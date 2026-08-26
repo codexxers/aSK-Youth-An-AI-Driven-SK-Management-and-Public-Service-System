@@ -119,7 +119,7 @@ User (Youth / SK Officer / Admin)
 
 ### Python AI Layer — `ai-layer/main.py` (FastAPI, port 8000)
 
-All Python models run on **CPU only** (`device=-1`) to preserve GPU VRAM for Qwen.
+All Python models run on **CPU only** (`device=-1`) to preserve GPU VRAM for Llama-3.2-3B.
 
 | Feature | Model | Notes |
 |---|---|---|
@@ -130,7 +130,7 @@ All Python models run on **CPU only** (`device=-1`) to preserve GPU VRAM for Qwe
 | OCR | Tesseract + pytesseract | Local or system install; Poppler for PDF-to-image |
 | Template Docs | Jinja2 + python-docx + reportlab | Renders resolution.j2, minutes.j2, certificate.j2 |
 | Analytics | pandas + plotly | Reads events.db, generates Plotly JSON charts |
-| Event Document Parser | regex keyword extraction | Extracts 12 event fields; Qwen fallback for low-confidence fields |
+| Event Document Parser | regex keyword extraction | Extracts 12 event fields; Llama-3.2-3B fallback for low-confidence fields |
 
 ### Embedding Strategy (Dual-Provider with Fallback)
 
@@ -188,10 +188,10 @@ project-root/
 ├── AI_INSTRUCTIONS.md                  # Developer instructions for AI assistants
 ├── CLEANUP_AND_REVERT_PROMPT.md
 ├── DEMO_GUIDE.md                       # Demo walkthrough guide
-├── MODEL_DOWNLOAD.md                   # Qwen GGUF download instructions
+├── MODEL_DOWNLOAD.md                   # Llama-3.2-3B GGUF download instructions
 ├── PHASE_UPDATE_PROMPT.md              # Feature phase update documentation
-├── Qwen25GGUF/
-│   └── Qwen2.5-7B-Instruct-Q4_K_M.gguf  # CRITICAL: Primary LLM model file (REQUIRED)
+├── Llama3.2-3BGGUF/
+│   └── Llama-3.2-3B-Instruct.gguf  # CRITICAL: Primary LLM model file (REQUIRED)
 ├── README.md
 ├── SYSTEM_ARCHITECTURE_CONTEXT.md      # THIS FILE
 ├── ai-layer/                           # Python FastAPI service (port 8000)
@@ -246,7 +246,6 @@ project-root/
 │   ├── vite.config.js                  # Vite config
 │   └── src/
 │       ├── App.jsx                     # MAIN SPA — 3214 lines: all views/modules/state
-│       ├── ChatbotInactivePage.jsx      # Fallback page when backend is offline
 │       ├── index.css                   # Global CSS styles
 │       ├── main.jsx                    # React root mount point
 │       ├── components/
@@ -308,7 +307,7 @@ sequenceDiagram
     participant PY as Python AI Layer :8000
     participant HNSW as HNSW VectorStore
     participant DB as SQLite events.db
-    participant LLM as Qwen 2.5 7B
+    participant LLM as Llama-3.2-3B
     participant CTX as context_manager :5007
     participant ROUTER as tool_router :5000
     participant LANG as language_corrector :5008
@@ -382,7 +381,6 @@ sequenceDiagram
 | Python AI layer health check | Once at startup with 30s delay | server.js setTimeout | Logs connectivity status of port 8000 |
 | HNSW snapshot | Non-blocking setImmediate after addChunks | HNSWVectorStore._save() | Persists index + metadata to disk after each upload batch |
 | SSE keepalive | Every 15 seconds per active connection | server.js setInterval inside SSE handler | Sends `: keepalive` comment to prevent proxy timeout |
-| Frontend backend health poll | At app load + on retry | App.jsx fetchBackendHealth() | Shows ChatbotInactivePage if /health unreachable |
 
 ---
 
@@ -560,7 +558,7 @@ END;
 | Endpoint Path | Method | Payload/Params | Purpose |
 |---|---|---|---|
 | `/health` | GET | — | Returns `{status:'ok', timestamp}`. Open CORS (reflects Origin). |
-| `/ready` | GET | — | Returns `{ready: true/false}`. Signals whether Qwen is loaded. |
+| `/ready` | GET | — | Returns `{ready: true/false}`. Signals whether Llama-3.2-3B is loaded. |
 
 ## Authentication
 
@@ -583,7 +581,7 @@ END;
 | `/api/events/scan` | POST | Body: `{eventId, t, first_name, mi, last_name, suffix, gender, address}` + Bearer JWT | Records attendance scan. Deduplicates by user_id (registered) or full name (guest). |
 | `/api/events/:id/logs` | GET | — | Returns attendance log for event (JOIN with users table) |
 | `/api/events/:id/refresh-qr` | POST | Body: `{admin_token}` | Rotates QR token (max once per SGT calendar day) |
-| `/api/events/parse-document` | POST | Multipart: file (PDF/DOCX/image/text) | Two-stage extraction: Python keyword scan then Qwen AI fallback for low-confidence fields |
+| `/api/events/parse-document` | POST | Multipart: file (PDF/DOCX/image/text) | Two-stage extraction: Python keyword scan then Llama-3.2-3B AI fallback for low-confidence fields |
 
 ## AI Chat
 
@@ -790,7 +788,7 @@ All models loaded once at startup (`@app.on_event("startup")`), stored as module
 **`/parse-event-document`** two-stage pipeline:
 1. `_extract_fields_from_text()` — regex keyword extraction for 12 fields with labeled patterns (e.g., `date:\s*(.+)`) and unlabeled fallbacks (e.g., YYYY-MM-DD pattern). Sets confidence scores per field.
 2. Returns `needs_ai=True` if any core field (title, date, attendees, budget_allotted) has confidence < 0.60.
-3. `server.js` then invokes Qwen with a structured JSON extraction prompt for low-confidence fields. Keyword results win if their confidence >= 0.60.
+3. `server.js` then invokes Llama-3.2-3B with a structured JSON extraction prompt for low-confidence fields. Keyword results win if their confidence >= 0.60.
 
 ---
 
@@ -808,7 +806,6 @@ Single-file React application. All views are controlled by `currentView` state:
 **Key inline components:**
 - `ExportResponseButton` — Per-message DOCX/PDF export popover via `/api/export/document`
 - `EventFormModal` — Event create/edit form with document import (`/api/events/parse-document`)
-- `ChatbotInactivePage` (imported) — Renders when backend `/health` check fails
 
 **`API_BASE`:** Reads `import.meta.env.VITE_BACKEND_URL`, falls back to `http://localhost:3001`.
 
@@ -826,8 +823,8 @@ Uses `useCamera.js` hook (getUserMedia) to access device camera. Captures video 
 
 | Service / App | Tech Stack | Port | Recovery / Failure Behavior |
 |---|---|---|---|
-| **Frontend SPA** | Vite / React | 5174 | Hard fail if backend is unreachable; renders `ChatbotInactivePage`. |
-| **Main Backend** | Node.js / Express | 3001 | Auto-restarts via PM2 or start.bat. If down, entire system is offline. |
+| **Frontend SPA** | Vite / React | 5174 | Standard error boundaries. Uses API loading state during backend cold-starts. |
+| **Main Backend** | Node.js / Express | 3001 | Handles concurrency and routes requests to Cloud API. |
 | **Python AI Layer** | FastAPI | 8000 | Checked at startup + 30s delay. If offline, `/embed`, `/summarize`, and `/ocr` gracefully fail, throwing errors to the frontend. |
 | **sk-router** | Flask | 5000 | Polled every 45s. Sets `pythonToolsOnline = false`. AI responses bypass tool execution. |
 | **sk-docgen** | Flask | 5001 | If offline, document generation requests fail and AI informs user of system error. |
@@ -852,7 +849,7 @@ Uses `useCamera.js` hook (getUserMedia) to access device camera. Captures video 
 | MAX_FILES | 5 | Maximum files per upload request (Multer limit) |
 | TOP_K | 5 | HNSW nearest-neighbor results to retrieve |
 | VECTOR_STORE_DIR | data | Directory (relative to backend/) for HNSW index + metadata |
-| GRAMMAR_ENFORCEMENT | false | If true, runs second Qwen pass to rewrite responses (slow) |
+| GRAMMAR_ENFORCEMENT | false | If true, runs second Llama-3.2-3B pass to rewrite responses (slow) |
 | JWT_SECRET | askyouth_super_secret_jwt_key_2026 | **SECRET** — HMAC key for JWT signing. Change in production! |
 | ADMIN_CREATION_TOKEN | SECRET_ADMIN_TOKEN_123 | **SECRET** — Token required to create admin users or reset passwords |
 | TRUST_PROXY | (not set = enabled) | Set to false or 0 to disable trust proxy (only when not behind Cloudflare) |
@@ -861,7 +858,7 @@ Uses `useCamera.js` hook (getUserMedia) to access device camera. Captures video 
 | ROUTER_URL | http://localhost:5000/route | Tool router Flask endpoint |
 | CONTEXT_URL | http://localhost:5007/tools/context | Context manager Flask endpoint |
 | LANGUAGE_URL | http://localhost:5008/tools/language/correct | Language corrector Flask endpoint |
-| LLM_GPU_LAYERS | 99 (all layers) | Override GPU layers for Qwen. Lower if VRAM < 6 GB. |
+| LLM_GPU_LAYERS | 99 (all layers) | Override GPU layers for Llama-3.2-3B. Lower if VRAM < 6 GB. |
 
 ## `backend/tools/.env`
 
@@ -889,8 +886,6 @@ Uses `useCamera.js` hook (getUserMedia) to access device camera. Captures video 
 
 - Node.js LTS v20+ with npm and npx
 - Python 3.10+ (preferably in `.venv` at project root)
-- CUDA-capable GPU with >= 6 GB VRAM (Vulkan or CPU fallback available)
-- Qwen GGUF model at `Qwen25GGUF/Qwen2.5-7B-Instruct-Q4_K_M.gguf`
 - Tesseract OCR (optional) at `tools/Tesseract-OCR/tesseract.exe` or system-wide
 - Poppler (optional) at `tools/poppler/` for PDF OCR via pdf2image
 
@@ -919,14 +914,11 @@ cd ..
 
 # Step 6: Configure backend environment
 copy backend\.env.example backend\.env
-# Edit backend\.env — set JWT_SECRET and ADMIN_CREATION_TOKEN to strong random strings
+# Edit backend\.env — set JWT_SECRET, ADMIN_CREATION_TOKEN, and API keys (GEMINI_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY)
 
 # Step 7: Configure Python tools environment
 copy backend\tools\.env.example backend\tools\.env
 # Edit backend\tools\.env — set ASKYOUTH_OUTPUT_DIR to absolute path
-
-# Step 8: Download Qwen GGUF model (see MODEL_DOWNLOAD.md)
-# Place at: Qwen25GGUF\Qwen2.5-7B-Instruct-Q4_K_M.gguf
 ```
 
 ## Starting All Services (Development)
@@ -946,7 +938,7 @@ cd backend\tools
 npx pm2 start pm2.ecosystem.config.cjs
 npx pm2 logs
 
-# Terminal 3: Node.js Backend + Qwen (port 3001)
+# Terminal 3: Node.js Backend + Llama-3.2-3B (port 3001)
 cd backend
 node server.js
 
@@ -1003,10 +995,9 @@ npx pm2 start pm2.ecosystem.config.cjs  # Start all microservices fresh
 # 10. Known Limitations & Tech Debt
 
 ### [High Priority / Security]
-1. **Single-instance inference serialization** — The `_genBusy`/`_genQueue` mutex serializes all LLM requests. High concurrent load causes queuing delays. There is no request cancellation if a client disconnects mid-generation; the generation runs to completion before the lock is released.
-2. **Python tool microservices have no authentication** — The Flask services on ports 5001–5008 accept any request from localhost without auth tokens. In a multi-tenant production environment with public IP access this is a security gap.
-3. **No SSE stream cancellation** — The `aborted` flag is set on `res.on('close')` but `LlamaChatSession.prompt()` in node-llama-cpp v3 does not support mid-generation cancellation. Client disconnect does not stop Qwen from generating internally.
-4. **`crypto.randomBytes` called inline via `require`** — In the `/api/events/:id/refresh-qr` route (line ~1248 of server.js), `const crypto = require('crypto')` is called inline inside the route handler. The `crypto` module is already available at module scope via `import { createHash } from 'crypto'`. Minor inconsistency.
+1. **Python tool microservices have no authentication** — The Flask services on ports 5001–5008 accept any request from localhost without auth tokens. In a multi-tenant production environment with public IP access this is a security gap.
+2. **No explicit SSE stream cancellation** — Client disconnects do not immediately abort upstream API requests.
+3. **`crypto.randomBytes` called inline via `require`** — In the `/api/events/:id/refresh-qr` route (line ~1248 of server.js), `const crypto = require('crypto')` is called inline inside the route handler. The `crypto` module is already available at module scope via `import { createHash } from 'crypto'`. Minor inconsistency.
 
 ### [Data Persistence & Integrity]
 5. **Conversation metadata is in-memory only** — The `conversations` Map and `threadDocuments` Map live in Node.js process memory. A server restart loses all conversation metadata (title, pinned state) and all thread-scoped uploaded document context. Frontend `localStorage` preserves message text but document context is permanently lost.

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import Plot from 'react-plotly.js'
-import ChatbotInactivePage from './ChatbotInactivePage.jsx'
+
 import EventLogModal from './components/EventLogModal'
 import ScanAttendance from './pages/ScanAttendance'
 
@@ -29,25 +29,7 @@ const formatSGT = (dateString) => {
   return `${hh}:${mm} // ${mo}/${dd}/${yy}`;
 };
 
-async function fetchBackendHealth(base) {
-  const url = `${base}/health`
-  const ctrl = new AbortController()
-  const tid = setTimeout(() => ctrl.abort(), 12000)
-  try {
-    const res = await fetch(url, { method: 'GET', signal: ctrl.signal, cache: 'no-store' })
-    clearTimeout(tid)
-    if (!res.ok) {
-      const txt = await res.text().catch(() => '')
-      console.warn('[aSK health]', url, res.status, txt.slice(0, 200))
-      return false
-    }
-    return true
-  } catch (err) {
-    clearTimeout(tid)
-    console.warn('[aSK health]', url, err?.name || 'fetch failed', err?.message || '')
-    return false
-  }
-}
+
 
 // ---------------------------------------------------------------------------
 // ExportResponseButton — Phase 5 Feature 1
@@ -2025,8 +2007,6 @@ function App() {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [backendStatus, setBackendStatus] = useState('checking')
-  const [healthRetryBusy, setHealthRetryBusy] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false);
 
   // Monitor scroll for "Scroll to Bottom" button
@@ -2044,30 +2024,6 @@ function App() {
   const scrollToBottom = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   };
-
-  useEffect(() => {
-    let cancelled = false
-    const tick = async () => {
-      const ok = await fetchBackendHealth(API_BASE)
-      if (!cancelled) setBackendStatus(ok ? 'up' : 'down')
-    }
-    tick()
-    const interval = setInterval(tick, 30000)
-    return () => {
-      cancelled = true
-      clearInterval(interval)
-    }
-  }, [])
-
-  const handleHealthRetry = async () => {
-    setHealthRetryBusy(true)
-    try {
-      const ok = await fetchBackendHealth(API_BASE)
-      setBackendStatus(ok ? 'up' : 'down')
-    } finally {
-      setHealthRetryBusy(false)
-    }
-  }
 
   // Mobile-aware initialization: close sidebar by default on smaller screens
   useEffect(() => {
@@ -2503,26 +2459,7 @@ function App() {
     streamingTextRef.current = '';
   }
 
-  if (backendStatus === 'checking') {
-    return (
-      <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-slate-300">
-        <div className="absolute inset-0 bg-noise-dark opacity-30 pointer-events-none" aria-hidden />
-        <div className="relative z-10 flex flex-col items-center gap-4">
-          <div className="h-10 w-10 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" />
-          <p className="font-mono text-xs tracking-widest uppercase text-cyan-400/80">Linking uplink…</p>
-        </div>
-      </div>
-    )
-  }
 
-  if (backendStatus === 'down') {
-    return (
-      <ChatbotInactivePage
-        onRetry={handleHealthRetry}
-        isRetrying={healthRetryBusy}
-      />
-    )
-  }
 
   if (authChecking) {
     return (

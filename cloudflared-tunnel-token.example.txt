@@ -1,0 +1,10 @@
+eyJhIjoiNTk2NWE3ZDI2OWQzYWJiNmMwZjA4ZjZhNjVjZjZhMTUiLCJ0IjoiMDczMTY0MjctZjcwNy00NGI4LWI5MWQtOTNiNDYwYjU4NjdiIiwicyI6IlpHSmxaREJqTURJdFpqSXhNaTAwWkdKbUxXRmhZelF0TjJNeFlURXlOR0kyWW1GaSJ9
+
+How to get it:
+1. https://one.dash.cloudflare.com → Networks → Tunnels → click your tunnel (e.g. askyouth).
+2. Configure / Install connector → Windows.
+3. Copy the command — it looks like: cloudflared.exe service install eyJhIjoi...
+4. Paste ONLY the token part (starting with eyJ...) here as ONE line — no quotes.
+5. Save this file as: cloudflared-tunnel-token.txt   (same folder as start_system.bat)
+
+Never commit cloudflared-tunnel-token.txt to Git.

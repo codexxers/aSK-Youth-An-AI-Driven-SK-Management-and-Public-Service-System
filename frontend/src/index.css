@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-display: 'Orbitron', sans-serif;
+  --color-cyan-glow: #0ff;
+  --color-dark-bg: #050510;
+}
+
+@keyframes pulse-border {
+  0% { border-color: rgba(0, 255, 255, 0.4); box-shadow: 0 0 10px rgba(0, 255, 255, 0.2); }
+  50% { border-color: rgba(0, 255, 255, 1); box-shadow: 0 0 20px rgba(0, 255, 255, 0.6), inset 0 0 10px rgba(0, 255, 255, 0.2); }
+  100% { border-color: rgba(0, 255, 255, 0.4); box-shadow: 0 0 10px rgba(0, 255, 255, 0.2); }
+}
+
+@keyframes pulse-border-light {
+  0% { border-color: rgba(15, 23, 42, 0.3); }
+  50% { border-color: rgba(6, 182, 212, 0.8); box-shadow: 0 0 15px rgba(6, 182, 212, 0.4); }
+  100% { border-color: rgba(15, 23, 42, 0.3); }
+}
+
+@keyframes static-noise {
+  0% { background-position: 0 0; }
+  100% { background-position: 100% 100%; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-neon-pulse {
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+.animate-neon-pulse-light {
+  animation: pulse-border-light 2s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+.bg-noise {
+  background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+.bg-noise-dark {
+  background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+  opacity: 0.25;
+  mix-blend-mode: difference;
+  pointer-events: none;
+}
+
+/* ── Markdown chat bubble prose styles ── */
+/* Plain text by default; only <strong>/<b> receive bold weight. */
+.prose-chat { font-weight: 400; }
+.prose-chat p { margin-bottom: 0.45rem; }
+.prose-chat p:last-child { margin-bottom: 0; }
+.prose-chat strong,
+.prose-chat b { font-weight: 600; }
+.prose-chat em,
+.prose-chat i { font-style: italic; }
+.prose-chat ul { list-style-type: disc; padding-left: 1.4rem; margin-bottom: 0.45rem; }
+.prose-chat ol { list-style-type: decimal; padding-left: 1.4rem; margin-bottom: 0.45rem; }
+.prose-chat li { margin-bottom: 0.2rem; }
+.prose-chat li > p { margin-bottom: 0; }
+.prose-chat code { font-family: var(--font-mono); font-size: 0.82em; background: rgba(255,255,255,0.08); padding: 0.1em 0.35em; border-radius: 4px; }
+.prose-chat pre { background: rgba(0,0,0,0.4); border: 1px solid rgba(6,182,212,0.2); border-radius: 6px; padding: 0.75rem 1rem; overflow-x: auto; margin-bottom: 0.45rem; }
+.prose-chat pre code { background: none; padding: 0; }

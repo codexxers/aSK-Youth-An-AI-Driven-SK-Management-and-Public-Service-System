@@ -1,0 +1,57 @@
+# Cloudflare secrets — never commit
+cloudflared-tunnel-token.txt
+cloudflared-origin-cert.txt
+
+# API Keys
+API KEYS.txt
+API keys.txt
+
+
+# ---------------------------------------------------
+# Dependencies
+node_modules/
+.venv/
+.cache/
+_MIGRATION_BACKUP_LOCAL_AI/
+Qwen25GGUF/
+backend/data/hnsw.index
+backend/data/hnsw-meta.json
+backend/.env
+backend/tools/.env
+.env
+API keys.txt
+
+# Dependencies & Virtual Environments
+.agents/
+node_modules/
+**/node_modules/
+.venv/
+**/venv/
+.cache/
+__pycache__/
+
+# Backups & Heavy Models
+_MIGRATION_BACKUP_LOCAL_AI/
+Qwen25GGUF/
+*.bak
+
+# Unrelated Folders & Archives
+Copy of FEU Alumnix/
+askyouth-web-only/
+CONTEXTS-IMPORTANT - Copy/
+response_styles_old_205_lines(PROTECTED DONT MODIFY)/
+
+# Secrets & Environment Files
+.env
+backend/.env
+backend/tools/.env
+API keys.txt
+API KEYS.txt
+cloudflared-tunnel-token.txt
+cloudflared-tunnel-name.txt
+
+# Generated Files & Binary DBs
+generated_docs/
+backend/data/hnsw.index
+backend/data/hnsw-meta.json
+*.log

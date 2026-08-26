@@ -1,0 +1,25 @@
+RESOLUTION NO. {{ series_no | default('___') }}
+Series of {{ year | default('2025') }}
+
+{{ title | default('RESOLUTION TITLE') }}
+
+WHEREAS, {{ whereas_1 | default('_____________________________________________') }};
+
+{% if whereas_2 is defined and whereas_2 %}WHEREAS, {{ whereas_2 }};
+
+{% endif %}{% if whereas_3 is defined and whereas_3 %}WHEREAS, {{ whereas_3 }};
+
+{% endif %}NOW, THEREFORE, BE IT RESOLVED, as it is hereby resolved, {{ resolved_1 | default('_____________________________________________') }}.
+
+{% if resolved_2 is defined and resolved_2 %}RESOLVED FURTHER, {{ resolved_2 }}.
+
+{% endif %}Adopted this {{ date | default('___') }} day of {{ month | default('___') }}, {{ year | default('2025') }}.
+
+{{ chairperson | default('SK CHAIRPERSON') }}
+Sangguniang Kabataan Chairperson
+Barangay Concepcion Dos, Marikina City
+
+Attested by:
+
+{{ secretary | default('SK SECRETARY') }}
+SK Secretary

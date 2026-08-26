@@ -1,0 +1,19 @@
+CERTIFICATE OF RECOGNITION
+
+This is to certify that
+
+{{ recipient_name | default('RECIPIENT NAME') }}
+
+is hereby recognized for {{ purpose | default('outstanding contribution to the Sangguniang Kabataan programs and activities') }}
+in Barangay Concepcion Dos, Marikina City.
+
+{% if details is defined and details %}{{ details }}
+
+{% endif %}Given this {{ date | default('___') }} day of {{ month | default('___') }}, {{ year | default('2025') }}
+at Barangay Concepcion Dos, Marikina City.
+
+{{ chairperson | default('SK CHAIRPERSON') }}
+Sangguniang Kabataan Chairperson
+
+{{ barangay_captain | default('BARANGAY CAPTAIN') }}
+Punong Barangay

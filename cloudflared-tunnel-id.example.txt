@@ -1,0 +1,4 @@
+0721be27-d727-440d-8f1d-92b403b55b7b
+
+Optional — only for NAME mode when you have {uuid}.json in %%USERPROFILE%%\.cloudflared\
+Copy to cloudflared-tunnel-id.txt if needed.

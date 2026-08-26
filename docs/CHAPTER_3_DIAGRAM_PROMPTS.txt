@@ -1,0 +1,142 @@
+ Chapter 3 — diagram generation prompts (aSK//YOUTH.AI)
+
+Use each block as a standalone prompt for a diagramming tool (Mermaid, draw.io, Lucidchart, Napkin AI, etc.). Convention: Treat the system as fully realized including the professor’s mandatory features (login, SK-patterned events including yearly view, responsive mobile UI, youth suggestions, admin reporting)—even if implementation is still rolling out—so all Chapter 3 figures stay internally consistent.
+
+Mandatory SK / governance framing: Events align with Sangguniang Kabataan (SK) practice—categories (sports, seminar, scholarship, assembly, etc.), barangay youth programs, budgets, attendance-style fields where relevant.
+
+---
+
+ Summary table — mandatory vs. optional
+
+| Figure | Title | Mandatory? |
+|:------:|-------|:----------:|
+| 1 | Conceptual Framework | Mandatory |
+| 2 | System Overview | Optional |
+| 3 | Literature Synthesis Map | Optional |
+| 4 | Agile Methodology | Mandatory |
+| 5 | System Architecture | Mandatory |
+| 6 | Use Case Diagram | Mandatory |
+| 7 | ERD (Entity–Relationship Diagram) | Mandatory |
+| 8 | Context DFD (Level 0) | Mandatory |
+| 9 | Level 1 DFD | Mandatory |
+| 10–12 | Detailed flowcharts | Optional |
+
+---
+
+ Figure 1 — Conceptual Framework
+
+Generated figure (vector): [`diagrams/figure-1-conceptual-framework.svg`](./diagrams/figure-1-conceptual-framework.svg) — open in browser or insert into Word/PDF. See also [`diagrams/figure-1-conceptual-framework.md`](./diagrams/figure-1-conceptual-framework.md) for embed + export notes.
+
+Prompt
+
+> Draw a horizontal conceptual framework for aSK//YOUTH.AI, a web-based AI assistant for SK-aligned youth programs in the Philippines. Use three main boxes: INPUT (left), PROCESS (center), OUTPUT (right), with bold arrows.  
+> INPUT: (1) Youth and SK officers as users, (2) program documents (PDF/DOCX), (3) event data and yearly SK calendars, (4) suggestions/feedback text, (5) admin parameters for reports.  
+> PROCESS: Split the center into stacked sub-processes: Secure access (login & roles), AI reasoning (LLM + RAG over documents), Event management (SK-patterned, yearly view), Mobile-responsive UI (Vercel-hosted SPA), Suggestions intake, Admin analytics & report generation; show Cloudflare Tunnel bridging public internet to on-premise inference PC (Node + Python + GPU).  
+> OUTPUT: (1) grounded chat answers, (2) event listings and schedules, (3) exported reports (PDF/DOCX), (4) dashboards for attendance/budget trends, (5) acknowledged suggestions.  
+> Style: clean academic diagram, black/white or one accent color, labels readable at thesis print size.
+
+---
+
+ Figure 2 — System Overview (optional)
+
+Prompt
+
+> Create a single-page system overview diagram: top banner “aSK//YOUTH.AI — end-to-end view”. Layers top-to-bottom: Users (browser/mobile) → Vercel (static React) → HTTPS → Cloudflare (DNS + Tunnel) → Inference PC (Express API :3001, FastAPI :8000, SQLite, GGUF on NVIDIA CUDA). Annotate short bullets per layer (1 line each). Show dual hostname pattern: UI domain vs API subdomain. Optional side callout: “Professor-mandatory modules” list: Login, SK events + yearly, Mobile, Suggestions, Admin reports.
+
+---
+
+ Figure 3 — Literature Synthesis Map (optional)
+
+Prompt
+
+> Build a literature synthesis concept map (not code-specific): central node “AI-enabled youth governance & information systems”. Branch nodes: Large language models & RAG (grounded answers, citation to local docs), Local / hybrid deployment (privacy, tunneling to on-prem GPU), SK & barangay youth programs (event lifecycle, participation), Web engineering (SPA, CDN, responsive design), Decision support & reporting (analytics, exports), Participatory design (suggestions channel). Use dotted lines for gaps addressed by aSK//YOUTH.AI. Academic map style; no vendor logos required.
+
+---
+
+ Figure 4 — Agile Methodology
+
+Prompt
+
+> Illustrate Agile / Scrum-style methodology used by the capstone team for aSK//YOUTH.AI. Show iterative loop: Product backlog → Sprint planning → Design / Implement / Test (small cycle) → Sprint review → Retrospective → back to backlog. Around the loop, place sticky-note style items tied to features: Login, SK event patterns & yearly calendar, Mobile UI, Suggestions, Admin reports, Tunnel + Vercel deployment, LLM + RAG. Indicate professor feedback entering the backlog as mandatory revisions. Clean infographic suitable for Chapter 3.
+
+---
+
+ Figure 5 — System Architecture
+
+Prompt
+
+> Produce a technical system architecture diagram for aSK//YOUTH.AI (deployment + apps + data).  
+> Client tier: Browser (desktop + mobile viewport); include login screen before main app.  
+> Edge tier: Vercel hosts built Vite/React SPA; Cloudflare terminates TLS, routes api. hostname through Cloudflare Tunnel (`cloudflared`) to origin.  
+> Application tier (on-premise PC): Node.js Express — auth middleware, REST/SSE chat (`/api/chat/stream`), events CRUD (`/api/events`), suggestions API, admin report endpoints, rate limiting behind proxy, CORS; node-llama-cpp with CUDA for Qwen 2.5 7B GGUF; Python FastAPI service for embeddings, intent, summarization, OCR pipeline; SQLite files for events, users/roles, suggestions, report snapshots.  
+> Integration: show arrows Vercel → API, API ↔ Python, API ↔ SQLite, LLM ↔ VRAM.  
+> Label mandatory features in callouts. Use layered boxes (presentation / application / data / infrastructure).
+
+---
+
+ Figure 6 — Use Case Diagram
+
+Prompt
+
+> Draw a UML use case diagram. Actors: Youth / Resident, SK Officer / Moderator, System Administrator, External Service (optional: email or SMS as secondary actor). System boundary rectangle labeled aSK//YOUTH.AI.  
+> Youth use cases: Login; Chat with AI (upload documents); View events (SK-patterned); Filter yearly programs; Submit suggestion; Use mobile layout.  
+> SK Officer: Login; Create/Edit/Cancel event; Import or attach program memo; View suggestions (read-only or triage).  
+> Administrator: Login; Configure roles; Access reports (attendance, budget, demographics); Export PDF/DOCX; Audit logs (high-level).  
+> Include relationships where logical (e.g. Chat includes Document upload). Extend optional (e.g. Export report extends View analytics). Keep ≤ 18 use cases for readability.
+
+---
+
+ Figure 7 — ERD (Entity–Relationship Diagram)
+
+Prompt
+
+> Design an ERD (Chen or crow’s foot notation) for aSK//YOUTH.AI including future-complete schema for professor requirements.  
+> Entities: `User` (id, email, password_hash, role enum [youth, sk_officer, admin]), `Session` or `AuthToken`; `Event` (id, title, description, category, date, time, location, organizer, status, requirements, contact, attendees, gender splits, staff_count, budget_allotted, fiscal_year or recurrence flag for yearly programs, SK_barangay_ref); `Suggestion` (id, user_id FK, body, status, created_at); `ChatThread` / `Message` (optional normalization); `Document` / `Attachment` linked to thread; `ReportDefinition` / `ReportRun` (admin exports, parameters, format); `VectorIndexMetadata` (thread_id, chunk refs)—can be simplified to one `RAG_Context` table or note “vector store” as separate store.  
+> Show 1:N User→Suggestions, User→Events (created_by), N:M optional Event↔Staff. Mark PK/FK. Thesis-ready, grayscale.
+
+---
+
+ Figure 8 — Context DFD (Level 0)
+
+Prompt
+
+> Draw a Context Diagram (DFD Level 0) — single central process bubble “0.0 aSK//YOUTH.AI System”. External entities (squares): Youth User, SK Officer, System Admin, Vercel CDN (or “Web Host”), Cloudflare Edge, Domain Registrar (DNS only if you want), Email/SMS Gateway (optional). Data flows (named arrows): Login credentials; Chat queries & file uploads; Event CRUD & yearly queries; Suggestions; Report requests & exports; Static assets request/response; HTTPS API traffic through tunnel; Optional notifications. No internal stores on context diagram. Label every arrow with data name, not just “request”.
+
+---
+
+ Figure 9 — Level 1 DFD
+
+Prompt
+
+> Create DFD Level 1 decomposing 0.0 into 5–7 numbered processes (rounded rectangles), data stores (open rectangles: D1 Users & roles, D2 Events (SK), D3 Suggestions, D4 Chat & documents, D5 Analytics / report cache), and same external entities as Level 0 where they interact.  
+> Example process numbering: 1.0 Authenticate user; 2.0 Process AI chat & RAG; 3.0 Maintain SK events & yearly views; 4.0 Record & route suggestions; 5.0 Generate admin reports; 6.0 Serve SPA & health (optional split). Show balanced flows: every process has inputs/outputs; every store has read/write labeled R/W. Include mobile and login only as data flows (credentials, session token), not separate processes unless cleaner. Keep diagram legible for A4 landscape.
+
+---
+
+ Figure 10 — Detailed flowchart (optional example: login)
+
+Prompt
+
+> Flowchart (ANSI/ISO symbols): User login for aSK//YOUTH.AI. Start → Input email/password → Validate format → Query D1 Users → Password verify (hash) → Decision: valid? If no → show error & loop; if yes → create session/JWT → branch by role (youth / SK / admin) → respective home route → End. Include lockout or rate-limit decision as optional diamond. Vertical layout, thesis fonts.
+
+---
+
+ Figure 11 — Detailed flowchart (optional example: AI chat + RAG)
+
+Prompt
+
+> Flowchart: Youth sends chat message with optional attachments. Start → Auth check → Upload files? → If yes: virus/type check → extract text → embed/chunk → update D4 / vector index → Build prompt with RAG → Call LLM (CUDA) stream tokens → Persist assistant message → End. Decisions for: empty message, unsupported file, model busy, Python service down (fallback path). Label SSE or “streaming response” on output branch.
+
+---
+
+ Figure 12 — Detailed flowchart (optional example: admin report)
+
+Prompt
+
+> Flowchart: Administrator generates participation & budget report for SK events. Start → Admin login & role check → Select fiscal year / date range → Query D2 Events + aggregates → Optional merge D3 suggestions themes → Preview on screen → Decision: export? → PDF/DOCX generation → Store D5 run metadata → Audit log entry → End. Include cancel path.
+
+---
+
+ Maintainer note
+
+When implementation catches up to these diagrams, add a one-line note in `CONTEXT.md` change log. If the adviser removes optional figures, strike them from the thesis table of figures only—this file can stay as a prompt library.

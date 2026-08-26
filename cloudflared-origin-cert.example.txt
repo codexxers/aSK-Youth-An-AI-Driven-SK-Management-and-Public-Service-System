@@ -1,0 +1,1 @@
+C:\Users\YOUR_WINDOWS_USER\.cloudflared\cert.pem

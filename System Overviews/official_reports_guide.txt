@@ -1,0 +1,81 @@
+Official Reports - Document Generator
+Page Guide
+Last updated: April 12, 2026
+
+================================================================================
+
+OVERVIEW
+--------
+- Used to generate official SK barangay documents from pre-built templates
+- Fill in the fields, pick a format, and download the finished document
+- Powered by the Python AI Layer; output is generated server-side
+
+================================================================================
+
+TEMPLATE SELECTOR (top of page)
+--------------------------------
+Three document types to choose from:
+
+- SK Resolution       -- Formal barangay resolution with WHEREAS and RESOLVED clauses
+- Meeting Minutes     -- Official minutes of an SK session with agenda and action items
+- Certificate of Recognition -- Award certificate for a specific recipient and purpose
+
+Switching templates clears all fields and loads the correct set of inputs for that document.
+
+================================================================================
+
+FORM FIELDS
+-----------
+
+SK Resolution fields:
+- Series No.          -- Resolution number (e.g. 001)
+- Year                -- Year of the resolution
+- Resolution Title    -- Short title/subject
+- WHEREAS (1)         -- First whereas clause (required)
+- WHEREAS (2)         -- Second whereas clause (optional)
+- RESOLVED            -- Main resolved clause (required)
+- RESOLVED FURTHER    -- Additional resolved clause (optional)
+- Day / Month         -- Date of passing (e.g. 15th / July)
+- SK Chairperson Name -- Full name
+- SK Secretary Name   -- Full name
+
+Meeting Minutes fields:
+- Date                -- Full date of the meeting (e.g. July 15, 2025)
+- Time                -- Start time (e.g. 2:00 PM)
+- Venue               -- Location of the session
+- Presiding Officer   -- Name of who led the meeting
+- Attendees           -- One name per line
+- Agenda Items        -- One item per line
+- Proceedings         -- Free-text discussion/proceedings narrative
+- Action Items        -- One action item per line
+- Adjournment Time    -- When the meeting ended
+- Prepared By         -- SK Secretary name
+- Noted By            -- SK Chairperson name
+
+Certificate of Recognition fields:
+- Recipient Name      -- Full name of awardee
+- Purpose             -- What the recognition is for
+- Additional Details  -- Optional extra context
+- Day / Month / Year  -- Date on the certificate
+- SK Chairperson Name -- Full name
+- Barangay Captain Name -- Full name
+
+================================================================================
+
+FORMAT & DOWNLOAD
+-----------------
+- Format dropdown: choose DOCX or PDF before generating
+- Click "Generate DOCX" or "Generate PDF" to build the document
+- File downloads automatically to your browser's default download folder
+- File name format: [template]_document.[ext]  (e.g. minutes_document.docx)
+
+================================================================================
+
+QUICK SUMMARY
+-------------
+- 3 document templates: SK Resolution, Meeting Minutes, Certificate of Recognition
+- Switching templates resets all fields automatically
+- List fields (Attendees, Agenda, Action Items) accept one entry per line
+- Optional fields can be left blank; they are skipped in the output
+- Output formats: DOCX or PDF, downloaded instantly after generation
+- Document is built server-side by the Python AI Layer using python-docx

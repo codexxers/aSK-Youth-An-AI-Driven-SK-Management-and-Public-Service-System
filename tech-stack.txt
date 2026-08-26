@@ -1,0 +1,98 @@
+=============================================
+      aSK//YOUTH AI - TECH STACK
+      Updated: 2026-04-12
+=============================================
+
+1. FRONTEND: "The Cyber-Lab Interface"
+---------------------------------------------
+- Base Framework: React.js (v18)
+- Build Tool: Vite (v5)
+- Styling: Tailwind CSS (v4 engine via @tailwindcss/vite)
+- API Communication: Axios
+- Charts: react-plotly.js (interactive analytics — pie, bar, grouped bar)
+- Markdown Rendering: react-markdown (AI response display)
+- Streaming: native fetch() + ReadableStream + TextDecoder (SSE consumer)
+- Typography: Google Web Fonts (Inter, JetBrains Mono, Orbitron)
+- Custom raw CSS keyframes for glowing/pulse animations.
+- Storage: localStorage (chat thread history, extracted file text persistence)
+
+2. BACKEND: "The Central Node"
+---------------------------------------------
+- Environment: Node.js (v20), ESM modules ("type": "module")
+- Server Framework: Express.js
+- AI Inference: node-llama-cpp v3 (Qwen 2.5-7B-Instruct Q4_K_M GGUF, CUDA/Vulkan/CPU)
+- Embedding Model: @xenova/transformers (all-MiniLM-L6-v2, ONNX, ~22 MB, auto-downloaded)
+- Vector Index: hnswlib-node (HNSW, on-disk snapshots, cosine similarity)
+- Database: better-sqlite3 (events DB with 15 columns + SHA-256 embedding cache)
+- File Extraction: pdf-parse (PDF text), mammoth (DOCX→HTML→text)
+- File Uploads: multer (memory storage, MIME + extension whitelist, 10 MB cap)
+- HTTP Client: Axios + form-data (Python AI Layer proxy calls)
+- Rate Limiting: express-rate-limit (60 req/min per IP)
+- Document Export: docx (DOCX generation), pdfkit (PDF generation) — SK letterhead
+- Config: dotenv (all config via backend/.env, never hardcoded)
+- Streaming: Server-Sent Events (SSE) with TCP setNoDelay, 15s keepalive
+- Generation Lock: single-thread queue (acquireGenLock / releaseGenLock)
+
+3. AI LAYER: "The Neural Process Service"
+---------------------------------------------
+Port: 8000 | All NLP models run on CPU only — GPU VRAM reserved for Qwen in Node.js
+
+- Environment: Python 3.11 (virtual environment at project root .venv)
+- Server Framework: FastAPI
+- ASGI Server: Uvicorn
+- Auto-Documentation: Swagger UI (http://localhost:8000/docs, built-in)
+
+  [Feature 1] Language Detection
+  - Library: langdetect
+  - Endpoint: POST /detect-language
+  - Detects language code from input text (e.g. "en", "tl", "fil")
+
+  [Feature 2] Intent Classification
+  - Model: facebook/bart-large-mnli (zero-shot-classification)
+  - Library: transformers (HuggingFace)
+  - Endpoint: POST /classify-intent
+  - Classifies user text against a configurable list of candidate labels
+
+  [Feature 3] Text Embeddings
+  - Model: sentence-transformers/all-MiniLM-L6-v2 (384-dim)
+  - Library: sentence-transformers
+  - Endpoint: POST /embed
+  - Returns 384-dimensional float vector for input text
+
+  [Feature 4] Text Summarization
+  - Model: sshleifer/distilbart-cnn-12-6 (seq2seq)
+  - Libraries: transformers (AutoModelForSeq2SeqLM + AutoTokenizer)
+  - Endpoint: POST /summarize
+  - Note: Uses model+tokenizer directly (transformers v5.5.3 removed "summarization" pipeline)
+
+  [Feature 5] OCR — Scanned Documents & Images
+  - Engine: Tesseract OCR (checks local tools/Tesseract-OCR/ first, then system install)
+  - Libraries: pytesseract, Pillow (PIL)
+  - PDF support: pdf2image + Poppler (checks local tools/poppler/ first, then system PATH)
+  - Endpoint: POST /ocr
+  - Supports: JPEG, PNG, TIFF, WebP, BMP (images) + PDF (scanned or native)
+
+  [Feature 6] Template-Based Document Generation
+  - Libraries: python-docx (DOCX), reportlab (PDF), Jinja2 (templates)
+  - Endpoint: POST /generate-document
+  - Templates: Resolution, Minutes, Certificate (Jinja2 .j2 files in ai-layer/templates/)
+  - Output: SK letterhead with double-line page borders (dark navy blue #1F3864)
+  - Formats: .docx (python-docx with OxmlElement border) + .pdf (reportlab with rect borders)
+
+  [Feature 7] Events Analytics Dashboard
+  - Libraries: pandas, plotly (plotly.express + plotly.graph_objects)
+  - Endpoint: GET /analytics/events
+  - Chart types: event (pie by category), monthly (bar), status (bar), attendance (grouped bar)
+  - Attendance chart: top 10 events by attendees; optional male/female + staff bar series
+  - Extended stats: total_attendees, total_male, total_female, total_staff, total_budget
+  - Data source: reads backend/data/events.db (read-only SQLite connection)
+
+  [Feature 8] Event Document Parser
+  - Libraries: python-docx (DOCX text), pytesseract + pdf2image (image/PDF OCR), built-in re
+  - Endpoint: POST /parse-event-document
+  - Accepts: PDF, DOCX, image (JPEG/PNG/TIFF/WebP), TXT
+  - Extracts 12 fields via keyword regex with per-field confidence scores (0.0–1.0):
+      title, date, time, location, organizer, category,
+      attendees, male_count, female_count, staff_count, budget_allotted, description
+  - Returns: { extracted, confidence, raw_text, needs_ai }
+  - needs_ai=true triggers Qwen AI fallback in Node.js (POST /api/events/parse-document)

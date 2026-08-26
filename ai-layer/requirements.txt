@@ -1,0 +1,34 @@
+# aSK//YOUTH Python AI Layer — Phase 1 Dependencies
+# All models run on CPU only (device=-1) to preserve GPU VRAM for Qwen in Node.js
+
+# Core server
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+
+# Feature 4: Language Detection
+langdetect
+
+# Features 1 & 3: Intent Classification + Summarization (shared transformers/torch)
+transformers
+torch
+
+# Feature 6: Embedding Service
+sentence-transformers
+
+# --- Phase 2 Dependencies ---
+
+# Feature 2: OCR for Scanned Documents
+pytesseract
+Pillow
+pdf2image
+
+# Feature 7: Template-Based Document Generation
+python-docx
+reportlab
+jinja2
+
+# Feature 5: Events Analytics Dashboard
+pandas
+plotly

@@ -1,0 +1,106 @@
+PROBLEM REPORT: node-llama-cpp CUDA Recompilation on Every Startup
+====================================================================
+
+PROJECT CONTEXT
+---------------
+Project: aSKYOUTH.AI - Local AI system
+Framework: Node.js backend using node-llama-cpp v3 (npm package)
+Model: Qwen 2.5 7B Instruct (GGUF format)
+GPU: NVIDIA RTX 4060 Laptop 6GB
+OS: Windows 11
+Node.js version: latest LTS
+
+PROBLEM DESCRIPTION
+-------------------
+Every time the Node.js backend starts (via start_system.bat), node-llama-cpp
+recompiles CUDA binaries from C++ source. This takes 30-40 minutes each startup.
+
+EXPECTED BEHAVIOR
+-----------------
+CUDA binaries should compile once (on first npm install) and be cached
+under:
+  backend\node_modules\node-llama-cpp\llama\localBuilds\win-x64-cuda\
+
+On subsequent startups, node-llama-cpp should detect the cached build
+and load it directly, skipping compilation. Startup should take < 30 seconds.
+
+ACTUAL BEHAVIOR
+---------------
+1. npm install runs and compiles for ~39 minutes (expected - first time only)
+2. start_system.bat launches the Node.js backend
+3. Node.js backend calls: getLlama({ gpu: 'cuda' })
+4. node-llama-cpp immediately starts recompiling CUDA from source AGAIN
+   - Seen in terminal: repack.cpp, hbm.cpp, traits.cpp, amx.cpp, mme.cpp,
+     binary-ops.cpp, unary-ops.cpp, vec.cpp, ops.cpp, sgemma.cpp,
+     Generating Code, quants.c, repack.cpp
+   - "Auto build dll exports"
+   - "Creating library ggml-cpu.lib and object ggml-cpu.exp"
+   - "ggml-cpu.vcxproj -> ...\win-x64-cuda\bin\Release\ggml-cpu.dll"
+
+5. After DLL compile finishes, it succeeds OR falls back to Vulkan if CUDA fails.
+
+WHAT WAS TRIED
+--------------
+1. Deleted backend\node_modules entirely on the laptop, ran npm install fresh.
+   Result: npm install took 39 min, compiled successfully.
+   Then ran start_system.bat -> recompilation started again immediately.
+
+2. The localBuilds\win-x64-cuda folder DOES exist after npm install.
+   But node-llama-cpp still recompiles on getLlama() call at runtime.
+
+3. Previous session: CUDA compiled during npm install on desktop machine,
+   then project was robocopy-backed-up to laptop.
+   node-llama-cpp detected mismatch (wrong machine binaries) and tried
+   to recompile but got EBUSY errors (files locked by running process).
+   Fell back to Vulkan backend instead.
+
+KEY QUESTION FOR AI
+-------------------
+Why does node-llama-cpp recompile CUDA at runtime (on getLlama() call) even
+after npm install already compiled the binaries into localBuilds/win-x64-cuda?
+
+Is there a way to:
+  a) Force node-llama-cpp to use the existing compiled binaries without rebuilding?
+  b) Pre-build all backends during npm install so runtime doesn't need to compile?
+  c) Set an environment variable or config flag to skip runtime recompilation?
+
+RELEVANT CODE
+-------------
+server.js - how getLlama is called:
+
+  import { getLlama, LlamaChatSession } from "node-llama-cpp";
+
+  async function initLlama() {
+      const backends = [
+          { label: 'CUDA',   opts: { gpu: 'cuda'   } },
+          { label: 'Vulkan', opts: { gpu: 'vulkan' } },
+          { label: 'CPU',    opts: {}                },
+      ];
+      for (const { label, opts } of backends) {
+          try {
+              const llamaInstance = await getLlama(opts);
+              const ctx = await tryCreateContext(llamaInstance, label);
+              if (ctx) {
+                  llama = llamaInstance;
+                  console.log(`Qwen 2.5 7B VRAM Mount Success! (backend: ${label})`);
+                  return;
+              }
+          } catch (e) {
+              console.warn(`[initLlama] ${label} getLlama failed: ${e.message}`);
+          }
+      }
+  }
+  initLlama();
+
+ADDITIONAL NOTES
+----------------
+- node-llama-cpp version: v3 (exact version in backend/package.json)
+- The project is on D:\PROGRAMMINGS\aSKYOUTH-Qwen-Backup-3\ on the laptop
+- The localBuilds folder path: 
+    backend\node_modules\node-llama-cpp\llama\localBuilds\win-x64-cuda\
+- First startup after fresh npm install: recompiles (this is the current issue)
+- If startup triggers recompile, it seems node-llama-cpp does a TWO-PHASE build:
+    Phase 1: npm install builds the Node addon/bindings
+    Phase 2: First getLlama() call builds llama.cpp GPU backends on demand
+- If Phase 2 is expected behavior, is there a way to trigger Phase 2
+  during npm install (e.g., a postinstall script or CLI command)?

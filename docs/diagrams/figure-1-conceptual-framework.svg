@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-labelledby="title desc">
+  <title id="title">Figure 1 � Conceptual Framework: aSK//YOUTH.AI</title>
+  <desc id="desc">INPUT, PROCESS, OUTPUT horizontal framework with Cloudflare Tunnel to on-premise inference.</desc>
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="8" refX="10" refY="4" orient="auto">
+      <polygon points="0 0, 12 4, 0 8" fill="#111"/>
+    </marker>
+    <filter id="sh" x="-3%" y="-3%" width="106%" height="106%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.1"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="900" fill="#ffffff"/>
+
+  <text x="800" y="40" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="700" fill="#111">Figure 1 � Conceptual Framework</text>
+  <text x="800" y="66" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#444">aSK//YOUTH.AI � Web-based AI assistant for SK-aligned youth programs (Philippines)</text>
+
+  <!-- INPUT -->
+  <g filter="url(#sh)">
+    <rect x="40" y="100" width="382" height="730" rx="12" fill="#fafafa" stroke="#1e293b" stroke-width="2"/>
+  </g>
+  <rect x="40" y="100" width="382" height="46" rx="12" fill="#0f766e"/>
+  <text x="231" y="131" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#fff">INPUT</text>
+  <text x="60" y="182" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" fill="#0f172a"><tspan font-weight="700">(1)</tspan> Youth &amp; SK officers as users</text>
+  <text x="60" y="218" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" fill="#0f172a"><tspan font-weight="700">(2)</tspan> Program documents (PDF / DOCX)</text>
+  <text x="60" y="254" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" fill="#0f172a"><tspan font-weight="700">(3)</tspan> Event data &amp; yearly SK calendars</text>
+  <text x="60" y="290" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" fill="#0f172a"><tspan font-weight="700">(4)</tspan> Suggestions / feedback text</text>
+  <text x="60" y="326" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" fill="#0f172a"><tspan font-weight="700">(5)</tspan> Admin parameters for reports</text>
+
+  <!-- Arrow 1 -->
+  <line x1="422" y1="465" x2="448" y2="465" stroke="#111" stroke-width="4.5" marker-end="url(#ah)"/>
+
+  <!-- PROCESS -->
+  <g filter="url(#sh)">
+    <rect x="458" y="100" width="684" height="730" rx="12" fill="#fafafa" stroke="#1e293b" stroke-width="2"/>
+  </g>
+  <rect x="458" y="100" width="684" height="46" rx="12" fill="#0f766e"/>
+  <text x="800" y="131" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#fff">PROCESS</text>
+
+  <text x="478" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#0f172a">� Secure access (login &amp; roles)</text>
+  <text x="478" y="210" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#0f172a">� AI reasoning (LLM + RAG over documents)</text>
+  <text x="478" y="242" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#0f172a">� Event management (SK-patterned, yearly view)</text>
+  <text x="478" y="274" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#0f172a">� Mobile-responsive UI (Vercel-hosted SPA)</text>
+  <text x="478" y="306" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#0f172a">� Suggestions intake</text>
+  <text x="478" y="338" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#0f172a">� Admin analytics &amp; report generation</text>
+
+  <rect x="478" y="368" width="644" height="118" rx="8" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1"/>
+  <text x="800" y="398" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#334155">Cloudflare Tunnel (HTTPS)</text>
+  <text x="800" y="422" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#475569">Public internet ? encrypted ingress ? on-premise inference PC</text>
+  <text x="800" y="448" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="600" fill="#111">Node.js (Express) � Python (FastAPI) � NVIDIA GPU (CUDA)</text>
+  <text x="800" y="470" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#64748b">Local API, models, SQLite � not hosted on Vercel</text>
+
+  <!-- Arrow 2 -->
+  <line x1="1142" y1="465" x2="1168" y2="465" stroke="#111" stroke-width="4.5" marker-end="url(#ah)"/>
+
+  <!-- OUTPUT -->
+  <g filter="url(#sh)">
+    <rect x="1178" y="100" width="382" height="730" rx="12" fill="#fafafa" stroke="#1e293b" stroke-width="2"/>
+  </g>
+  <rect x="1178" y="100" width="382" height="46" rx="12" fill="#0f766e"/>
+  <text x="1369" y="131" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#fff">OUTPUT</text>
+  <text x="1198" y="182" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" fill="#0f172a"><tspan font-weight="700">(1)</tspan> Grounded chat answers</text>
+  <text x="1198" y="218" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" fill="#0f172a"><tspan font-weight="700">(2)</tspan> Event listings &amp; schedules</text>
+  <text x="1198" y="254" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" fill="#0f172a"><tspan font-weight="700">(3)</tspan> Exported reports (PDF / DOCX)</text>
+  <text x="1198" y="290" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" fill="#0f172a"><tspan font-weight="700">(4)</tspan> Dashboards (attendance / budget trends)</text>
+  <text x="1198" y="326" font-family="Segoe UI, Arial, sans-serif" font-size="13.5" fill="#0f172a"><tspan font-weight="700">(5)</tspan> Acknowledged suggestions</text>
+
+  <text x="800" y="868" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#94a3b8">Thesis print: export SVG to PDF or place in Word (Insert ? Pictures). Grayscale-friendly with teal section headers.</text>
+</svg>

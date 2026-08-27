@@ -1264,8 +1264,8 @@ app.post('/api/events/parse-document', upload.single('file'), async (req, res) =
             source[key] = 'keyword';
         }
 
-        // Step 2: If needs_ai, call Qwen for low-confidence field extraction
-        if (pyResult.needs_ai && context) {
+        // Step 2: If needs_ai, call Cloud AI for low-confidence field extraction
+        if (pyResult.needs_ai) {
             const lowConfFields = [];
             const allFields = ['title', 'date', 'time', 'location', 'organizer', 'category',
                                'attendees', 'male_count', 'female_count', 'staff_count',
@@ -1859,7 +1859,6 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
             ? JSON.parse(req.body.messages)
             : req.body.messages;
         if (!messages) { sendEvent({ type: 'error', message: 'Invalid payload.' }); return res.end(); }
-        if (!context)  { sendEvent({ type: 'error', message: 'Model still loading.' }); return res.end(); }
 
         const filesArr = req.files || [];
 

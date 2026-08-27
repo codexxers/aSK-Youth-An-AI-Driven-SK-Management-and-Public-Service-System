@@ -110,7 +110,7 @@ export async function generateResponse(systemPrompt, userPrompt, chatHistory = [
         try {
             if (onToken) {
                 const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-                    model: 'meta-llama/llama-3.2-3b-instruct',
+                    model: 'openrouter/free',
                     messages: openAIHistory,
                     temperature: temperature,
                     max_tokens: maxTokens,
@@ -145,7 +145,7 @@ export async function generateResponse(systemPrompt, userPrompt, chatHistory = [
                 });
             } else {
                 const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-                    model: 'meta-llama/llama-3.2-3b-instruct',
+                    model: 'openrouter/free',
                     messages: openAIHistory,
                     temperature: temperature,
                     max_tokens: maxTokens,

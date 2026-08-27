@@ -54,7 +54,9 @@ let pythonToolsOnline = false;
 // Load the centralized response-style system prompt from the versioned template file.
 // Only the content between <!-- SYSTEM_PROMPT_START --> and <!-- SYSTEM_PROMPT_END --> is extracted.
 function loadSystemPrompt() {
-    const promptPath = path.join(__dirname, '..', 'response_styles', 'response_style.md');
+    const localPath  = path.join(__dirname, 'response_style.md');
+    const parentPath = path.join(__dirname, '..', 'response_styles', 'response_style.md');
+    const promptPath = fs.existsSync(localPath) ? localPath : parentPath;
     const raw = fs.readFileSync(promptPath, 'utf8');
     const match = raw.match(/<!-- SYSTEM_PROMPT_START -->([\s\S]*?)<!-- SYSTEM_PROMPT_END -->/);
     if (match) return match[1].trim();
@@ -63,7 +65,9 @@ function loadSystemPrompt() {
 }
 
 function loadRewriterPrompt() {
-    const promptPath = path.join(__dirname, '..', 'response_styles', 'response_style.md');
+    const localPath  = path.join(__dirname, 'response_style.md');
+    const parentPath = path.join(__dirname, '..', 'response_styles', 'response_style.md');
+    const promptPath = fs.existsSync(localPath) ? localPath : parentPath;
     const raw = fs.readFileSync(promptPath, 'utf8');
     const START_MARKER = 'Rewriter instruction:';
     const start = raw.indexOf(START_MARKER);

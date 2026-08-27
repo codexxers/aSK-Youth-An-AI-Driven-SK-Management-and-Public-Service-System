@@ -42,7 +42,7 @@ export async function generateResponse(systemPrompt, userPrompt, chatHistory = [
             if (onPhase) onPhase('GENERATING', 'Generating response (Tier 1: Gemini)...');
             const model = genAI.getGenerativeModel({
                 model: 'gemini-3.6-flash',
-                systemInstruction: systemPrompt
+                systemInstruction: { parts: [{ text: systemPrompt }] }
             });
 
             if (onToken) {

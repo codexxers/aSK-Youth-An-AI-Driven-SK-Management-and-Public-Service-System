@@ -41,7 +41,7 @@ export async function generateResponse(systemPrompt, userPrompt, chatHistory = [
         try {
             if (onPhase) onPhase('GENERATING', 'Generating response (Tier 1: Gemini)...');
             const model = genAI.getGenerativeModel({
-                model: 'gemini-2.0-flash',
+                model: 'gemini-3.6-flash',
                 systemInstruction: systemPrompt
             });
 
@@ -77,7 +77,7 @@ export async function generateResponse(systemPrompt, userPrompt, chatHistory = [
             if (onToken) {
                 const stream = await groq.chat.completions.create({
                     messages: openAIHistory,
-                    model: 'llama-3.3-70b-versatile',
+                    model: 'qwen/qwen3.8-27b',
                     temperature: temperature,
                     max_tokens: maxTokens,
                     stream: true
@@ -92,7 +92,7 @@ export async function generateResponse(systemPrompt, userPrompt, chatHistory = [
             } else {
                 const completion = await groq.chat.completions.create({
                     messages: openAIHistory,
-                    model: 'llama-3.3-70b-versatile',
+                    model: 'qwen/qwen3.8-27b',
                     temperature: temperature,
                     max_tokens: maxTokens,
                 });
@@ -110,7 +110,7 @@ export async function generateResponse(systemPrompt, userPrompt, chatHistory = [
         try {
             if (onToken) {
                 const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-                    model: 'meta-llama/llama-3.3-70b-instruct:free',
+                    model: 'meta-llama/llama-3.2-3b-instruct',
                     messages: openAIHistory,
                     temperature: temperature,
                     max_tokens: maxTokens,
@@ -145,7 +145,7 @@ export async function generateResponse(systemPrompt, userPrompt, chatHistory = [
                 });
             } else {
                 const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-                    model: 'meta-llama/llama-3.3-70b-instruct:free',
+                    model: 'meta-llama/llama-3.2-3b-instruct',
                     messages: openAIHistory,
                     temperature: temperature,
                     max_tokens: maxTokens,

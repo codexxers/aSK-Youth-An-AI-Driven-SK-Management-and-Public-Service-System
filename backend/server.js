@@ -822,11 +822,25 @@ app.get('/api/admin/stats', (req, res) => {
         const pendingSuggestionsRow = db.prepare("SELECT COUNT(*) as count FROM suggestions WHERE status = 'pending'").get();
         const activeUsersRow = db.prepare("SELECT COUNT(*) as count FROM users WHERE status = 'active'").get();
         
+        const totalEvents = totalEventsRow.count;
+        const activeAttendees = totalAttendeesRow.total;
+        const totalBudget = totalBudgetRow.total;
+        const pendingSuggestions = pendingSuggestionsRow.count;
+
         res.json({
-            total_events: totalEventsRow.count,
-            total_attendees: totalAttendeesRow.total,
-            total_budget: totalBudgetRow.total,
-            pending_suggestions: pendingSuggestionsRow.count,
+            total_events: totalEvents,
+            totalEvents: totalEvents,
+            total_sk_events: totalEvents,
+            active_attendees: activeAttendees,
+            activeAttendees: activeAttendees,
+            total_attendees: activeAttendees,
+            totalAttendees: activeAttendees,
+            budget_utilized: totalBudget,
+            budgetUtilized: totalBudget,
+            total_budget: totalBudget,
+            totalBudget: totalBudget,
+            pending_suggestions: pendingSuggestions,
+            pendingSuggestions: pendingSuggestions,
             active_users: activeUsersRow.count
         });
     } catch (err) {
@@ -1135,29 +1149,36 @@ app.get('/api/events/:id/qr', async (req, res) => {
 // Scan Event QR to record attendance
 app.post('/api/events/scan', (req, res) => {
     const { eventId, t, first_name, mi, last_name, suffix, gender, address } = req.body;
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized. Please log in.' });
-    
-    let decoded;
-    try {
-        const token = authHeader.split(' ')[1];
-        decoded = jwt.verify(token, JWT_SECRET);
-    } catch (err) {
-        return res.status(401).json({ error: 'Invalid token. Please log in again.' });
-    }
-
     if (!eventId) return res.status(400).json({ error: 'Missing Event ID' });
+
+    let decoded = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+            const token = authHeader.split(' ')[1];
+            decoded = jwt.verify(token, JWT_SECRET);
+        } catch (err) {
+            // Will fallback to guest validation via 't' token
+        }
+    }
 
     try {
         const event = db.prepare('SELECT status, qr_token FROM events WHERE id = ?').get(eventId);
         if (!event) return res.status(404).json({ error: 'Event not found' });
         if (event.status === 'completed') return res.status(400).json({ error: 'This event has already ended.' });
 
-        if (event.qr_token && event.qr_token !== t) {
-            return res.status(403).json({ error: 'Invalid or expired QR code.' });
+        // Authenticate via JWT or QR token 't'
+        if (!decoded) {
+            if (!t || (event.qr_token && event.qr_token !== t)) {
+                return res.status(401).json({ error: 'Invalid token. Please log in again or scan a valid QR code.' });
+            }
+        } else {
+            if (event.qr_token && t && event.qr_token !== t) {
+                return res.status(403).json({ error: 'Invalid or expired QR code.' });
+            }
         }
 
-        if (decoded.isGuest || !decoded.id) {
+        if (!decoded || decoded.isGuest || !decoded.id) {
             // Guest/Youth Flow
             if (!first_name || !last_name) {
                 return res.status(400).json({ error: 'Name is required for guest attendance.' });

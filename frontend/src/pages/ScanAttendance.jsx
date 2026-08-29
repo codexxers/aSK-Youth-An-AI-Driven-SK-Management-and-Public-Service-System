@@ -56,6 +56,7 @@ export default function ScanAttendance({ authUser }) {
   // Youth (formerly guest) Form State
   const [youthFormVisible, setYouthFormVisible] = useState(false)
   const [scannedEventId, setScannedEventId] = useState(null)
+  const [scannedToken, setScannedToken] = useState(null)
   const [youthData, setYouthData] = useState({ first_name: '', mi: '', last_name: '', suffix: '', gender: 'Male', address: '' })
 
   const lastScanned = useRef(0)
@@ -75,20 +76,25 @@ export default function ScanAttendance({ authUser }) {
   }, [result])
 
   const handleScan = useCallback(async (code) => {
-    if (!code || submitting || overlayActive || youthFormVisible || !token) return
+    if (!code || submitting || overlayActive || youthFormVisible) return
     const now = Date.now()
     if (now - lastScanned.current < 3000) return
 
     let eventId
+    let scanToken = null
     if (code.startsWith('http')) {
       try {
         const url = new URL(code)
         eventId = url.searchParams.get('scan')
+        scanToken = url.searchParams.get('t')
       } catch (e) {}
     } else {
       try {
         const payload = JSON.parse(code)
-        if (payload.type === 'askyouth_attendance') eventId = payload.eventId
+        if (payload.type === 'askyouth_attendance') {
+           eventId = payload.eventId
+           scanToken = payload.t
+        }
       } catch (e) {}
     }
 
@@ -100,7 +106,7 @@ export default function ScanAttendance({ authUser }) {
     lastScanned.current = now
 
     // Youth device-level duplicate check
-    if (authUser?.isGuest || authUser?.role === 'youth') {
+    if (!authUser || authUser?.isGuest || authUser?.role === 'youth') {
       try {
         const localScans = JSON.parse(localStorage.getItem('askyouth_youth_scans') || '[]')
         if (localScans.some(s => String(s.eventId) === String(eventId))) {
@@ -109,12 +115,13 @@ export default function ScanAttendance({ authUser }) {
         }
       } catch (e) {}
       setScannedEventId(eventId)
+      setScannedToken(scanToken)
       setYouthFormVisible(true)
       return
     }
 
-    submitAttendance(eventId, {})
-  }, [submitting, overlayActive, youthFormVisible, token, authUser])
+    submitAttendance(eventId, { t: scanToken })
+  }, [submitting, overlayActive, youthFormVisible, authUser])
 
   // QR decode loop
   const loop = useCallback(() => {
@@ -210,9 +217,12 @@ export default function ScanAttendance({ authUser }) {
     setYouthFormVisible(false)
     const API_URL = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001').replace(/\/$/, '')
     try {
+      const headers = { 'Content-Type': 'application/json' }
+      if (token) headers.Authorization = `Bearer ${token}`
+      
       const res = await fetch(`${API_URL}/api/events/scan`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers,
         body: JSON.stringify({ eventId, ...extraData }),
       })
       const data = await res.json()
@@ -236,7 +246,7 @@ export default function ScanAttendance({ authUser }) {
   const handleYouthSubmit = (e) => {
     e.preventDefault()
     if (!youthData.first_name || !youthData.last_name) return
-    submitAttendance(scannedEventId, youthData)
+    submitAttendance(scannedEventId, { ...youthData, t: scannedToken })
   }
 
   if (cameraError) {

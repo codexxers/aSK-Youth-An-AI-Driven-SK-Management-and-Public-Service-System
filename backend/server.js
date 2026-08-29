@@ -816,12 +816,19 @@ app.get('/api/admin/stats', (req, res) => {
         const role  = req.headers['x-role'] || 'admin';
         writeLog(actor, role, 'view_dashboard_stats', 'analytics', 'Accessed overview telemetry', req.ip);
 
-        const total_events = db.prepare('SELECT COUNT(*) as c FROM events').get().c;
-        const total_attendees = db.prepare('SELECT SUM(attendees) as s FROM events').get().s || 0;
-        const total_budget = db.prepare('SELECT SUM(budget_allotted) as s FROM events').get().s || 0;
-        const pending_suggestions = db.prepare("SELECT COUNT(*) as c FROM suggestions WHERE status = 'pending'").get().c;
-        const active_users = db.prepare("SELECT COUNT(*) as c FROM users WHERE status = 'active'").get().c;
-        res.json({ total_events, total_attendees, total_budget, pending_suggestions, active_users });
+        const totalEventsRow = db.prepare('SELECT COUNT(*) as count FROM events').get();
+        const totalAttendeesRow = db.prepare('SELECT COALESCE(SUM(attendees), 0) as total FROM events').get();
+        const totalBudgetRow = db.prepare('SELECT COALESCE(SUM(budget_allotted), 0) as total FROM events').get();
+        const pendingSuggestionsRow = db.prepare("SELECT COUNT(*) as count FROM suggestions WHERE status = 'pending'").get();
+        const activeUsersRow = db.prepare("SELECT COUNT(*) as count FROM users WHERE status = 'active'").get();
+        
+        res.json({
+            total_events: totalEventsRow.count,
+            total_attendees: totalAttendeesRow.total,
+            total_budget: totalBudgetRow.total,
+            pending_suggestions: pendingSuggestionsRow.count,
+            active_users: activeUsersRow.count
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

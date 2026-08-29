@@ -789,8 +789,6 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
       });
     } catch (err) {
       console.error('Stats fetch error:', err);
-      // Set error only if it's a catastrophic failure
-      if (!stats.total_events) setError('Gateway Connection Error: Verify backend & AI layers are active.');
     }
 
     // 2. Fetch participation

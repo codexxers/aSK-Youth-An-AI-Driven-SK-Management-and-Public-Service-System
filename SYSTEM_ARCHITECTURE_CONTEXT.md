@@ -37,7 +37,7 @@ User (Youth / SK Officer / Admin)
         │                   ▼
         │         SQLite DB (better-sqlite3)
         │         [events, users, suggestions, system_logs, event_logs, chunk_embeddings]
-        │  VRAM (CUDA/Vulkan)
+        │
         ▼
   Cloud AI Fallback Engine
   [Tier 1: Gemini -> Tier 2: Groq -> Tier 3: OpenRouter]
@@ -115,11 +115,9 @@ User (Youth / SK Officer / Admin)
 | Tier 3 | OpenRouter Free Tier (meta-llama/llama-3.3-70b-instruct:free) |
 | Temperature | 0.7 (chat), 0.1 (JSON extraction), 0.3 (grammar rewrite) |
 | Max tokens per response | 2,048 |
-| Concurrency | Fully concurrent, API bound (GPU locks removed) |
+| Concurrency | Fully concurrent, API bound |
 
 ### Python AI Layer — `ai-layer/main.py` (FastAPI, port 8000)
-
-All Python models run on **CPU only** (`device=-1`) to preserve GPU VRAM for Llama-3.2-3B.
 
 | Feature | Model | Notes |
 |---|---|---|
@@ -130,7 +128,7 @@ All Python models run on **CPU only** (`device=-1`) to preserve GPU VRAM for Lla
 | OCR | Tesseract + pytesseract | Local or system install; Poppler for PDF-to-image |
 | Template Docs | Jinja2 + python-docx + reportlab | Renders resolution.j2, minutes.j2, certificate.j2 |
 | Analytics | pandas + plotly | Reads events.db, generates Plotly JSON charts |
-| Event Document Parser | regex keyword extraction | Extracts 12 event fields; Llama-3.2-3B fallback for low-confidence fields |
+| Event Document Parser | regex keyword extraction | Extracts 12 event fields; Cloud AI fallback for low-confidence fields |
 
 ### Embedding Strategy (Dual-Provider with Fallback)
 
@@ -188,10 +186,7 @@ project-root/
 ├── AI_INSTRUCTIONS.md                  # Developer instructions for AI assistants
 ├── CLEANUP_AND_REVERT_PROMPT.md
 ├── DEMO_GUIDE.md                       # Demo walkthrough guide
-├── MODEL_DOWNLOAD.md                   # Llama-3.2-3B GGUF download instructions
 ├── PHASE_UPDATE_PROMPT.md              # Feature phase update documentation
-├── Llama3.2-3BGGUF/
-│   └── Llama-3.2-3B-Instruct.gguf  # CRITICAL: Primary LLM model file (REQUIRED)
 ├── README.md
 ├── SYSTEM_ARCHITECTURE_CONTEXT.md      # THIS FILE
 ├── ai-layer/                           # Python FastAPI service (port 8000)
@@ -215,6 +210,7 @@ project-root/
 │   ├── migrate_db.cjs                  # DB schema migration helper
 │   ├── migrate_qr.cjs                  # QR token column migration script
 │   ├── package.json                    # Backend npm dependencies
+│   ├── response_style.md               # CRITICAL: AI persona, jurisdiction, tool invocation prompts
 │   ├── scratch_migrate.cjs             # One-off migration scratch script
 │   ├── scratch_seed_suggestions.cjs    # Suggestion seeding script
 │   ├── server.js                       # MAIN BACKEND — 2327 lines: all routes + LLM inference
@@ -307,7 +303,7 @@ sequenceDiagram
     participant PY as Python AI Layer :8000
     participant HNSW as HNSW VectorStore
     participant DB as SQLite events.db
-    participant LLM as Llama-3.2-3B
+    participant LLM as Cloud AI Fallback Engine
     participant CTX as context_manager :5007
     participant ROUTER as tool_router :5000
     participant LANG as language_corrector :5008
@@ -558,7 +554,7 @@ END;
 | Endpoint Path | Method | Payload/Params | Purpose |
 |---|---|---|---|
 | `/health` | GET | — | Returns `{status:'ok', timestamp}`. Open CORS (reflects Origin). |
-| `/ready` | GET | — | Returns `{ready: true/false}`. Signals whether Llama-3.2-3B is loaded. |
+| `/ready` | GET | — | Returns `{ready: true/false}`. Signals whether Cloud AI Engine is loaded. |
 
 ## Authentication
 
@@ -581,7 +577,7 @@ END;
 | `/api/events/scan` | POST | Body: `{eventId, t, first_name, mi, last_name, suffix, gender, address}` + Bearer JWT | Records attendance scan. Deduplicates by user_id (registered) or full name (guest). |
 | `/api/events/:id/logs` | GET | — | Returns attendance log for event (JOIN with users table) |
 | `/api/events/:id/refresh-qr` | POST | Body: `{admin_token}` | Rotates QR token (max once per SGT calendar day) |
-| `/api/events/parse-document` | POST | Multipart: file (PDF/DOCX/image/text) | Two-stage extraction: Python keyword scan then Llama-3.2-3B AI fallback for low-confidence fields |
+| `/api/events/parse-document` | POST | Multipart: file (PDF/DOCX/image/text) | Two-stage extraction: Python keyword scan then Cloud AI Engine AI fallback for low-confidence fields |
 
 ## AI Chat
 
@@ -671,7 +667,7 @@ This is the most critical file. It is a monolithic Express application that perf
 
 `_genBusy` (boolean) + `_genQueue` (array of resolve callbacks) form a promise-based mutex that serializes all LLM inference. Only one `LlamaChatSession.prompt()` runs at a time. All requests queue and execute in FIFO order. This prevents `context.getSequence()` race conditions in node-llama-cpp.
 
-### B. System Prompt Construction — `buildFullSystemPrompt()`
+### A. System Prompt Construction — `buildFullSystemPrompt()`
 
 Assembles the final system prompt from four parts in order:
 1. `buildRuntimeInjection(role, pythonToolsOnline)` — injects `ACTIVE_ROLE`, `SYSTEM_TIMESTAMP` (UTC+8 from server clock via timestamp_util.cjs), `PYTHON_TOOLS` flag
@@ -679,7 +675,7 @@ Assembles the final system prompt from four parts in order:
 3. `response_style.md` content — extracted between `<!-- SYSTEM_PROMPT_START -->` and `<!-- SYSTEM_PROMPT_END -->` markers at startup
 4. `eventContext` — live SQL event data as `[DATABASE: EVENTS]` block with explicit anti-hallucination instructions
 
-### C. Fused RAG Context Builder — `buildRagContext()`
+### B. Fused RAG Context Builder — `buildRagContext()`
 
 Runs before every LLM call. Merges three information sources:
 
@@ -694,7 +690,7 @@ Additionally calls:
 - Python `/classify-intent` to append `[Response Mode: B|C]` flags (B=professional, C=document analysis)
 - Python `/summarize` for large document uploads (>3000 chars combined) to prepend an auto-summary chunk
 
-### D. Post-Processing Pipeline — `postProcessAIResponse()`
+### C. Post-Processing Pipeline — `postProcessAIResponse()`
 
 After every LLM generation:
 1. Calls `language_corrector` (port 5008) for Filipino/English grammar correction
@@ -702,11 +698,11 @@ After every LLM generation:
 3. If a tool executed, `formatToolResult()` formats the result deterministically — no second LLM call needed
 4. Returns `{finalReply, toolUsed}`
 
-### E. SSE Streaming Filter
+### D. SSE Streaming Filter
 
 The `/api/chat/stream` `onToken` callback maintains a stateful `streamBuf` and `activeTag` ('think' or 'TOOL'). It detects `<think>`, `</think>`, `<TOOL>`, `</TOOL>` boundaries in real-time within the token stream. Text before a tag opens is flushed immediately as a `{type:'token'}` SSE event. Text inside a tag is silently discarded. This prevents the model's chain-of-thought and tool invocations from being displayed raw to the user. A partial-tag guard of 7 characters prevents premature flush of partially-arrived opening tags.
 
-### F. Authentication Flow
+### E. Authentication Flow
 
 - **Login:** `bcrypt.compareSync()` → JWT signed with `JWT_SECRET` (24h, payload: `{id, username, role, full_name}`)
 - **Youth/Guest login:** Guest JWT issued without DB lookup (12h, `isGuest:true`, `id:null`)
@@ -788,7 +784,7 @@ All models loaded once at startup (`@app.on_event("startup")`), stored as module
 **`/parse-event-document`** two-stage pipeline:
 1. `_extract_fields_from_text()` — regex keyword extraction for 12 fields with labeled patterns (e.g., `date:\s*(.+)`) and unlabeled fallbacks (e.g., YYYY-MM-DD pattern). Sets confidence scores per field.
 2. Returns `needs_ai=True` if any core field (title, date, attendees, budget_allotted) has confidence < 0.60.
-3. `server.js` then invokes Llama-3.2-3B with a structured JSON extraction prompt for low-confidence fields. Keyword results win if their confidence >= 0.60.
+3. `server.js` then invokes Cloud AI Engine with a structured JSON extraction prompt for low-confidence fields. Keyword results win if their confidence >= 0.60.
 
 ---
 
@@ -849,7 +845,7 @@ Uses `useCamera.js` hook (getUserMedia) to access device camera. Captures video 
 | MAX_FILES | 5 | Maximum files per upload request (Multer limit) |
 | TOP_K | 5 | HNSW nearest-neighbor results to retrieve |
 | VECTOR_STORE_DIR | data | Directory (relative to backend/) for HNSW index + metadata |
-| GRAMMAR_ENFORCEMENT | false | If true, runs second Llama-3.2-3B pass to rewrite responses (slow) |
+| GRAMMAR_ENFORCEMENT | false | If true, runs second Cloud AI Engine pass to rewrite responses (slow) |
 | JWT_SECRET | askyouth_super_secret_jwt_key_2026 | **SECRET** — HMAC key for JWT signing. Change in production! |
 | ADMIN_CREATION_TOKEN | SECRET_ADMIN_TOKEN_123 | **SECRET** — Token required to create admin users or reset passwords |
 | TRUST_PROXY | (not set = enabled) | Set to false or 0 to disable trust proxy (only when not behind Cloudflare) |
@@ -858,7 +854,7 @@ Uses `useCamera.js` hook (getUserMedia) to access device camera. Captures video 
 | ROUTER_URL | http://localhost:5000/route | Tool router Flask endpoint |
 | CONTEXT_URL | http://localhost:5007/tools/context | Context manager Flask endpoint |
 | LANGUAGE_URL | http://localhost:5008/tools/language/correct | Language corrector Flask endpoint |
-| LLM_GPU_LAYERS | 99 (all layers) | Override GPU layers for Llama-3.2-3B. Lower if VRAM < 6 GB. |
+| LLM_GPU_LAYERS | 99 (all layers) | Override GPU layers for Cloud AI Engine. Lower if VRAM < 6 GB. |
 
 ## `backend/tools/.env`
 
@@ -938,7 +934,7 @@ cd backend\tools
 npx pm2 start pm2.ecosystem.config.cjs
 npx pm2 logs
 
-# Terminal 3: Node.js Backend + Llama-3.2-3B (port 3001)
+# Terminal 3: Node.js Backend + Cloud AI Engine (port 3001)
 cd backend
 node server.js
 

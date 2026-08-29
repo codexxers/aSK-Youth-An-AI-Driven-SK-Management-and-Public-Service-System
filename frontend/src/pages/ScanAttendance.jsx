@@ -202,15 +202,24 @@ export default function ScanAttendance({ authUser }) {
     return () => { if (animRef.current) cancelAnimationFrame(animRef.current) }
   }, [isReady, overlayActive, loop])
 
-  // Handle Deep Link on Mount
+  // Handle Deep Link on Mount — works with or without auth token
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const scanParam = urlParams.get('scan')
-    if (scanParam && token && !overlayActive && !youthFormVisible) {
-      handleScan(window.location.href)
-      window.history.replaceState({}, document.title, '/')
+    const tParam    = urlParams.get('t')
+    if (scanParam && !overlayActive && !youthFormVisible) {
+      window.history.replaceState({}, document.title, window.location.pathname)
+      if (!authUser || authUser?.isGuest || authUser?.role === 'youth') {
+        // Guest path: show form immediately
+        setScannedEventId(scanParam)
+        setScannedToken(tParam)
+        setYouthFormVisible(true)
+      } else {
+        // Authenticated officer/admin: scan directly
+        handleScan(window.location.href)
+      }
     }
-  }, [token])
+  }, [])  // run once on mount
 
   const submitAttendance = async (eventId, extraData = {}) => {
     setSubmitting(true)

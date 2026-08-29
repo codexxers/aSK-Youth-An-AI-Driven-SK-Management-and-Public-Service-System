@@ -782,10 +782,11 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
       const pyData = resPy.ok ? await resPy.json() : {};
       setStats({
         ...statsData,
-        total_events: pyData?.stats?.total_events || statsData.total_events || 0,
-        total_attendees: pyData?.stats?.total_attendees || statsData.total_attendees || 0,
-        total_budget: pyData?.stats?.total_budget || statsData.total_budget || 0,
-        pending_suggestions: statsData.pending_suggestions ?? 0,
+        total_events:        statsData.total_events      || statsData.totalEvents      || statsData.total_sk_events  || pyData?.stats?.total_events  || 0,
+        active_attendees:    statsData.active_attendees  || statsData.activeAttendees  || statsData.total_attendees   || pyData?.stats?.total_attendees || 0,
+        budget_utilized:     statsData.budget_utilized   || statsData.budgetUtilized   || statsData.total_budget      || pyData?.stats?.total_budget    || 0,
+        pending_suggestions: statsData.pending_suggestions ?? statsData.pendingSuggestions ?? 0,
+        active_users:        statsData.active_users ?? 0,
       });
     } catch (err) {
       console.error('Stats fetch error:', err);
@@ -1002,10 +1003,10 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             {/* Stats Row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'TOTAL SK EVENTS', val: stats.total_events, color: 'border-blue-500/30 text-blue-400', icon: '📅' },
-                { label: 'ACTIVE ATTENDEES', val: stats.total_attendees?.toLocaleString(), color: 'border-cyan-500/30 text-cyan-400', icon: '🙋‍♂️' },
-                { label: 'BUDGET UTILIZED', val: `₱${stats.total_budget?.toLocaleString()}`, color: 'border-emerald-500/30 text-emerald-400', icon: '💰' },
-                { label: 'PENDING SUGGESTIONS', val: stats.pending_suggestions, color: 'border-amber-500/30 text-amber-400', icon: '📬' },
+                { label: 'TOTAL SK EVENTS',       val: stats.total_events ?? stats.totalEvents ?? stats.total_sk_events ?? 0,                                                                                          color: 'border-blue-500/30 text-blue-400',    icon: '📅' },
+                { label: 'ACTIVE ATTENDEES',       val: (stats.active_attendees ?? stats.activeAttendees ?? stats.total_attendees ?? 0).toLocaleString(),                                                              color: 'border-cyan-500/30 text-cyan-400',    icon: '🙋‍♂️' },
+                { label: 'BUDGET UTILIZED',        val: `₱${(stats.budget_utilized ?? stats.budgetUtilized ?? stats.total_budget ?? 0).toLocaleString()}`,                                                             color: 'border-emerald-500/30 text-emerald-400', icon: '💰' },
+                { label: 'PENDING SUGGESTIONS',    val: stats.pending_suggestions ?? stats.pendingSuggestions ?? 0,                                                                                                   color: 'border-amber-500/30 text-amber-400',  icon: '📬' },
               ].map((st, i) => (
                 <div key={i} className={`bg-slate-900/40 border ${st.color} rounded-xl p-4 relative group hover:bg-slate-900/80 transition-all overflow-hidden`}>
                   <div className="flex justify-between items-start">

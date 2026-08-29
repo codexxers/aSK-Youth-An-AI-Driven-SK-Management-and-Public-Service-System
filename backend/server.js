@@ -811,40 +811,29 @@ async function postProcessAIResponse(rawReply, { fullSystemPrompt, chatHistoryAr
 
 // --- Admin Analytics & Logging API Routes ---
 app.get('/api/admin/stats', (req, res) => {
+    // Require a valid JWT — inline auth check
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Unauthorized — missing token' });
+    }
+    try { jwt.verify(authHeader.split(' ')[1], JWT_SECRET); }
+    catch { return res.status(401).json({ error: 'Unauthorized — invalid token' }); }
+
     try {
         const actor = req.headers['x-actor'] || 'Admin';
-        const role  = req.headers['x-role'] || 'admin';
+        const role  = req.headers['x-role']  || 'admin';
         writeLog(actor, role, 'view_dashboard_stats', 'analytics', 'Accessed overview telemetry', req.ip);
 
-        const totalEventsRow = db.prepare('SELECT COUNT(*) as count FROM events').get();
-        const totalAttendeesRow = db.prepare('SELECT COALESCE(SUM(attendees), 0) as total FROM events').get();
-        const totalBudgetRow = db.prepare('SELECT COALESCE(SUM(budget_allotted), 0) as total FROM events').get();
-        const pendingSuggestionsRow = db.prepare("SELECT COUNT(*) as count FROM suggestions WHERE status = 'pending'").get();
-        const activeUsersRow = db.prepare("SELECT COUNT(*) as count FROM users WHERE status = 'active'").get();
-        
-        const totalEvents = totalEventsRow.count;
-        const activeAttendees = totalAttendeesRow.total;
-        const totalBudget = totalBudgetRow.total;
-        const pendingSuggestions = pendingSuggestionsRow.count;
+        const totalEvents        = db.prepare('SELECT COUNT(*) as c FROM events').get().c || 0;
+        const totalAttendees     = db.prepare('SELECT COALESCE(SUM(attendees), 0) as c FROM events').get().c || 0;
+        const totalBudget        = db.prepare('SELECT COALESCE(SUM(budget_allotted), 0) as c FROM events').get().c || 0;
+        const pendingSuggestions = db.prepare("SELECT COUNT(*) as c FROM suggestions WHERE status = 'pending'").get().c || 0;
+        const activeUsers        = db.prepare("SELECT COUNT(*) as c FROM users WHERE status = 'active'").get().c || 0;
 
-        res.json({
-            total_events: totalEvents,
-            totalEvents: totalEvents,
-            total_sk_events: totalEvents,
-            active_attendees: activeAttendees,
-            activeAttendees: activeAttendees,
-            total_attendees: activeAttendees,
-            totalAttendees: activeAttendees,
-            budget_utilized: totalBudget,
-            budgetUtilized: totalBudget,
-            total_budget: totalBudget,
-            totalBudget: totalBudget,
-            pending_suggestions: pendingSuggestions,
-            pendingSuggestions: pendingSuggestions,
-            active_users: activeUsersRow.count
-        });
+        res.json({ totalEvents, totalAttendees, totalBudget, pendingSuggestions, activeUsers });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('[Admin Stats] Error:', err.message);
+        res.status(500).json({ error: 'Failed to fetch stats' });
     }
 });
 

@@ -1968,6 +1968,15 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate }) {
   );
 }
 
+const getDynamicGreeting = (user) => {
+  const hour = new Date().getHours();
+  const timeOfDay = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
+  const role = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Guest';
+  const name = user?.name ? user.name.split(' ')[0] : '';
+  const greetingName = name ? `${role} ${name}` : role;
+  return `aSK//YOUTH.AI Initialized. Good ${timeOfDay}, ${greetingName}. How may I assist you today?`;
+};
+
 function App() {
   // ─── Phase 6-A: Auth state ─────────────────────────────────────────
   const [authUser, setAuthUser] = useState(null);       // { id, username, role, full_name }
@@ -1979,7 +1988,7 @@ function App() {
       id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2), 
       title: 'New Chat',
       pinned: false,
-      messages: [{ role: "assistant", content: "aSK//YOUTH.AI Initialized. How can I assist you?" }] 
+      messages: [{ role: "assistant", content: getDynamicGreeting(authUser) }] 
   }]);
   const [activeThreadId, setActiveThreadId] = useState(null);
 
@@ -1994,7 +2003,7 @@ function App() {
         id: crypto.randomUUID(), 
         title: 'New Chat',
         pinned: false,
-        messages: [{ role: "assistant", content: "aSK//YOUTH.AI Initialized. How can I assist you?" }] 
+        messages: [{ role: "assistant", content: getDynamicGreeting(authUser) }] 
       }]);
       setActiveThreadId(null);
       return;
@@ -2016,7 +2025,7 @@ function App() {
       id: getUUID(), 
       title: 'New Chat',
       pinned: false,
-      messages: [{ role: "assistant", content: "aSK//YOUTH.AI Initialized. How can I assist you?" }] 
+      messages: [{ role: "assistant", content: getDynamicGreeting(authUser) }] 
     }];
     setThreads(initial);
     setActiveThreadId(initial[0].id);
@@ -2061,6 +2070,11 @@ function App() {
   const scrollToBottom = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   };
+
+  // Reset generating state on thread switch
+  useEffect(() => {
+    setLoading(false);
+  }, [activeThreadId]);
 
   // Mobile-aware initialization: close sidebar by default on smaller screens
   useEffect(() => {
@@ -2282,11 +2296,12 @@ function App() {
   }, [activeThread?.messages, loading]);
 
   const createNewChat = () => {
+    if (activeThread?.title === 'New Chat' && activeThread?.messages?.length <= 1) return;
     const newThread = {
       id: getUUID(),
       title: 'New Chat',
       pinned: false,
-      messages: [{ role: "assistant", content: "aSK//YOUTH.AI Initialized. How can I assist you?" }]
+      messages: [{ role: "assistant", content: getDynamicGreeting(authUser) }]
     };
     setThreads([newThread, ...threads]);
     setActiveThreadId(newThread.id);
@@ -2331,13 +2346,49 @@ function App() {
         id: crypto.randomUUID(),
         title: 'New Chat',
         pinned: false,
-        messages: [{ role: "assistant", content: "aSK//YOUTH.AI Initialized. How can I assist you?" }]
+        messages: [{ role: "assistant", content: getDynamicGreeting(authUser) }]
       };
       setThreads([fallback]);
       setActiveThreadId(fallback.id);
     } else {
       setThreads(nextThreads);
       if (activeThreadId === id) setActiveThreadId(nextThreads[0].id);
+    }
+  };
+
+  const handleExport = async (docContent, docTitle, format) => {
+    try {
+      if (docContent.trim().startsWith('{')) {
+        const parsed = JSON.parse(docContent);
+        if (parsed.download_url) {
+          const a = document.createElement('a');
+          a.href = parsed.download_url;
+          a.target = '_blank';
+          a.download = parsed.filename || `${docTitle.replace(/[^a-z0-9]/gi, '_')}.${format}`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          return;
+        }
+      }
+      
+      const res = await fetch(`${API_BASE}/api/export/document`, {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ title: docTitle, content: docContent, format })
+      });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${docTitle.replace(/[^a-z0-9]/gi, '_')}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
     }
   };
 

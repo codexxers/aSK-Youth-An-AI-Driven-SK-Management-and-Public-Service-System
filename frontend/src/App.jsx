@@ -449,11 +449,11 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        ev.status === 'completed' ? 'bg-slate-700 text-slate-300' : 
+                        ev.status === 'completed' ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-800/50' : 
                         ev.status === 'active' ? 'bg-green-600 text-white' : 
                         'bg-amber-600 text-white'
                       }`}>
-                        {ev.status === 'completed' ? 'Archived' : ev.status === 'active' ? 'Active' : 'Not Started'}
+                        {ev.status === 'completed' ? 'Completed' : ev.status === 'active' ? 'Active' : 'Not Started'}
                       </span>
                     </td>
                     <td className="px-4 py-3 font-mono">{ev.attendees || 0}</td>

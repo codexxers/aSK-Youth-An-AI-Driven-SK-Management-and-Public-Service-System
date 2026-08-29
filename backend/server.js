@@ -491,13 +491,13 @@ for (const col of migrationColumns) {
 }
 
 try {
-  const archiveQuery = "UPDATE events SET status = 'Archived' WHERE status != 'Archived' AND (title LIKE '%Batang Con Dos%' OR title LIKE '%Turnover of Sports%' OR title LIKE '%Gabi ng Kabataan%' OR title LIKE '%Edu-Aksyon%' OR title LIKE '%SKcentives%' OR title LIKE '%Youth Scholarship%' OR title LIKE '%BasketBottle%' OR title LIKE '%Youth Fun Run%')";
+  const archiveQuery = "UPDATE events SET status = 'completed' WHERE status != 'completed' AND (title LIKE '%Batang Con Dos%' OR title LIKE '%Turnover of Sports%' OR title LIKE '%Gabi ng Kabataan%' OR title LIKE '%Edu-Aksyon%' OR title LIKE '%SKcentives%' OR title LIKE '%Youth Scholarship%' OR title LIKE '%BasketBottle%' OR title LIKE '%Youth Fun Run%')";
   const info = db.prepare(archiveQuery).run();
   if (info.changes > 0) {
-    console.log(`Auto-archived ${info.changes} ABYIP events on startup.`);
+    console.log(`Auto-completed ${info.changes} ABYIP events on startup.`);
   }
 } catch (error) {
-  console.error('Failed to auto-archive ABYIP events:', error);
+  console.error('Failed to auto-complete ABYIP events:', error);
 }
 
 // Embedding cache — stores SHA-256(chunk_text) → Float32Array BLOB

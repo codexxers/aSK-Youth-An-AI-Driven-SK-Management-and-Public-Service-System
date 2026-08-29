@@ -423,62 +423,46 @@ def build_project_brief(fields: dict, language: str) -> Document:
     """Generates a Project Brief in the official SK ABYIP barangay format."""
     doc = Document()
 
-    # 1. Global Typography — set Normal style as baseline
+    # ── 1. Global Font ────────────────────────────────────────────────────
     style = doc.styles['Normal']
     style.font.name = 'Times New Roman'
     style.font.size = Pt(12)
     style.paragraph_format.space_after = Pt(0)
     style.paragraph_format.space_before = Pt(0)
 
-    # 2. Official Letterhead (in the Document Header, NOT the body)
+    # ── 2. Document Header (letterhead — NOT in body) ─────────────────────
     section = doc.sections[0]
     section.header_distance = Cm(1.27)
     header = section.header
     header.is_linked_to_previous = False
 
-    # Clear default empty paragraph
-    for p in header.paragraphs:
-        p.clear()
+    # Use a SINGLE centered paragraph with multiple runs for the letterhead
+    hp = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
+    hp.clear()
+    hp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    hp.paragraph_format.space_after = Pt(4)
 
-    # Line 1: Republic of the Philippines (11pt, black)
-    p1 = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
-    p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p1.paragraph_format.space_after = Pt(0)
-    r1 = p1.add_run('Republic of the Philippines')
+    # Run 1: Republic of the Philippines (11pt, black)
+    r1 = hp.add_run('Republic of the Philippines\n')
     _set_run_font(r1, size=Pt(11))
 
-    # Line 2: SANGGUNIANG KABATAAN (16pt, red)
-    p2 = header.add_paragraph()
-    p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p2.paragraph_format.space_after = Pt(0)
-    p2.paragraph_format.space_before = Pt(0)
-    r2 = p2.add_run('SANGGUNIANG KABATAAN')
+    # Run 2: SK + Barangay (16pt, red)
+    r2 = hp.add_run('SANGGUNIANG KABATAAN\nBARANGAY CONCEPCION DOS\n')
     _set_run_font(r2, size=Pt(16), color=RGBColor(218, 41, 28))
 
-    # Line 3: BARANGAY CONCEPCION DOS (16pt, red)
-    p3 = header.add_paragraph()
-    p3.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p3.paragraph_format.space_after = Pt(0)
-    p3.paragraph_format.space_before = Pt(0)
-    r3 = p3.add_run('BARANGAY CONCEPCION DOS')
-    _set_run_font(r3, size=Pt(16), color=RGBColor(218, 41, 28))
+    # Run 3: City line (11pt, black)
+    r3 = hp.add_run('City of Marikina, Metro Manila, Philippines')
+    _set_run_font(r3, size=Pt(11))
 
-    # Line 4: City of Marikina... (11pt, black)
-    p4 = header.add_paragraph()
-    p4.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p4.paragraph_format.space_before = Pt(0)
-    r4 = p4.add_run('City of Marikina, Metro Manila, Philippines')
-    _set_run_font(r4, size=Pt(11))
-
-    # 3. Document Title in body
+    # ── 3. Body Title ─────────────────────────────────────────────────────
     doc.add_paragraph()  # spacer
-    t = doc.add_paragraph()
-    t.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    t_run = t.add_run('PROJECT BRIEF')
+    title_p = doc.add_paragraph()
+    title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    title_p.paragraph_format.space_after = Pt(12)
+    t_run = title_p.add_run('PROJECT BRIEF')
     _set_run_font(t_run, size=Pt(12), bold=True)
-    doc.add_paragraph()  # spacer
 
-    # 4. Two-Column Project Table with full grid borders
+    # ── 4. Two-Column Table (Table Grid = black borders) ──────────────────
     table = doc.add_table(rows=8, cols=2)
     table.style = 'Table Grid'
 
@@ -494,92 +478,69 @@ def build_project_brief(fields: dict, language: str) -> Document:
     ]
 
     for i, (label, val, bold_val) in enumerate(rows_data):
-        # Left column — label
         cell_left = table.rows[i].cells[0]
         p_left = cell_left.paragraphs[0]
         p_left.clear()
         r_left = p_left.add_run(label)
         _set_run_font(r_left, size=Pt(12), bold=True)
 
-        # Right column — value
         cell_right = table.rows[i].cells[1]
         p_right = cell_right.paragraphs[0]
         p_right.clear()
         r_right = p_right.add_run(val)
         _set_run_font(r_right, size=Pt(12), bold=bold_val)
 
-    doc.add_paragraph()  # spacer
-    doc.add_paragraph()  # spacer
+    # ── 5. Signature Block ────────────────────────────────────────────────
+    doc.add_paragraph()
+    doc.add_paragraph()
 
-    # 5. Official Signature Section
+    # "Prepared by:" (left-aligned)
     p_prep = doc.add_paragraph()
     r_prep = p_prep.add_run('Prepared by:')
     _set_run_font(r_prep, size=Pt(12))
     doc.add_paragraph()
     doc.add_paragraph()
 
-    # Lead Official (centered)
-    p_lead = doc.add_paragraph()
-    p_lead.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_lead = p_lead.add_run(fields.get('prepared_by_name', 'LOUIE MARI LAMPA').upper())
-    _set_run_font(r_lead, size=Pt(12), bold=True, underline=True)
-
-    p_lead_t1 = doc.add_paragraph()
-    p_lead_t1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_t1 = p_lead_t1.add_run('Sangguniang Kabataan Chairperson')
-    _set_run_font(r_t1, size=Pt(12))
-
-    p_lead_t2 = doc.add_paragraph()
-    p_lead_t2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_t2 = p_lead_t2.add_run('Chairperson, Committee on Youth and Sports Development')
-    _set_run_font(r_t2, size=Pt(12))
+    # Chairman (centered)
+    p_chair = doc.add_paragraph()
+    p_chair.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r_chair_name = p_chair.add_run(fields.get('prepared_by_name', 'LOUIE MARI LAMPA').upper())
+    _set_run_font(r_chair_name, size=Pt(12), bold=True, underline=True)
+    r_chair_title = p_chair.add_run('\nSangguniang Kabataan Chairperson\nChairperson, Committee on Youth and Sports Development')
+    _set_run_font(r_chair_title, size=Pt(12))
 
     doc.add_paragraph()
     doc.add_paragraph()
 
-    # SK Council Member Signature Grid (6 in 2x3, 7th centered)
+    # SK Council Members — 6 in a 2-column borderless table
     members = [
-        'JOSHUA E. AROCENA',         'JEAN B. CABILING',
-        'MA. LOUELLA B. MENDOZA',    'REINNIER B. YARZA',
-        'JULIA BEATRICE F. OLAYVAR', 'CLYDE HARRY S. GOMEZ',
-        'TRICIA YZABEL T. SULIT',
+        ('JANE CLARICE P. BORJE',    'PAULO JOHN DE GUZMAN'),
+        ('ANGELA L. PIANDO',         'MARGARET AIMEE A. CADAG'),
+        ('GENEVIE C. DOGELLO',       'VINZCENT KYLE R. LOPEZ'),
     ]
 
     sig_table = doc.add_table(rows=3, cols=2)
-    # Remove borders from signature table
-    for row in sig_table.rows:
-        for cell in row.cells:
-            tc = cell._element
-            tcPr = tc.get_or_add_tcPr()
-            tcBorders = OxmlElement('w:tcBorders')
-            for edge in ('top', 'left', 'bottom', 'right'):
-                el = OxmlElement(f'w:{edge}')
-                el.set(qn('w:val'), 'none')
-                el.set(qn('w:sz'), '0')
-                el.set(qn('w:space'), '0')
-                el.set(qn('w:color'), 'auto')
-                tcBorders.append(el)
-            tcPr.append(tcBorders)
+    # No style = borderless by default in python-docx
 
-    for idx in range(6):
-        r_idx = idx // 2
-        c_idx = idx % 2
-        cell_p = sig_table.rows[r_idx].cells[c_idx].paragraphs[0]
-        cell_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    for row_idx, (left_name, right_name) in enumerate(members):
+        for col_idx, name in enumerate((left_name, right_name)):
+            cell = sig_table.rows[row_idx].cells[col_idx]
+            p = cell.paragraphs[0]
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-        r_name = cell_p.add_run(members[idx])
-        _set_run_font(r_name, size=Pt(12), bold=True, underline=True)
+            r_n = p.add_run(name)
+            _set_run_font(r_n, size=Pt(12), bold=True, underline=True)
 
-        r_sub = cell_p.add_run('\nSangguniang Kabataan Member\n\n')
-        _set_run_font(r_sub, size=Pt(12))
+            r_s = p.add_run('\nSangguniang Kabataan Member\n\n')
+            _set_run_font(r_s, size=Pt(12))
 
-    # 7th member centered
+    # 7th member — centered at bottom
     p_last = doc.add_paragraph()
     p_last.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_last_name = p_last.add_run(members[6])
-    _set_run_font(r_last_name, size=Pt(12), bold=True, underline=True)
-    r_last_sub = p_last.add_run('\nSangguniang Kabataan Member')
-    _set_run_font(r_last_sub, size=Pt(12))
+    r_last_n = p_last.add_run('MELVIN JAMES Y. EBUENGA')
+    _set_run_font(r_last_n, size=Pt(12), bold=True, underline=True)
+    r_last_s = p_last.add_run('\nSangguniang Kabataan Member')
+    _set_run_font(r_last_s, size=Pt(12))
 
     return doc
 

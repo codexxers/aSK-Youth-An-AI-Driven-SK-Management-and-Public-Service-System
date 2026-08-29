@@ -1464,7 +1464,8 @@ function isCasualQuery(query) {
     return false;
 }
 
-async function buildRagContext(currentQuery, documentsData, conversationId = null) {
+async function buildRagContext(currentQuery, documentsData, conversationId = null, activeRole = 'youth') {
+    const GLOBAL_ADMIN_SCOPE = 'global_admin';
     let retrievedChunks  = [];
     let finalUserPrompt  = currentQuery;
 
@@ -1682,6 +1683,26 @@ ${c.text}
         finalUserPrompt += languageFlag;
     }
 
+    // 4. Admin-Gated Global Knowledge Base
+    if (['officer', 'chairman', 'system_admin'].includes(activeRole) && vectorStore.hasChunks()) {
+        const queryVec = await embed(currentQuery);
+        const adminRanked = await vectorStore.search(queryVec, TOP_K);
+        
+        const ADMIN_THRESHOLD = parseFloat(process.env.GLOBAL_KB_RELEVANCE_THRESHOLD || "0.35");
+        const adminFiltered = adminRanked
+            .filter(r => r.conversationId === GLOBAL_ADMIN_SCOPE)
+            .filter(r => r.score >= ADMIN_THRESHOLD);
+            
+        if (adminFiltered.length > 0) {
+            console.log(`[RAG Admin] Injected ${adminFiltered.length} global chunks for role ${activeRole} (threshold: ${ADMIN_THRESHOLD})`);
+            const adminBlocks = adminFiltered.map((c, i) =>
+                `[Source: ${c.documentName}]\n${c.text}`
+            ).join('\n\n');
+            
+            finalUserPrompt += `\n\n[BACKGROUND_REFERENCE — INTERNAL, ADMIN-TIER ONLY, DO NOT CITE UNLESS RULES BELOW SAY SO]\n${adminBlocks}`;
+        }
+    }
+
     return { finalUserPrompt, eventContext, retrievedChunks };
 }
 // ---------------------------------------------------------------------------
@@ -1740,7 +1761,7 @@ app.post('/api/chat', upload.array('files', MAX_FILES), async (req, res) => {
         // Fused retrieval: persistent HNSW vector search + SQL events query
         const conversationId = req.body.conversationId || null;
         const { finalUserPrompt, eventContext, retrievedChunks } =
-            await buildRagContext(currentQuery, documentsData, conversationId);
+            await buildRagContext(currentQuery, documentsData, conversationId, activeRole);
 
         const clientDateString = req.body.clientDateString || null;
         const fullSystemPrompt = buildFullSystemPrompt(eventContext, activeRole, clientDateString);
@@ -1887,8 +1908,9 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
         }
 
         const conversationId = req.body.conversationId || null;
+        const activeRole = resolveActiveRole(req);
         const { finalUserPrompt, eventContext, retrievedChunks } =
-            await buildRagContext(currentQuery, documentsData, conversationId);
+            await buildRagContext(currentQuery, documentsData, conversationId, activeRole);
 
         if (retrievedChunks.length > 0) {
             sendEvent({ type: 'retrieved', chunks: retrievedChunks });
@@ -1899,7 +1921,6 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
             if (index === 0 && msg.role === 'assistant' && msg.content.toLowerCase().includes("initialized")) return false;
             return true;
         });
-        const activeRole = resolveActiveRole(req);
         const compressedRoleHistory = await compressChatHistory(validMessages);
         const chatHistoryArr = compressedRoleHistory.map(msg => {
             if (msg.role === 'assistant') {

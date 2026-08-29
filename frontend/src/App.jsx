@@ -603,6 +603,18 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
       { key: 'chairperson', label: 'SK Chairperson Name', placeholder: 'Full name' },
       { key: 'barangay_captain', label: 'Barangay Captain Name', placeholder: 'Full name' },
     ],
+    project_brief: [
+      { key: 'project_name',     label: 'Name of Project / Activity', placeholder: 'e.g. Gabi ng Kabataan 2025' },
+      { key: 'location',         label: 'Location', placeholder: 'e.g. Barangay Concepcion Dos Multi-Purpose Hall' },
+      { key: 'target_date',      label: 'Target Date of Implementation', placeholder: 'e.g. December 15, 2025' },
+      { key: 'background',       label: 'Background / Rationale', placeholder: 'Why is this project needed?', multiline: true },
+      { key: 'objective',        label: 'Objective', placeholder: 'What does this project aim to achieve?', multiline: true },
+      { key: 'physical_output',  label: 'Target Physical Output', placeholder: 'e.g. 200 youth attended, 50 kits distributed', multiline: true },
+      { key: 'beneficiaries',    label: 'Target Beneficiaries', placeholder: 'e.g. Youth aged 15–30 of Barangay Concepcion Dos' },
+      { key: 'budget',           label: 'Budget (Php)', placeholder: 'e.g. 50,000' },
+      { key: 'prepared_by_name', label: 'Prepared By — Name', placeholder: 'Full name' },
+      { key: 'prepared_by_title',label: 'Prepared By — Title/Position', placeholder: 'e.g. SK Chairperson' },
+    ],
   };
 
   const handleFieldChange = (key, value, isList) => {
@@ -650,9 +662,10 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
   };
 
   const templates = [
-    { id: 'resolution',  label: 'SK Resolution',            emoji: '📜' },
-    { id: 'minutes',     label: 'Meeting Minutes',          emoji: '📝' },
-    { id: 'certificate', label: 'Certificate of Recognition', emoji: '🏆' },
+    { id: 'resolution',    label: 'SK Resolution',               emoji: '📜' },
+    { id: 'minutes',       label: 'Meeting Minutes',             emoji: '📝' },
+    { id: 'certificate',   label: 'Certificate of Recognition',  emoji: '🏆' },
+    { id: 'project_brief', label: 'Project Brief',               emoji: '📊' },
   ];
 
   return (
@@ -663,7 +676,7 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
       <div className="flex-1 p-6 overflow-auto">
         <div className="max-w-2xl mx-auto space-y-6">
           {/* Template selector */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {templates.map(t => (
               <button
                 key={t.id}

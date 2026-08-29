@@ -18,6 +18,7 @@ Supported document types:
   poa           — Program of Activities
   report        — Activity / Accomplishment Report
   proposal      — Project Proposal
+  project_brief — ABYIP-format SK Project Brief
 
 API:
   POST /tools/document
@@ -398,6 +399,60 @@ def build_report(fields: dict, language: str) -> Document:
     return doc
 
 
+def build_project_brief(fields: dict, language: str) -> Document:
+    """Generates a Project Brief in the official SK ABYIP barangay format."""
+    doc = Document()
+    _add_header(doc)
+
+    # Title block
+    t = doc.add_paragraph("PROJECT BRIEF")
+    t.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    t.runs[0].bold = True
+    t.runs[0].font.size = Pt(14)
+    doc.add_paragraph()
+
+    # Key metadata fields
+    meta_fields = [
+        ("Name of Project/Activity", fields.get("project_name", "[Project Name]")),
+        ("Location",                  fields.get("location",     f"{BARANGAY}, {CITY}")),
+        ("Target Date",               fields.get("target_date",  "[Date]")),
+        ("Target Beneficiaries",      fields.get("beneficiaries","[Beneficiaries]")),
+        ("Budget Allotted",           f"Php {fields.get('budget', '[Amount]')}"),
+    ]
+    for label, value in meta_fields:
+        p = doc.add_paragraph()
+        p.add_run(f"{label}: ").bold = True
+        p.add_run(value)
+
+    doc.add_paragraph()
+
+    # Narrative sections following the ABYIP format
+    sections = [
+        ("I.   BACKGROUND / RATIONALE",   "background"),
+        ("II.  OBJECTIVE",                 "objective"),
+        ("III. TARGET PHYSICAL OUTPUT",    "physical_output"),
+    ]
+    for heading, key in sections:
+        p = doc.add_paragraph(heading)
+        p.runs[0].bold = True
+        content = fields.get(key, f"[{heading.split('.', 1)[1].strip().title()}]")
+        doc.add_paragraph(f"        {content}")
+        doc.add_paragraph()
+
+    # Prepared by signature block
+    doc.add_paragraph()
+    doc.add_paragraph("Prepared by:")
+    doc.add_paragraph()
+    prep_name  = fields.get("prepared_by_name",  "[Name]")
+    prep_title = fields.get("prepared_by_title", "[Title/Position]")
+    p = doc.add_paragraph("________________________________")
+    p = doc.add_paragraph(prep_name);  p.runs[0].bold = True
+    doc.add_paragraph(prep_title)
+    doc.add_paragraph(f"{SK_ORG}, {BARANGAY}")
+
+    return doc
+
+
 def build_proposal(fields: dict, language: str) -> Document:
     doc = Document()
     _add_header(doc)
@@ -431,14 +486,15 @@ def build_proposal(fields: dict, language: str) -> Document:
 
 # ── Dispatch table ────────────────────────────────────────────────────────────
 BUILDERS = {
-    "certificate": build_certificate,
-    "resolution":  build_resolution,
-    "minutes":     build_minutes,
-    "letter":      build_letter,
-    "memo":        build_memo,
-    "poa":         build_poa,
-    "report":      build_report,
-    "proposal":    build_proposal,
+    "certificate":   build_certificate,
+    "resolution":    build_resolution,
+    "minutes":       build_minutes,
+    "letter":        build_letter,
+    "memo":          build_memo,
+    "poa":           build_poa,
+    "report":        build_report,
+    "proposal":      build_proposal,
+    "project_brief": build_project_brief,
 }
 
 
@@ -485,7 +541,8 @@ def _build_preview(doc_type: str, fields: dict) -> str:
         "memo":        f"Memo: {fields.get('subject','?')} — {date}",
         "poa":         f"Program of Activities — {event} ({date})",
         "report":      f"{fields.get('report_type','Activity Report')} — {event} ({date})",
-        "proposal":    f"Project Proposal: {fields.get('project_title','?')}",
+        "proposal":      f"Project Proposal: {fields.get('project_title','?')}",
+        "project_brief": f"Project Brief: {fields.get('project_name','?')} — {fields.get('target_date', '')}",
     }
     return snippets.get(doc_type, f"{doc_type.title()} document generated.")
 

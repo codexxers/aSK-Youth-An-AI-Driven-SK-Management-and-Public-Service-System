@@ -1733,7 +1733,8 @@ ${c.text}
     // 4. Admin-Gated Global Knowledge Base
     if (['admin', 'system_admin', 'chairman', 'officer'].includes(activeRole) && vectorStore.hasChunks()) {
         const queryVec = await embed(currentQuery);
-        const adminRanked = await vectorStore.search(queryVec, TOP_K);
+        // Ensure all ABYIP projects can be retrieved by overriding default TOP_K
+        const adminRanked = await vectorStore.search(queryVec, 15);
         
         const ADMIN_THRESHOLD = parseFloat(process.env.GLOBAL_KB_RELEVANCE_THRESHOLD || "0.35");
         const adminFiltered = adminRanked

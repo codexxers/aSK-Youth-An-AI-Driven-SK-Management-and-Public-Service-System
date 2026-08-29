@@ -402,53 +402,123 @@ def build_report(fields: dict, language: str) -> Document:
 def build_project_brief(fields: dict, language: str) -> Document:
     """Generates a Project Brief in the official SK ABYIP barangay format."""
     doc = Document()
-    _add_header(doc)
+    
+    # 1. Global Typography
+    style = doc.styles['Normal']
+    font = style.font
+    font.name = 'Times New Roman'
+    font.size = Pt(12)
 
-    # Title block
+    # 2. Official Letterhead (in Document Header)
+    header = doc.sections[0].header
+    p1 = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
+    p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r1 = p1.add_run('Republic of the Philippines')
+    r1.font.size = Pt(11)
+    
+    p2 = header.add_paragraph()
+    p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r2 = p2.add_run('SANGGUNIANG KABATAAN')
+    r2.font.size = Pt(16)
+    r2.font.color.rgb = RGBColor(218, 41, 28)
+    
+    p3 = header.add_paragraph()
+    p3.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r3 = p3.add_run('BARANGAY CONCEPCION DOS')
+    r3.font.size = Pt(16)
+    r3.font.color.rgb = RGBColor(218, 41, 28)
+    
+    p4 = header.add_paragraph()
+    p4.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r4 = p4.add_run('City of Marikina, Metro Manila, Philippines')
+    r4.font.size = Pt(11)
+
+    # 3. Document Body & Title
+    doc.add_paragraph()
     t = doc.add_paragraph("PROJECT BRIEF")
     t.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    t.runs[0].bold = True
-    t.runs[0].font.size = Pt(14)
+    t_run = t.runs[0]
+    t_run.bold = True
+    t_run.font.size = Pt(12)
     doc.add_paragraph()
 
-    # Key metadata fields
-    meta_fields = [
-        ("Name of Project/Activity", fields.get("project_name", "[Project Name]")),
-        ("Location",                  fields.get("location",     f"{BARANGAY}, {CITY}")),
-        ("Target Date",               fields.get("target_date",  "[Date]")),
-        ("Target Beneficiaries",      fields.get("beneficiaries","[Beneficiaries]")),
-        ("Budget Allotted",           f"Php {fields.get('budget', '[Amount]')}"),
+    # 4. Two-Column Project Table
+    table = doc.add_table(rows=8, cols=2)
+    table.style = 'Table Grid'
+    
+    rows_data = [
+        ("NAME OF PROJECT/ACTIVITY", fields.get("project_name", "[Project Name]"), True),
+        ("LOCATION OF PROJECT", fields.get("location", f"Barangay Concepcion Dos"), False),
+        ("TARGET DATE OF IMPLEMENTATION", fields.get("target_date", "[Target Date]"), False),
+        ("BACKGROUND/RATIONALE", fields.get("background", "[Background Narrative]"), False),
+        ("OBJECTIVE", fields.get("objective", "[Objective Narrative]"), False),
+        ("TARGET PHYSICAL OUTPUT", fields.get("physical_output", "[Target Physical Output]"), False),
+        ("TARGET BENEFICIARIES", fields.get("beneficiaries", "[Target Beneficiaries]"), False),
+        ("BUDGET:", f"Php {fields.get('budget', '[Amount]')}", False),
     ]
-    for label, value in meta_fields:
-        p = doc.add_paragraph()
-        p.add_run(f"{label}: ").bold = True
-        p.add_run(value)
+
+    for i, (label, val, bold_val) in enumerate(rows_data):
+        row = table.rows[i]
+        
+        # Left column
+        p_left = row.cells[0].paragraphs[0]
+        p_left.text = label
+        
+        # Right column
+        p_right = row.cells[1].paragraphs[0]
+        r_right = p_right.add_run(val)
+        if bold_val:
+            r_right.bold = True
 
     doc.add_paragraph()
-
-    # Narrative sections following the ABYIP format
-    sections = [
-        ("I.   BACKGROUND / RATIONALE",   "background"),
-        ("II.  OBJECTIVE",                 "objective"),
-        ("III. TARGET PHYSICAL OUTPUT",    "physical_output"),
-    ]
-    for heading, key in sections:
-        p = doc.add_paragraph(heading)
-        p.runs[0].bold = True
-        content = fields.get(key, f"[{heading.split('.', 1)[1].strip().title()}]")
-        doc.add_paragraph(f"        {content}")
-        doc.add_paragraph()
-
-    # Prepared by signature block
     doc.add_paragraph()
+
+    # 5. Official Signature Section
     doc.add_paragraph("Prepared by:")
     doc.add_paragraph()
-    prep_name  = fields.get("prepared_by_name",  "[Name]")
-    prep_title = fields.get("prepared_by_title", "[Title/Position]")
-    p = doc.add_paragraph("________________________________")
-    p = doc.add_paragraph(prep_name);  p.runs[0].bold = True
-    doc.add_paragraph(prep_title)
-    doc.add_paragraph(f"{SK_ORG}, {BARANGAY}")
+    doc.add_paragraph()
+
+    # Lead Official
+    p_lead = doc.add_paragraph()
+    p_lead.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r_lead = p_lead.add_run(fields.get("prepared_by_name", "LOUIE MARI LAMPA").upper())
+    r_lead.bold = True
+    r_lead.underline = True
+    
+    p_lead_title = doc.add_paragraph()
+    p_lead_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_lead_title.add_run("Sangguniang Kabataan Chairperson\nChairperson, Committee on Youth and Sports Development")
+    
+    doc.add_paragraph()
+    doc.add_paragraph()
+    doc.add_paragraph()
+
+    # SK Council Member Signature Grid (6 in 2 cols)
+    members = [
+        "JOSHUA E. AROCENA", "JEAN B. CABILING", 
+        "MA. LOUELLA B. MENDOZA", "REINNIER B. YARZA",
+        "JULIA BEATRICE F. OLAYVAR", "CLYDE HARRY S. GOMEZ",
+        "TRICIA YZABEL T. SULIT"
+    ]
+    
+    sig_table = doc.add_table(rows=3, cols=2)
+    for idx in range(6):
+        row = idx // 2
+        col = idx % 2
+        cell_p = sig_table.rows[row].cells[col].paragraphs[0]
+        cell_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = cell_p.add_run(members[idx])
+        r.bold = True
+        r.underline = True
+        cell_p.add_run("\nSangguniang Kabataan Member\n\n\n")
+
+    # 7th member centered at bottom
+    p_last = doc.add_paragraph()
+    p_last.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r_last = p_last.add_run(members[6])
+    r_last.bold = True
+    r_last.underline = True
+    p_last.add_run("\nSangguniang Kabataan Member")
 
     return doc
 

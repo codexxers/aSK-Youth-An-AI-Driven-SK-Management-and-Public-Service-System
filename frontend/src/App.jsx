@@ -1972,8 +1972,9 @@ const getDynamicGreeting = (user) => {
   const hour = new Date().getHours();
   const timeOfDay = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
   const role = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Guest';
-  const name = user?.name ? user.name.split(' ')[0] : '';
-  const greetingName = name ? `${role} ${name}` : role;
+  const rawName = user?.identity || user?.name || user?.alias || '';
+  const firstName = rawName.trim().split(' ')[0] || '';
+  const greetingName = firstName ? `${role} ${firstName}` : role;
   return `aSK//YOUTH.AI Initialized. Good ${timeOfDay}, ${greetingName}. How may I assist you today?`;
 };
 

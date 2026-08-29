@@ -770,52 +770,68 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   const fetchDashboardData = async () => {
     setLoading(true);
     setError(null);
-    try {
-      const headers = authHeaders({ 'X-Actor': authUser?.full_name || 'Admin', 'X-Role': effectiveRole });
+    const headers = authHeaders({ 'X-Actor': authUser?.full_name || 'Admin', 'X-Role': effectiveRole });
 
-      // Fetch stats from Node (for suggestions/users) and Python (for event totals)
+    // 1. Fetch Stats & Analytics
+    try {
       const [resStats, resPy] = await Promise.all([
         fetch(`${API_BASE}/api/admin/stats`, { headers }),
         fetch(`${API_BASE}/api/analytics/events?type=event`, { headers: authHeaders() })
       ]);
-
       const statsData = resStats.ok ? await resStats.json() : {};
       const pyData = resPy.ok ? await resPy.json() : {};
-
       setStats({
         ...statsData,
-        total_events: pyData?.stats?.total || statsData.total_events || 0,
+        total_events: pyData?.stats?.total_events || statsData.total_events || 0,
         total_attendees: pyData?.stats?.total_attendees || statsData.total_attendees || 0,
         total_budget: pyData?.stats?.total_budget || statsData.total_budget || 0,
         pending_suggestions: statsData.pending_suggestions ?? 0,
       });
+    } catch (err) {
+      console.error('Stats fetch error:', err);
+      // Set error only if it's a catastrophic failure
+      if (!stats.total_events) setError('Gateway Connection Error: Verify backend & AI layers are active.');
+    }
 
-      // Fetch participation
+    // 2. Fetch participation
+    try {
       const resPart = await fetch(`${API_BASE}/api/admin/participation`, { headers });
       if (resPart.ok) setParticipationData(await resPart.json());
+    } catch (err) {
+      console.error('Participation fetch error:', err);
+    }
 
-      // Fetch budget
+    // 3. Fetch budget
+    try {
       const resBudg = await fetch(`${API_BASE}/api/admin/budget`, { headers });
       if (resBudg.ok) setBudgetData(await resBudg.json());
+    } catch (err) {
+      console.error('Budget fetch error:', err);
+    }
 
-      // Fetch users
+    // 4. Fetch users
+    try {
       const resUsers = await fetch(`${API_BASE}/api/users`, { headers });
       if (resUsers.ok) setUsers(await resUsers.json());
+    } catch (err) {
+      console.error('Users fetch error:', err);
+    }
 
-      // Fetch logs if admin
-      if (effectiveRole === 'admin') {
+    // 5. Fetch logs if admin
+    if (effectiveRole === 'admin') {
+      try {
         const resLogs = await fetch(`${API_BASE}/api/admin/logs?page=${logsPage}&limit=20&actor=${encodeURIComponent(logActorFilter)}&action=${encodeURIComponent(logActionFilter)}`, { headers });
         if (resLogs.ok) {
           const dataLogs = await resLogs.json();
           setLogs(dataLogs.logs || []);
           setLogsTotalPages(dataLogs.totalPages || 1);
         }
+      } catch (err) {
+        console.error('Logs fetch error:', err);
       }
-    } catch (err) {
-      setError(err.message === 'Failed to fetch' ? 'Gateway Connection Error: Verify backend & AI layers are active.' : err.message);
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   useEffect(() => {

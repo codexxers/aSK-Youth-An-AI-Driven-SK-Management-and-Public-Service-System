@@ -1408,7 +1408,37 @@ async function extractTextFromFile(buffer, mimeType, originalName) {
 let contextSize = 100000;
 
 vectorStore.init()
-    .then(() => console.log('[VectorStore] Persistent index ready.'))
+    .then(async () => {
+        console.log('[VectorStore] Persistent index ready.');
+        
+        // Auto-seed Global Admin Knowledge Base on startup if missing
+        try {
+            const hasAdminChunks = Array.from(vectorStore.metadata.values())
+                .some(c => c.conversationId === 'global_admin');
+            
+            if (!hasAdminChunks) {
+                console.log('[VectorStore] Global admin knowledge missing. Auto-seeding...');
+                const kbPath = path.join(__dirname, '..', 'knowledge_base', 'abyip', 'abyip_2025_chunks.json');
+                if (fs.existsSync(kbPath)) {
+                    const data = JSON.parse(fs.readFileSync(kbPath, 'utf8'));
+                    if (Array.isArray(data)) {
+                        const chunksToInsert = data.map((text, index) => ({
+                            text: text,
+                            documentName: 'abyip_2025',
+                            chunkIdx: index,
+                            conversationId: 'global_admin'
+                        }));
+                        await vectorStore.addChunks(chunksToInsert);
+                        console.log('[VectorStore] Auto-seeding complete.');
+                    }
+                } else {
+                    console.warn('[VectorStore] Auto-seed failed: abyip_2025_chunks.json not found at', kbPath);
+                }
+            }
+        } catch (seedErr) {
+            console.error('[VectorStore] Auto-seed error:', seedErr);
+        }
+    })
     .catch(err => console.error('[VectorStore] Init error:', err));
 
 // ---------------------------------------------------------------------------
@@ -1684,7 +1714,7 @@ ${c.text}
     }
 
     // 4. Admin-Gated Global Knowledge Base
-    if (['officer', 'chairman', 'system_admin'].includes(activeRole) && vectorStore.hasChunks()) {
+    if (['admin', 'system_admin', 'chairman', 'officer'].includes(activeRole) && vectorStore.hasChunks()) {
         const queryVec = await embed(currentQuery);
         const adminRanked = await vectorStore.search(queryVec, TOP_K);
         
@@ -2183,24 +2213,33 @@ app.post('/api/generate-document', async (req, res) => {
 // Phase 2: Events Analytics Dashboard (Feature 5) — proxy to Python
 // ---------------------------------------------------------------------------
 app.get('/api/analytics/events', async (req, res) => {
-    const type = req.query.type || 'category';
-    const VALID_TYPES = ['category', 'monthly', 'status', 'event', 'attendance'];
-    if (!VALID_TYPES.includes(type)) {
-        return res.status(400).json({ error: `type must be one of: ${VALID_TYPES.join(', ')}` });
-    }
     try {
-        const params = { type };
-        if (req.query.show_gender) params.show_gender = req.query.show_gender;
-        if (req.query.show_staff) params.show_staff = req.query.show_staff;
-        const pyRes = await axios.get(`${PYTHON_SERVICE_URL}/analytics/events`, {
-            params,
-            timeout: 15000
+        const rows = db.prepare('SELECT category, attendees, male_count, female_count, budget_allotted FROM events').all();
+        
+        let total_events = rows.length;
+        let total_attendees = 0;
+        let total_budget = 0;
+        const category_counts = {};
+        
+        rows.forEach(r => {
+            total_attendees += (r.attendees || 0);
+            total_budget += (r.budget_allotted || 0);
+            const cat = r.category || 'Uncategorized';
+            category_counts[cat] = (category_counts[cat] || 0) + 1;
         });
-        res.json(pyRes.data);
+        
+        res.json({
+            chart: null,
+            stats: {
+                total_events,
+                total_attendees,
+                total_budget,
+                category_counts
+            }
+        });
     } catch (err) {
-        console.error('[Analytics] Proxy error:', err.message);
-        const status = err.response?.status || 500;
-        res.status(status).json({ error: err.response?.data?.detail || err.message });
+        console.error('[Analytics] Error:', err.message);
+        res.status(500).json({ error: err.message });
     }
 });
 

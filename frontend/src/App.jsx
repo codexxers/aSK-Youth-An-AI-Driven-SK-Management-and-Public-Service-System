@@ -1972,8 +1972,20 @@ const getDynamicGreeting = (user) => {
   const hour = new Date().getHours();
   const timeOfDay = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
   const role = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Guest';
-  const rawName = user?.identity || user?.name || user?.alias || '';
-  const firstName = rawName.trim().split(' ')[0] || '';
+  let firstName = '';
+  try {
+    const rawName = user?.full_name || user?.identity || user?.name || user?.alias || user?.username || '';
+    if (!rawName || rawName === 'Youth Member' || rawName === 'guest') {
+      const stored = sessionStorage.getItem('askyouth_user') || localStorage.getItem('askyouth_user');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const storedName = parsed?.full_name || parsed?.identity || parsed?.name || '';
+        firstName = storedName.trim().split(' ')[0] || '';
+      }
+    } else {
+      firstName = rawName.trim().split(' ')[0] || '';
+    }
+  } catch(e) {}
   const greetingName = firstName ? `${role} ${firstName}` : role;
   return `aSK//YOUTH.AI Initialized. Good ${timeOfDay}, ${greetingName}. How may I assist you today?`;
 };
@@ -2297,7 +2309,10 @@ function App() {
   }, [activeThread?.messages, loading]);
 
   const createNewChat = () => {
-    if (activeThread?.title === 'New Chat' && activeThread?.messages?.length <= 1) return;
+    if (activeThread?.title === 'New Chat' && activeThread?.messages?.length <= 1) {
+      setCurrentView('chat');
+      return;
+    }
     const newThread = {
       id: getUUID(),
       title: 'New Chat',
@@ -2306,6 +2321,7 @@ function App() {
     };
     setThreads([newThread, ...threads]);
     setActiveThreadId(newThread.id);
+    setCurrentView('chat');
     if(window.innerWidth < 768) setSidebarOpen(false);
   };
 

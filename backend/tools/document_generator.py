@@ -40,8 +40,10 @@ from datetime import datetime
 from pathlib import Path
 
 from docx import Document
-from docx.shared import Pt, Inches, RGBColor
+from docx.shared import Pt, Inches, RGBColor, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
 from flask import Flask, request, jsonify
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -399,126 +401,185 @@ def build_report(fields: dict, language: str) -> Document:
     return doc
 
 
+def _set_run_font(run, size=Pt(12), bold=False, underline=False, color=None):
+    """Force Times New Roman + size on a single run. python-docx does NOT cascade
+    the Normal style font into table cells or headers, so every run needs this."""
+    run.font.name = 'Times New Roman'
+    run.font.size = size
+    run.bold = bold
+    run.underline = underline
+    # East-Asian fallback — required for Word to actually render Times New Roman
+    rpr = run._element.get_or_add_rPr()
+    rFonts = rpr.find(qn('w:rFonts'))
+    if rFonts is None:
+        rFonts = OxmlElement('w:rFonts')
+        rpr.insert(0, rFonts)
+    rFonts.set(qn('w:eastAsia'), 'Times New Roman')
+    if color:
+        run.font.color.rgb = color
+
+
 def build_project_brief(fields: dict, language: str) -> Document:
     """Generates a Project Brief in the official SK ABYIP barangay format."""
     doc = Document()
-    
-    # 1. Global Typography
-    style = doc.styles['Normal']
-    font = style.font
-    font.name = 'Times New Roman'
-    font.size = Pt(12)
 
-    # 2. Official Letterhead (in Document Header)
-    header = doc.sections[0].header
+    # 1. Global Typography — set Normal style as baseline
+    style = doc.styles['Normal']
+    style.font.name = 'Times New Roman'
+    style.font.size = Pt(12)
+    style.paragraph_format.space_after = Pt(0)
+    style.paragraph_format.space_before = Pt(0)
+
+    # 2. Official Letterhead (in the Document Header, NOT the body)
+    section = doc.sections[0]
+    section.header_distance = Cm(1.27)
+    header = section.header
+    header.is_linked_to_previous = False
+
+    # Clear default empty paragraph
+    for p in header.paragraphs:
+        p.clear()
+
+    # Line 1: Republic of the Philippines (11pt, black)
     p1 = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
     p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p1.paragraph_format.space_after = Pt(0)
     r1 = p1.add_run('Republic of the Philippines')
-    r1.font.size = Pt(11)
-    
+    _set_run_font(r1, size=Pt(11))
+
+    # Line 2: SANGGUNIANG KABATAAN (16pt, red)
     p2 = header.add_paragraph()
     p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p2.paragraph_format.space_after = Pt(0)
+    p2.paragraph_format.space_before = Pt(0)
     r2 = p2.add_run('SANGGUNIANG KABATAAN')
-    r2.font.size = Pt(16)
-    r2.font.color.rgb = RGBColor(218, 41, 28)
-    
+    _set_run_font(r2, size=Pt(16), color=RGBColor(218, 41, 28))
+
+    # Line 3: BARANGAY CONCEPCION DOS (16pt, red)
     p3 = header.add_paragraph()
     p3.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p3.paragraph_format.space_after = Pt(0)
+    p3.paragraph_format.space_before = Pt(0)
     r3 = p3.add_run('BARANGAY CONCEPCION DOS')
-    r3.font.size = Pt(16)
-    r3.font.color.rgb = RGBColor(218, 41, 28)
-    
+    _set_run_font(r3, size=Pt(16), color=RGBColor(218, 41, 28))
+
+    # Line 4: City of Marikina... (11pt, black)
     p4 = header.add_paragraph()
     p4.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p4.paragraph_format.space_before = Pt(0)
     r4 = p4.add_run('City of Marikina, Metro Manila, Philippines')
-    r4.font.size = Pt(11)
+    _set_run_font(r4, size=Pt(11))
 
-    # 3. Document Body & Title
-    doc.add_paragraph()
-    t = doc.add_paragraph("PROJECT BRIEF")
+    # 3. Document Title in body
+    doc.add_paragraph()  # spacer
+    t = doc.add_paragraph()
     t.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    t_run = t.runs[0]
-    t_run.bold = True
-    t_run.font.size = Pt(12)
-    doc.add_paragraph()
+    t_run = t.add_run('PROJECT BRIEF')
+    _set_run_font(t_run, size=Pt(12), bold=True)
+    doc.add_paragraph()  # spacer
 
-    # 4. Two-Column Project Table
+    # 4. Two-Column Project Table with full grid borders
     table = doc.add_table(rows=8, cols=2)
     table.style = 'Table Grid'
-    
+
     rows_data = [
-        ("NAME OF PROJECT/ACTIVITY", fields.get("project_name", "[Project Name]"), True),
-        ("LOCATION OF PROJECT", fields.get("location", f"Barangay Concepcion Dos"), False),
-        ("TARGET DATE OF IMPLEMENTATION", fields.get("target_date", "[Target Date]"), False),
-        ("BACKGROUND/RATIONALE", fields.get("background", "[Background Narrative]"), False),
-        ("OBJECTIVE", fields.get("objective", "[Objective Narrative]"), False),
-        ("TARGET PHYSICAL OUTPUT", fields.get("physical_output", "[Target Physical Output]"), False),
-        ("TARGET BENEFICIARIES", fields.get("beneficiaries", "[Target Beneficiaries]"), False),
-        ("BUDGET:", f"Php {fields.get('budget', '[Amount]')}", False),
+        ('NAME OF PROJECT/ACTIVITY',       fields.get('project_name',    '[Project Name]'),            True),
+        ('LOCATION OF PROJECT',            fields.get('location',        'Barangay Concepcion Dos'),   False),
+        ('TARGET DATE OF IMPLEMENTATION',  fields.get('target_date',     '[Target Date]'),             False),
+        ('BACKGROUND/RATIONALE',           fields.get('background',      '[Background Narrative]'),    False),
+        ('OBJECTIVE',                      fields.get('objective',       '[Objective Narrative]'),     False),
+        ('TARGET PHYSICAL OUTPUT',         fields.get('physical_output', '[Target Physical Output]'),  False),
+        ('TARGET BENEFICIARIES',           fields.get('beneficiaries',   '[Target Beneficiaries]'),    False),
+        ('BUDGET:',                        f"Php {fields.get('budget',   '[Amount]')}",               False),
     ]
 
     for i, (label, val, bold_val) in enumerate(rows_data):
-        row = table.rows[i]
-        
-        # Left column
-        p_left = row.cells[0].paragraphs[0]
-        p_left.text = label
-        
-        # Right column
-        p_right = row.cells[1].paragraphs[0]
-        r_right = p_right.add_run(val)
-        if bold_val:
-            r_right.bold = True
+        # Left column — label
+        cell_left = table.rows[i].cells[0]
+        p_left = cell_left.paragraphs[0]
+        p_left.clear()
+        r_left = p_left.add_run(label)
+        _set_run_font(r_left, size=Pt(12), bold=True)
 
-    doc.add_paragraph()
-    doc.add_paragraph()
+        # Right column — value
+        cell_right = table.rows[i].cells[1]
+        p_right = cell_right.paragraphs[0]
+        p_right.clear()
+        r_right = p_right.add_run(val)
+        _set_run_font(r_right, size=Pt(12), bold=bold_val)
+
+    doc.add_paragraph()  # spacer
+    doc.add_paragraph()  # spacer
 
     # 5. Official Signature Section
-    doc.add_paragraph("Prepared by:")
+    p_prep = doc.add_paragraph()
+    r_prep = p_prep.add_run('Prepared by:')
+    _set_run_font(r_prep, size=Pt(12))
     doc.add_paragraph()
     doc.add_paragraph()
 
-    # Lead Official
+    # Lead Official (centered)
     p_lead = doc.add_paragraph()
     p_lead.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_lead = p_lead.add_run(fields.get("prepared_by_name", "LOUIE MARI LAMPA").upper())
-    r_lead.bold = True
-    r_lead.underline = True
-    
-    p_lead_title = doc.add_paragraph()
-    p_lead_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_lead_title.add_run("Sangguniang Kabataan Chairperson\nChairperson, Committee on Youth and Sports Development")
-    
-    doc.add_paragraph()
+    r_lead = p_lead.add_run(fields.get('prepared_by_name', 'LOUIE MARI LAMPA').upper())
+    _set_run_font(r_lead, size=Pt(12), bold=True, underline=True)
+
+    p_lead_t1 = doc.add_paragraph()
+    p_lead_t1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r_t1 = p_lead_t1.add_run('Sangguniang Kabataan Chairperson')
+    _set_run_font(r_t1, size=Pt(12))
+
+    p_lead_t2 = doc.add_paragraph()
+    p_lead_t2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r_t2 = p_lead_t2.add_run('Chairperson, Committee on Youth and Sports Development')
+    _set_run_font(r_t2, size=Pt(12))
+
     doc.add_paragraph()
     doc.add_paragraph()
 
-    # SK Council Member Signature Grid (6 in 2 cols)
+    # SK Council Member Signature Grid (6 in 2x3, 7th centered)
     members = [
-        "JOSHUA E. AROCENA", "JEAN B. CABILING", 
-        "MA. LOUELLA B. MENDOZA", "REINNIER B. YARZA",
-        "JULIA BEATRICE F. OLAYVAR", "CLYDE HARRY S. GOMEZ",
-        "TRICIA YZABEL T. SULIT"
+        'JOSHUA E. AROCENA',         'JEAN B. CABILING',
+        'MA. LOUELLA B. MENDOZA',    'REINNIER B. YARZA',
+        'JULIA BEATRICE F. OLAYVAR', 'CLYDE HARRY S. GOMEZ',
+        'TRICIA YZABEL T. SULIT',
     ]
-    
-    sig_table = doc.add_table(rows=3, cols=2)
-    for idx in range(6):
-        row = idx // 2
-        col = idx % 2
-        cell_p = sig_table.rows[row].cells[col].paragraphs[0]
-        cell_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        r = cell_p.add_run(members[idx])
-        r.bold = True
-        r.underline = True
-        cell_p.add_run("\nSangguniang Kabataan Member\n\n\n")
 
-    # 7th member centered at bottom
+    sig_table = doc.add_table(rows=3, cols=2)
+    # Remove borders from signature table
+    for row in sig_table.rows:
+        for cell in row.cells:
+            tc = cell._element
+            tcPr = tc.get_or_add_tcPr()
+            tcBorders = OxmlElement('w:tcBorders')
+            for edge in ('top', 'left', 'bottom', 'right'):
+                el = OxmlElement(f'w:{edge}')
+                el.set(qn('w:val'), 'none')
+                el.set(qn('w:sz'), '0')
+                el.set(qn('w:space'), '0')
+                el.set(qn('w:color'), 'auto')
+                tcBorders.append(el)
+            tcPr.append(tcBorders)
+
+    for idx in range(6):
+        r_idx = idx // 2
+        c_idx = idx % 2
+        cell_p = sig_table.rows[r_idx].cells[c_idx].paragraphs[0]
+        cell_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        r_name = cell_p.add_run(members[idx])
+        _set_run_font(r_name, size=Pt(12), bold=True, underline=True)
+
+        r_sub = cell_p.add_run('\nSangguniang Kabataan Member\n\n')
+        _set_run_font(r_sub, size=Pt(12))
+
+    # 7th member centered
     p_last = doc.add_paragraph()
     p_last.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r_last = p_last.add_run(members[6])
-    r_last.bold = True
-    r_last.underline = True
-    p_last.add_run("\nSangguniang Kabataan Member")
+    r_last_name = p_last.add_run(members[6])
+    _set_run_font(r_last_name, size=Pt(12), bold=True, underline=True)
+    r_last_sub = p_last.add_run('\nSangguniang Kabataan Member')
+    _set_run_font(r_last_sub, size=Pt(12))
 
     return doc
 

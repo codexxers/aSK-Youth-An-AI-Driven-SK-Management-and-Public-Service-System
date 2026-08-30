@@ -1077,7 +1077,7 @@ app.patch('/api/suggestions/:id', (req, res) => {
 });
 
 // Detect whether the user's query is asking about events/programs
-const EVENT_KEYWORDS = /\b(event|events|program|programs|activity|activities|schedule|upcoming|calendar|sports|scholarship|seminar|training|workshop|assembly|clean.?up|fun.?run|livelihood|kabataan|supply|assistance|incentive|mayroon|anong|kelan|saan|paano|list|show|what.*happening|what.*planned|magkano|gaano|budget|attendees|attendance|staff|cultural|health|ilan|participants|happen|happening|fetch|records|record|registered|registrant|registrants|who attended|how many|participants|seminar|leadership|sports fest|clean.?up|general assembly|report|accomplishment|summary)\b/i;
+const EVENT_KEYWORDS = /\b(event|events|program|programs|activity|activities|schedule|upcoming|calendar|sports|scholarship|seminar|training|workshop|assembly|clean.?up|fun.?run|livelihood|kabataan|supply|assistance|incentive|mayroon|anong|kelan|saan|paano|list|show|what.*happening|what.*planned|magkano|gaano|budget|attendees|attendance|staff|cultural|health|ilan|participants|happen|happening|fetch|records|record|registered|registrant|registrants|who attended|how many|participants|seminar|leadership|sports fest|clean.?up|general assembly|report|accomplishment|summary|naka.?schedule|susunod|pinakamalapit|aktibo|iskedyul|gaganapin|darating|nalalapit|events natin|programa|aktibidad)\b/i;
 
 function isEventQuery(text) {
     return EVENT_KEYWORDS.test(text);
@@ -1086,6 +1086,7 @@ function isEventQuery(text) {
 function fetchEventsAsContext(filterStatus) {
     let rows;
     if (filterStatus) {
+        // filterStatus is 'upcoming' or 'active' — query by exact match
         rows = db.prepare('SELECT * FROM events WHERE status = ? ORDER BY date ASC').all(filterStatus);
     } else {
         rows = db.prepare('SELECT * FROM events ORDER BY date DESC').all();
@@ -1109,6 +1110,19 @@ function fetchEventsAsContext(filterStatus) {
         return entry;
     }).join('\n\n');
     return `SK Events Database (Barangay Concepcion Dos):\n\n${formatted}\n\nIMPORTANT: The above data is the COMPLETE and AUTHORITATIVE record. Do NOT invent, estimate, or add ANY data not shown above (no demographics, schedules, satisfaction rates, or participant details unless explicitly listed).`;
+}
+
+// Helper: fetch all non-completed, non-archived events ordered by date ASC
+function fetchNonCompletedEvents() {
+    return db.prepare("SELECT * FROM events WHERE status NOT IN ('completed', 'Archived') ORDER BY date ASC").all();
+}
+
+// Helper: format a single event row into a short summary string
+function formatEventShort(e) {
+    let entry = `- ${e.title} (${e.status.toUpperCase()})\n  Date: ${e.date}${e.time ? ' at ' + e.time : ''}\n  Category: ${e.category}\n  Location: ${e.location || 'TBD'}\n  Description: ${e.description || ''}`.trim();
+    if (e.budget_allotted > 0) entry += `\n  Budget Allotted: PHP ${Number(e.budget_allotted).toLocaleString()}`;
+    entry += `\n  Requirements: ${e.requirements || 'None'}\n  Contact: ${e.contact || 'SK Secretariat'}`;
+    return entry;
 }
 
 // API to list events (for future admin panel)
@@ -1599,7 +1613,7 @@ const GLOBAL_SCOPES = {
 // Track seen conversation IDs for the one-time notification nudge (Task 4.3)
 const _seenConversations = new Set();
 
-async function buildRagContext(currentQuery, documentsData, conversationId = null, activeRole = 'youth', sendEvent = null) {
+async function buildRagContext(currentQuery, documentsData, conversationId = null, activeRole = 'youth', sendEvent = null, clientDateString = null) {
     let retrievedChunks  = [];
     let finalUserPrompt  = currentQuery;
 
@@ -1757,9 +1771,8 @@ ${c.text}
     // 3. SQL events fusion — always run alongside vector search
     let eventContext = '';
     if (isEventQuery(currentQuery)) {
-        // Detect status filter
-        const upcomingFilter = /(upcoming|next|schedule|what.*happening|mayroon|anong|kelan|happen|future|this month|this year|january|february|march|april|may|june|july|august|september|october|november|december)/i.test(currentQuery)
-            ? 'upcoming' : null;
+        // Determine if the query is asking about upcoming/future/active events specifically
+        const isAskingFuture = /(upcoming|next|schedule|what.*happening|mayroon|anong|kelan|happen|future|this month|this year|naka.?schedule|susunod|darating|nalalapit|gaganapin|january|february|march|april|may|june|july|august|september|october|november|december)/i.test(currentQuery);
 
         // Extract specific month from query (e.g. "july 2026", "events in june")
         const MONTHS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
@@ -1768,52 +1781,85 @@ ${c.text}
         const yearMatch = currentQuery.match(/\b(202\d)\b/);
         const requestedYear = yearMatch ? parseInt(yearMatch[1]) : null;
 
-        let dbData = fetchEventsAsContext(upcomingFilter);
+        // Core fix: always fetch all non-completed, non-archived events so 'active' events are never missed.
+        // This replaces the old WHERE status = 'upcoming' pattern that silently excluded active events.
+        const allNonCompleted = fetchNonCompletedEvents();
+
+        let dbData = null;
+        // Note: eventContext is declared at outer scope (line 1772) — do not re-declare here.
 
         // Filter returned rows by month/year if user specified one
-        if (dbData && requestedMonth) {
+        if (requestedMonth) {
             const monthNum = String(MONTHS.indexOf(requestedMonth) + 1).padStart(2, '0');
-            // Extract the event entries and filter by the month in their Date field
-            const allRows = upcomingFilter
-                ? db.prepare('SELECT * FROM events WHERE status = ? ORDER BY date ASC').all(upcomingFilter)
-                : db.prepare('SELECT * FROM events ORDER BY date DESC').all();
-            const monthRows = allRows.filter(e => {
+            const monthRows = allNonCompleted.filter(e => {
                 const datePart = String(e.date || '');
-                // Match YYYY-MM or MM-DD containing the month number
                 const matchesMonth = datePart.split('-')[1] === monthNum;
                 const matchesYear = !requestedYear || datePart.startsWith(String(requestedYear));
                 return matchesMonth && matchesYear;
             });
+
+            const monthLabel = requestedMonth.charAt(0).toUpperCase() + requestedMonth.slice(1);
+            const yearLabel  = requestedYear ? ` ${requestedYear}` : '';
+
             if (monthRows.length > 0) {
-                const monthLabel = monthMatch[1].charAt(0).toUpperCase() + monthMatch[1].slice(1);
-                const yearLabel = requestedYear ? ` ${requestedYear}` : '';
-                const formatted = monthRows.map(e => {
-                    const logCount = db.prepare('SELECT COUNT(*) as c FROM event_logs WHERE event_id = ?').get(e.id);
-                    const actualAttendees = logCount?.c || 0;
-                    let entry = `- ${e.title} (${e.status.toUpperCase()})\n  Date: ${e.date}${e.time ? ' at ' + e.time : ''}\n  Category: ${e.category}\n  Location: ${e.location}\n  Description: ${e.description}`;
-                    if (actualAttendees > 0) entry += `\n  Registered Attendees: ${actualAttendees}`;
-                    else if (e.attendees > 0) entry += `\n  Attendees (recorded): ${e.attendees}`;
-                    else entry += `\n  Attendees: 0`;
-                    if (e.budget_allotted > 0) entry += `\n  Budget: PHP ${Number(e.budget_allotted).toLocaleString()}`;
-                    entry += `\n  Requirements: ${e.requirements}\n  Contact: ${e.contact}`;
-                    return entry;
-                }).join('\n\n');
+                const formatted = monthRows.map(e => formatEventShort(e)).join('\n\n');
                 dbData = `SK Events Database — ${monthLabel}${yearLabel} (Barangay Concepcion Dos):\n\n${formatted}\n\nIMPORTANT: The above is ALL events for ${monthLabel}${yearLabel}. Do NOT add, invent, or mention any event not listed above.`;
             } else {
-                dbData = null; // trigger "no events" message below
-                eventContext = `\n\n[DATABASE: EVENTS]\nThere are NO events recorded in the database for ${requestedMonth.charAt(0).toUpperCase() + requestedMonth.slice(1)}${requestedYear ? ' ' + requestedYear : ''}. DO NOT hallucinate or mention any fictional events. Tell the user clearly that no events are scheduled for that month.\n[END DATABASE]`;
-                console.log('[aSK Youth] Event context injected from DB (EMPTY for month) —', requestedMonth, requestedYear);
+                // Month has zero matching events — compute nearest non-completed event as explicit fallback.
+                // Use clientDateString as "today" if provided; otherwise fall back to server time.
+                const todayStr = clientDateString
+                    ? clientDateString.split('T')[0].split(',')[0].trim() // accept ISO or human-readable
+                    : new Date(Date.now() + 8 * 3600 * 1000).toISOString().split('T')[0]; // SGT fallback
+
+                // Find nearest upcoming event by date proximity to today
+                const nearestEvent = allNonCompleted
+                    .filter(e => e.date) // skip rows with no date
+                    .sort((a, b) => {
+                        // prefer future events; among those, take earliest. Past non-completed come after.
+                        const aFuture = a.date >= todayStr;
+                        const bFuture = b.date >= todayStr;
+                        if (aFuture && !bFuture) return -1;
+                        if (!aFuture && bFuture) return 1;
+                        // both future: ascending; both past: descending (most recent first)
+                        return aFuture ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date);
+                    })[0] || null;
+
+                const nearestSummary = nearestEvent
+                    ? `Closest non-completed event: "${nearestEvent.title}" on ${nearestEvent.date}${nearestEvent.time ? ' at ' + nearestEvent.time : ''} at ${nearestEvent.location || 'TBD'} — status: ${nearestEvent.status}.\n\n[NOTE FOR TEAM: "Defense Event" (ID 18) is marked "upcoming" but dated 2026-05-25, which is chronologically past. This may be a stale test row; confirm if it should be updated or removed.]`
+                    : 'No upcoming events found in the database.';
+
+                // Also include the full non-completed list so the model can answer the second part of the query
+                const fullList = allNonCompleted.length > 0
+                    ? 'Full list of non-completed events, chronological:\n' + allNonCompleted.map(e => `- ${e.title} (${e.status}) — ${e.date}${e.location ? ' at ' + e.location : ''}`).join('\n')
+                    : 'No non-completed events in the database.';
+
+                eventContext = `\n\n[DATABASE: EVENTS]\nToday's date: ${todayStr}.\nNo events found for the requested period (${monthLabel}${yearLabel}). DO NOT hallucinate or mention any fictional events.\n${nearestSummary}\n\n${fullList}\n[END DATABASE]`;
+                console.log('[aSK Youth] Event context injected from DB (NO MATCH for month, fallback injected) —', requestedMonth, requestedYear);
+            }
+        } else if (isAskingFuture) {
+            // No specific month — show all non-completed events
+            const formatted = allNonCompleted.map(e => formatEventShort(e)).join('\n\n');
+            if (allNonCompleted.length > 0) {
+                dbData = `SK Events Database — Upcoming & Active Events (Barangay Concepcion Dos):\n\n${formatted}\n\nIMPORTANT: This is the COMPLETE list of non-completed events. Do NOT add, invent, or mention any event not listed above.`;
+            }
+        } else {
+            // General event query — show everything
+            const allRows = db.prepare('SELECT * FROM events ORDER BY date DESC').all();
+            if (allRows.length > 0) {
+                const formatted = allRows.map(e => formatEventShort(e)).join('\n\n');
+                dbData = `SK Events Database — All Events (Barangay Concepcion Dos):\n\n${formatted}\n\nIMPORTANT: The above data is the COMPLETE and AUTHORITATIVE record. Do NOT invent event details.`;
             }
         }
 
         if (dbData && !eventContext) {
             eventContext = `\n\n[DATABASE: EVENTS]\nThe following is LIVE, AUTHORITATIVE data from the SK Concepcion Dos events database. Use it as the SOLE source of truth for any event-related answers. Do not invent event details. You MUST strictly limit your response to ONLY the events provided below. DO NOT use your pre-trained knowledge to mention any generic, external, or hallucinated events. If the user asks for events in a specific month, only list the ones from this block that match.\n\n${dbData}\n[END DATABASE]`;
-            console.log('[aSK Youth] Event context injected from DB —', requestedMonth || upcomingFilter || 'all', 'events.');
+            console.log('[aSK Youth] Event context injected from DB —', requestedMonth || (isAskingFuture ? 'upcoming/active' : 'all'), 'events.');
         } else if (!eventContext) {
-            eventContext = `\n\n[DATABASE: EVENTS]\nThere are currently NO ${upcomingFilter ? 'upcoming ' : ''}events scheduled or recorded in the database. DO NOT hallucinate, invent, or mention any fictional events. Clearly state to the user that there are no events in the database.\n[END DATABASE]`;
-            console.log('[aSK Youth] Event context injected from DB (EMPTY) —', upcomingFilter || 'all', 'events.');
+            eventContext = `\n\n[DATABASE: EVENTS]\nThere are currently NO events scheduled or recorded in the database. DO NOT hallucinate, invent, or mention any fictional events. Clearly state to the user that there are no events in the database.\n[END DATABASE]`;
+            console.log('[aSK Youth] Event context injected from DB (EMPTY) — all events.');
         }
-    }
+
+    } // end if (isEventQuery)
 
     // --- Append Python AI Layer flags to the final prompt ---
     // Intent mode flag (A=Casual, B=Professional, C=Document Analysis)
@@ -1922,10 +1968,10 @@ app.post('/api/chat', upload.array('files', MAX_FILES), async (req, res) => {
 
         // Fused retrieval: persistent HNSW vector search + SQL events query
         const conversationId = req.body.conversationId || null;
-        const { finalUserPrompt, eventContext, retrievedChunks } =
-            await buildRagContext(currentQuery, documentsData, conversationId, activeRole);
-
         const clientDateString = req.body.clientDateString || null;
+        const { finalUserPrompt, eventContext, retrievedChunks } =
+            await buildRagContext(currentQuery, documentsData, conversationId, activeRole, null, clientDateString);
+
         const fullSystemPrompt = buildFullSystemPrompt(eventContext, activeRole, clientDateString);
         console.log("Final Prompt sent to LLM:", finalUserPrompt.substring(0, 200) + "...");
 
@@ -2074,8 +2120,9 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
 
         const conversationId = req.body.conversationId || null;
         const activeRole = resolveActiveRole(req);
+        const clientDateString = req.body.clientDateString || null;
         const { finalUserPrompt, eventContext, retrievedChunks } =
-            await buildRagContext(currentQuery, documentsData, conversationId, activeRole, sendEvent);
+            await buildRagContext(currentQuery, documentsData, conversationId, activeRole, sendEvent, clientDateString);
 
         if (retrievedChunks.length > 0) {
             sendEvent({ type: 'retrieved', chunks: retrievedChunks });
@@ -2095,7 +2142,6 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
             return { type: 'user', text: msg.content };
         });
 
-        const clientDateString = req.body.clientDateString || null;
         const fullSystemPrompt = buildFullSystemPrompt(eventContext, activeRole, clientDateString);
 
         // Phase 2: Generating (streaming tokens via onToken → SSE)

@@ -37,7 +37,7 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 const PORT         = parseInt(process.env.PORT)             || 3001;
 const CORS_ORIGINS = process.env.CORS_ORIGINS               || 'http://localhost:5174';
 const MAX_FILE_MB  = parseInt(process.env.MAX_FILE_SIZE_MB) || 10;
-const MAX_FILES    = parseInt(process.env.MAX_FILES)         || 5;
+const MAX_FILES    = parseInt(process.env.MAX_FILES)         || 8;
 const TOP_K        = parseInt(process.env.TOP_K)             || 5;
 const VECTOR_DIR   = path.join(__dirname, process.env.VECTOR_STORE_DIR || 'data');
 const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';

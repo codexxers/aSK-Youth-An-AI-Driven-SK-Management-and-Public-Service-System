@@ -2527,7 +2527,7 @@ function App() {
     setSelectedFiles(prev => {
       const combined = [...prev, ...dropped];
       const unique = combined.filter((f, i, arr) => arr.findIndex(x => x.name === f.name) === i);
-      return unique.slice(0, 5);
+      return unique.slice(0, 8);
     });
   };
 
@@ -2546,7 +2546,7 @@ function App() {
     setSelectedFiles(prev => {
       const combined = [...prev, ...pastedFiles];
       const unique = combined.filter((f, i, arr) => arr.findIndex(x => x.name === f.name) === i);
-      return unique.slice(0, 5);
+      return unique.slice(0, 8);
     });
   };
 
@@ -3382,13 +3382,13 @@ function App() {
                     <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
                       <div className="flex items-center gap-2 px-4 py-2 bg-cyan-950/80 border border-cyan-500 rounded-lg text-cyan-400 font-mono text-xs tracking-widest uppercase">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                        Drop files to attach (max 5)
+                        Drop files to attach (max 8)
                       </div>
                     </div>
                   )}
                    <form onSubmit={sendMessage} className="max-w-4xl mx-auto flex flex-col gap-2">
 
-                      {/* File attachment chips — one per selected file, max 5 */}
+                      {/* File attachment chips — one per selected file, max 8 */}
                       {selectedFiles.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {selectedFiles.map((f, idx) => (
@@ -3405,8 +3405,8 @@ function App() {
                               </button>
                             </div>
                           ))}
-                          {selectedFiles.length >= 5 && (
-                            <span className="self-center text-[10px] font-mono text-amber-500 tracking-wider">MAX 5 FILES</span>
+                          {selectedFiles.length >= 8 && (
+                            <span className="self-center text-[10px] font-mono text-amber-500 tracking-wider">MAX 8 FILES</span>
                           )}
                         </div>
                       )}
@@ -3426,7 +3426,7 @@ function App() {
                             setSelectedFiles(prev => {
                               const combined = [...prev, ...picked];
                               const unique = combined.filter((f, i, arr) => arr.findIndex(x => x.name === f.name) === i);
-                              return unique.slice(0, 5);
+                              return unique.slice(0, 8);
                             });
                             e.target.value = '';
                           }}
@@ -3434,8 +3434,8 @@ function App() {
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          disabled={loading || selectedFiles.length >= 5}
-                          title={selectedFiles.length >= 5 ? "Max 5 files reached" : "Attach files (PDF, DOCX, TXT) — up to 5"}
+                          disabled={loading || selectedFiles.length >= 8}
+                          title={selectedFiles.length >= 8 ? "Max 8 files reached" : "Attach files (PDF, DOCX, TXT) — up to 8"}
                           className="shrink-0 p-3 rounded-lg border border-slate-700 bg-slate-900/80 text-slate-400 hover:text-cyan-400 hover:border-cyan-600 transition-all disabled:opacity-40"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>

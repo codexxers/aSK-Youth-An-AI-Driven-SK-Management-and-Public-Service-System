@@ -15,6 +15,7 @@ import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import QRCode from 'qrcode';
+import os from 'os';
 import { generateResponse } from './llm_engine.js';
 
 const require     = createRequire(import.meta.url);
@@ -591,6 +592,31 @@ db.exec(`
   );
 `);
 
+// ── FAQ Entries table (panelist suggestion #1) ──────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS faq_entries (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    question      TEXT NOT NULL,
+    answer        TEXT NOT NULL,
+    category      TEXT DEFAULT 'general',
+    display_order INTEGER DEFAULT 0,
+    status        TEXT DEFAULT 'published' CHECK(status IN ('published','draft','archived')),
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+// ── category_other_label column for events (panelist suggestion #2) ─────────
+try {
+    const evtCols = db.pragma('table_info(events)').map(c => c.name);
+    if (!evtCols.includes('category_other_label')) {
+        db.exec('ALTER TABLE events ADD COLUMN category_other_label TEXT;');
+        console.log('[aSK Youth] events.category_other_label column added.');
+    }
+} catch (e) {
+    console.warn('[aSK Youth] category_other_label migration skipped:', e.message);
+}
+
 // Seed default users if empty
 const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get();
 if (userCount.c === 0) {
@@ -627,6 +653,24 @@ if (logCount.c < 5) {
     stmt.run('System Administrator', 'admin', 'update_user', 'officer', 'Changed role to officer', '127.0.0.1');
     stmt.run('SK Chairperson', 'chairman', 'view_reports', 'reports', 'Generated Q4 financial report', '192.168.1.15');
     console.log('[aSK Youth] Sparse logs detected. Seeded with realistic data.');
+}
+
+// Seed starter FAQ entries if table empty
+const faqCount = db.prepare('SELECT COUNT(*) as c FROM faq_entries').get();
+if (faqCount.c === 0) {
+    const faqInsert = db.prepare('INSERT INTO faq_entries (question, answer, category, display_order, status) VALUES (?, ?, ?, ?, ?)');
+    const seedFaqs = db.transaction(() => {
+        faqInsert.run('What is aSK//YOUTH AI?', 'aSK//YOUTH AI is an AI-powered platform built for the Sangguniang Kabataan (SK) of Barangay Concepcion Dos, Marikina City. It helps SK officials manage events, track attendance, generate official documents, and allows youth constituents to query SK programs and submit suggestions — all in one unified system.', 'general', 1, 'published');
+        faqInsert.run('How do I view upcoming SK events?', 'Navigate to the "Event Management" module from the sidebar, or ask the AI Assistant: "What are the upcoming SK events?" It will display real-time event information from the database.', 'events', 2, 'published');
+        faqInsert.run('How does QR attendance scanning work?', 'Each SK event has a unique QR code. Scan it with your phone camera or the in-app QR Scanner. Registered members are automatically logged; guests enter their name and details on the scan screen. Attendance is recorded instantly.', 'attendance', 3, 'published');
+        faqInsert.run("What should I do if the QR code won't scan?", 'Ensure your camera is focused and there is good lighting. If the issue persists, ask an SK officer to refresh the QR code for that event, or approach the officer on duty to have your attendance manually recorded.', 'attendance', 4, 'published');
+        faqInsert.run('How do I submit a suggestion or feedback to the SK?', 'Go to the "Suggestions" module in the sidebar, type your suggestion, choose a category, and submit. SK officers and the Chairperson can review and respond. Submissions can be kept anonymous.', 'participation', 5, 'published');
+        faqInsert.run('What is the ABYIP?', 'ABYIP stands for Annual Barangay Youth Investment Program — the official budget and project plan for SK-funded youth programs for the year. It outlines planned projects, objectives, target beneficiaries, and allocated budgets. You can ask the AI Assistant about specific ABYIP projects.', 'general', 6, 'published');
+        faqInsert.run('Can I ask the AI about past SK programs and budgets?', 'Yes! The AI Assistant is knowledgeable about general SK programs and services. Specific historical budget details may be available to SK officers. Feel free to ask — the assistant will share what it is authorized to provide based on your role.', 'general', 7, 'published');
+        faqInsert.run('Where do I find events happening near me?', 'All SK events are held within Barangay Concepcion Dos, Marikina City, unless stated otherwise. Check the "Event Management" module or ask the AI: "Are there any events this month?"', 'events', 8, 'published');
+    });
+    seedFaqs();
+    console.log('[aSK Youth] Starter FAQ entries seeded (8 entries).');
 }
 
 // Helper function to write system logs safely
@@ -1465,6 +1509,29 @@ vectorStore.init()
         } catch (seedErr) {
             console.error('[VectorStore] Auto-seed error:', seedErr);
         }
+
+        // Auto-seed FAQ to Global Public Knowledge Base
+        try {
+            const hasFaqChunks = Array.from(vectorStore.metadata.values())
+                .some(c => c.conversationId === 'global_public');
+            
+            if (!hasFaqChunks) {
+                console.log('[VectorStore] FAQ knowledge missing. Auto-seeding...');
+                const faqRows = db.prepare("SELECT * FROM faq_entries WHERE status='published'").all();
+                if (faqRows.length > 0) {
+                    const faqChunks = faqRows.map(r => ({
+                        text: `Q: ${r.question}\nA: ${r.answer}`,
+                        documentName: 'FAQ Database',
+                        chunkIdx: r.id,
+                        conversationId: 'global_public'
+                    }));
+                    await vectorStore.addChunks(faqChunks);
+                    console.log(`[VectorStore] FAQ auto-seeding complete (${faqChunks.length} chunks).`);
+                }
+            }
+        } catch (faqErr) {
+            console.error('[VectorStore] FAQ Auto-seed error:', faqErr);
+        }
     })
     .catch(err => console.error('[VectorStore] Init error:', err));
 
@@ -1521,8 +1588,18 @@ function isCasualQuery(query) {
     return false;
 }
 
+// GLOBAL_SCOPES: defines which conversationId scopes bypass thread isolation and who can see them.
+// global_admin  — admin-tier institutional knowledge (ABYIP, SK procedures), officer+ only
+// global_public — public FAQ content, all roles including youth/guest
+const GLOBAL_SCOPES = {
+    global_admin: { allowedRoles: ['officer', 'chairman', 'system_admin'] },
+    global_public: { allowedRoles: null } // null = all roles
+};
+
+// Track seen conversation IDs for the one-time notification nudge (Task 4.3)
+const _seenConversations = new Set();
+
 async function buildRagContext(currentQuery, documentsData, conversationId = null, activeRole = 'youth') {
-    const GLOBAL_ADMIN_SCOPE = 'global_admin';
     let retrievedChunks  = [];
     let finalUserPrompt  = currentQuery;
 
@@ -1624,11 +1701,17 @@ async function buildRagContext(currentQuery, documentsData, conversationId = nul
         const queryVec  = await embed(currentQuery);
         const rawRanked = await vectorStore.search(queryVec, TOP_K);
 
-        // Thread isolation: discard chunks from other conversations.
-        // Score threshold: discard chunks with cosine similarity below 0.20.
+        // Thread isolation: admit chunk if it belongs to current conversation,
+        // OR its conversationId is a GLOBAL_SCOPE key visible to the active role.
         const MIN_SIMILARITY = 0.20;
         const ranked = rawRanked
-            .filter(r => !conversationId || r.conversationId === conversationId)
+            .filter(r => {
+                if (!conversationId || r.conversationId === conversationId) return true;
+                const scope = GLOBAL_SCOPES[r.conversationId];
+                if (!scope) return false;
+                if (scope.allowedRoles === null) return true; // public scope
+                return scope.allowedRoles.includes(activeRole);
+            })
             .filter(r => r.score >= MIN_SIMILARITY);
 
         if (rawRanked.length !== ranked.length) {
@@ -1740,15 +1823,15 @@ ${c.text}
         finalUserPrompt += languageFlag;
     }
 
-    // 4. Admin-Gated Global Knowledge Base
-    if (['admin', 'system_admin', 'chairman', 'officer'].includes(activeRole) && vectorStore.hasChunks()) {
+    // 4. Admin-Gated Global Knowledge Base (global_admin scope)
+    if (GLOBAL_SCOPES.global_admin.allowedRoles.includes(activeRole) && vectorStore.hasChunks()) {
         const queryVec = await embed(currentQuery);
         // Ensure all ABYIP projects can be retrieved by overriding default TOP_K
         const adminRanked = await vectorStore.search(queryVec, 15);
         
-        const ADMIN_THRESHOLD = parseFloat(process.env.GLOBAL_KB_RELEVANCE_THRESHOLD || "0.35");
+        const ADMIN_THRESHOLD = parseFloat(process.env.GLOBAL_KB_RELEVANCE_THRESHOLD || '0.35');
         const adminFiltered = adminRanked
-            .filter(r => r.conversationId === GLOBAL_ADMIN_SCOPE)
+            .filter(r => r.conversationId === 'global_admin')
             .filter(r => r.score >= ADMIN_THRESHOLD);
             
         if (adminFiltered.length > 0) {
@@ -1759,6 +1842,25 @@ ${c.text}
             
             finalUserPrompt += `\n\n[BACKGROUND_REFERENCE — INTERNAL, ADMIN-TIER ONLY, DO NOT CITE UNLESS RULES BELOW SAY SO]\n${adminBlocks}`;
         }
+    }
+
+    // Task 4.3 — One-time chat nudge for upcoming events on first message of a new conversation
+    if (conversationId && !_seenConversations.has(conversationId)) {
+        _seenConversations.add(conversationId);
+        try {
+            const windowDays = parseInt(process.env.UPCOMING_EVENT_WINDOW_DAYS || '3');
+            const now = new Date();
+            const cutoff = new Date(now.getTime() + windowDays * 24 * 60 * 60 * 1000);
+            const nowStr = now.toISOString().slice(0, 10);
+            const cutoffStr = cutoff.toISOString().slice(0, 10);
+            const upcomingNudge = db.prepare(
+                "SELECT title, date, location FROM events WHERE status='upcoming' AND date >= ? AND date <= ? ORDER BY date ASC"
+            ).all(nowStr, cutoffStr);
+            if (upcomingNudge.length > 0) {
+                const nudgeList = upcomingNudge.map(e => `"${e.title}" on ${e.date}${e.location ? ' at ' + e.location : ''}`).join(', ');
+                finalUserPrompt += `\n\n[CONTEXT: ${upcomingNudge.length} event(s) happening within the next ${windowDays} days — ${nudgeList}. You may mention this naturally once if relevant to the conversation. Do not force it into every reply.]`;
+            }
+        } catch (_) { /* non-fatal */ }
     }
 
     return { finalUserPrompt, eventContext, retrievedChunks };
@@ -2318,6 +2420,226 @@ app.delete('/conversations/:id', (req, res) => {
     conversations.delete(id);
     threadDocuments.delete(id); // Clean up thread-scoped document store
     res.json({ success: true, id });
+});
+
+// ===========================================================================
+// ── FAQ API routes (Panelist Suggestion #1) ─────────────────────────────────
+// ===========================================================================
+
+// GET /api/faq — all authenticated users; youth/guest see published only
+app.get('/api/faq', (req, res) => {
+    try {
+        const role = resolveActiveRole(req);
+        const elevatedRoles = ['admin', 'system_admin', 'chairman', 'officer'];
+        let rows;
+        if (elevatedRoles.includes(role)) {
+            rows = db.prepare('SELECT * FROM faq_entries ORDER BY display_order ASC, created_at ASC').all();
+        } else {
+            rows = db.prepare("SELECT * FROM faq_entries WHERE status='published' ORDER BY display_order ASC, created_at ASC").all();
+        }
+        res.json(rows);
+    } catch (err) {
+        console.error('[FAQ GET] Error:', err);
+        res.status(500).json({ error: 'Failed to fetch FAQ entries' });
+    }
+});
+
+// POST /api/faq — admin + chairman only
+app.post('/api/faq', (req, res) => {
+    const role = resolveActiveRole(req);
+    if (!['admin', 'system_admin', 'chairman'].includes(role))
+        return res.status(403).json({ error: 'Forbidden' });
+    try {
+        const { question, answer, category = 'general', display_order = 0, status = 'published' } = req.body;
+        if (!question || !answer) return res.status(400).json({ error: 'question and answer are required' });
+        const result = db.prepare(
+            'INSERT INTO faq_entries (question, answer, category, display_order, status) VALUES (?, ?, ?, ?, ?)'
+        ).run(question.trim(), answer.trim(), category, Number(display_order), status);
+        const actor = req.headers['x-actor'] || 'Admin';
+        writeLog(actor, role, 'create_faq', question.slice(0, 60), 'FAQ entry created', req.ip);
+        res.status(201).json({ id: result.lastInsertRowid, success: true });
+    } catch (err) {
+        console.error('[FAQ POST] Error:', err);
+        res.status(500).json({ error: 'Failed to create FAQ entry' });
+    }
+});
+
+// PATCH /api/faq/:id — admin + chairman only
+app.patch('/api/faq/:id', (req, res) => {
+    const role = resolveActiveRole(req);
+    if (!['admin', 'system_admin', 'chairman'].includes(role))
+        return res.status(403).json({ error: 'Forbidden' });
+    try {
+        const { id } = req.params;
+        const { question, answer, category, display_order, status } = req.body;
+        const updates = [];
+        const params = [];
+        if (question !== undefined) { updates.push('question = ?'); params.push(question.trim()); }
+        if (answer  !== undefined) { updates.push('answer = ?');   params.push(answer.trim());   }
+        if (category !== undefined){ updates.push('category = ?'); params.push(category);         }
+        if (display_order !== undefined) { updates.push('display_order = ?'); params.push(Number(display_order)); }
+        if (status !== undefined) { updates.push('status = ?'); params.push(status); }
+        if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
+        updates.push('updated_at = CURRENT_TIMESTAMP');
+        params.push(id);
+        const result = db.prepare(`UPDATE faq_entries SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+        if (result.changes === 0) return res.status(404).json({ error: 'FAQ entry not found' });
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[FAQ PATCH] Error:', err);
+        res.status(500).json({ error: 'Failed to update FAQ entry' });
+    }
+});
+
+// DELETE /api/faq/:id — soft-delete (archived), admin only
+app.delete('/api/faq/:id', (req, res) => {
+    const role = resolveActiveRole(req);
+    if (!['admin', 'system_admin'].includes(role))
+        return res.status(403).json({ error: 'Forbidden' });
+    try {
+        const { id } = req.params;
+        const result = db.prepare(
+            "UPDATE faq_entries SET status='archived', updated_at=CURRENT_TIMESTAMP WHERE id=?"
+        ).run(id);
+        if (result.changes === 0) return res.status(404).json({ error: 'FAQ entry not found' });
+        const actor = req.headers['x-actor'] || 'Admin';
+        writeLog(actor, role, 'archive_faq', id, 'FAQ entry archived', req.ip);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[FAQ DELETE] Error:', err);
+        res.status(500).json({ error: 'Failed to archive FAQ entry' });
+    }
+});
+
+// ===========================================================================
+// ── System Health (Panelist Suggestion #3) ──────────────────────────────────
+// ===========================================================================
+
+async function getSystemHealth() {
+    const totalMem = os.totalmem();
+    const freeMem  = os.freemem();
+    const ramUsagePct = Math.round((1 - freeMem / totalMem) * 100);
+
+    // Per-service status from tool router
+    let serviceStatuses = null;
+    try {
+        const svcRes = await axios.get(ROUTER_URL.replace('/route', '/services'), { timeout: 2500 });
+        serviceStatuses = svcRes.data;
+    } catch (_) { /* unavailable */ }
+
+    // HNSW index stats
+    const hnswChunkCount = vectorStore.hasChunks ? (vectorStore.metadata ? vectorStore.metadata.size : 0) : 0;
+    let hnswIndexSizeMB = null;
+    try {
+        const idxPath = path.join(VECTOR_DIR, 'hnsw.index');
+        if (fs.existsSync(idxPath)) {
+            hnswIndexSizeMB = parseFloat((fs.statSync(idxPath).size / 1024 / 1024).toFixed(2));
+        }
+    } catch (_) {}
+
+    // DB size
+    let dbSizeMB = null;
+    try {
+        dbSizeMB = parseFloat((fs.statSync(DB_PATH).size / 1024 / 1024).toFixed(2));
+    } catch (_) {}
+
+    // Orphaned event_logs
+    let orphanedEventLogs = 0;
+    try {
+        orphanedEventLogs = db.prepare(
+            'SELECT COUNT(*) as c FROM event_logs WHERE event_id NOT IN (SELECT id FROM events)'
+        ).get().c;
+    } catch (_) {}
+
+    return {
+        ramUsagePct,
+        totalMemGB: parseFloat((totalMem / 1024 / 1024 / 1024).toFixed(2)),
+        freeMemGB:  parseFloat((freeMem  / 1024 / 1024 / 1024).toFixed(2)),
+        pythonToolsOnline,
+        serviceStatuses,
+        hnswChunkCount,
+        hnswIndexSizeMB,
+        dbSizeMB,
+        processUptimeSeconds: Math.round(process.uptime()),
+        orphanedEventLogs,
+    };
+}
+
+// GET /api/admin/system-health — admin + chairman only
+app.get('/api/admin/system-health', async (req, res) => {
+    const role = resolveActiveRole(req);
+    if (!['admin', 'system_admin', 'chairman'].includes(role))
+        return res.status(403).json({ error: 'Forbidden' });
+    try {
+        const health = await getSystemHealth();
+        res.json(health);
+    } catch (err) {
+        console.error('[System Health] Error:', err);
+        res.status(500).json({ error: 'Failed to retrieve system health' });
+    }
+});
+
+// POST /api/admin/backup-db — admin only
+app.post('/api/admin/backup-db', (req, res) => {
+    const role = resolveActiveRole(req);
+    if (!['admin', 'system_admin'].includes(role))
+        return res.status(403).json({ error: 'Forbidden' });
+    try {
+        const backupDir = path.join(__dirname, 'data', 'backups');
+        if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+        const backupPath = path.join(backupDir, `events.db.backup-${Date.now()}`);
+        fs.copyFileSync(DB_PATH, backupPath);
+        const actor = req.headers['x-actor'] || 'Admin';
+        writeLog(actor, role, 'backup_db', backupPath, 'Database backup created', req.ip);
+        res.json({ success: true, path: backupPath });
+    } catch (err) {
+        console.error('[Backup DB] Error:', err);
+        res.status(500).json({ error: 'Backup failed: ' + err.message });
+    }
+});
+
+// POST /api/admin/purge-logs — admin only
+app.post('/api/admin/purge-logs', (req, res) => {
+    const role = resolveActiveRole(req);
+    if (!['admin', 'system_admin'].includes(role))
+        return res.status(403).json({ error: 'Forbidden' });
+    try {
+        const days = parseInt(req.body?.days || 30);
+        if (isNaN(days) || days < 1) return res.status(400).json({ error: 'Invalid days value' });
+        const result = db.prepare(
+            `DELETE FROM system_logs WHERE created_at < datetime('now', '-${days} days')`
+        ).run();
+        const actor = req.headers['x-actor'] || 'Admin';
+        writeLog(actor, role, 'purge_logs', `${days} days`, `Purged ${result.changes} log entries older than ${days} days`, req.ip);
+        res.json({ success: true, deleted: result.changes });
+    } catch (err) {
+        console.error('[Purge Logs] Error:', err);
+        res.status(500).json({ error: 'Purge failed: ' + err.message });
+    }
+});
+
+// ===========================================================================
+// ── Notifications (Panelist Suggestion #4) ──────────────────────────────────
+// ===========================================================================
+
+// GET /api/notifications/upcoming — all authenticated roles
+app.get('/api/notifications/upcoming', (req, res) => {
+    const role = resolveActiveRole(req);
+    if (!role) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+        const windowDays = parseInt(process.env.UPCOMING_EVENT_WINDOW_DAYS || '3');
+        const now = new Date();
+        const cutoff = new Date(now.getTime() + windowDays * 24 * 60 * 60 * 1000);
+        const nowStr    = now.toISOString().slice(0, 10);
+        const cutoffStr = cutoff.toISOString().slice(0, 10);
+        const rows = db.prepare(
+            "SELECT id, title, date, time, location, category, description FROM events WHERE status='upcoming' AND date >= ? AND date <= ? ORDER BY date ASC"
+        ).all(nowStr, cutoffStr);
+        res.json({ count: rows.length, windowDays, events: rows });
+    } catch (err) {
+        console.error('[Notifications] Error:', err);
+        res.status(500).json({ error: 'Failed to fetch upcoming notifications' });
+    }
 });
 
 // ---------------------------------------------------------------------------

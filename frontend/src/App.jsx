@@ -139,8 +139,8 @@ function ExportResponseButton({ messageContent, hasOfficialDocument, officialDoc
 // ---------------------------------------------------------------------------
 // EventsAnalyticsModule — Phase C: Full CRUD + Analytics + Document Import
 // ---------------------------------------------------------------------------
-const EVENT_CATEGORIES = ['sports','seminar','scholarship','assembly','community','livelihood','general','cultural','health'];
-const EMPTY_EVENT_FORM = { title:'', description:'', category:'general', date:'', time:'', location:'', organizer:'', status:'upcoming', requirements:'', contact:'', attendees:0, male_count:0, female_count:0, staff_count:'', budget_allotted:'' };
+const EVENT_CATEGORIES = ['sports','seminar','scholarship','assembly','community','livelihood','general','cultural','health','others'];
+const EMPTY_EVENT_FORM = { title:'', description:'', category:'general', category_other_label:'', date:'', time:'', location:'', organizer:'', status:'upcoming', requirements:'', contact:'', attendees:0, male_count:0, female_count:0, staff_count:'', budget_allotted:'' };
 
 function EventFormModal({ event, onClose, onSaved, authHeaders }) {
   const isEdit = !!event;
@@ -215,6 +215,9 @@ function EventFormModal({ event, onClose, onSaved, authHeaders }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           <div className="col-span-2"><label className={labelCls}>Title</label><input value={form.title} onChange={e => set('title', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Category</label><select value={form.category} onChange={e => set('category', e.target.value)} className={inputCls}>{EVENT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          {form.category === 'others' && (
+            <div className="col-span-1 sm:col-span-2"><label className={labelCls}>Specify Category</label><input value={form.category_other_label || ''} onChange={e => set('category_other_label', e.target.value)} placeholder="e.g. Blood Donation" className={inputCls} /></div>
+          )}
           <div><label className={labelCls}>Status</label><select value={form.status} onChange={e => set('status', e.target.value)} className={inputCls}><option value="upcoming">Upcoming</option><option value="completed">Completed</option></select></div>
           <div><label className={labelCls}>Date</label><input type="date" value={form.date} onChange={e => set('date', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Time</label><input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} /></div>
@@ -238,6 +241,250 @@ function EventFormModal({ event, onClose, onSaved, authHeaders }) {
         <div className="flex justify-end gap-2 mt-3">
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm bg-slate-700 text-slate-300 hover:bg-slate-600">Cancel</button>
           <button onClick={handleSave} disabled={saving || !form.title} className="px-4 py-2 rounded-lg text-sm bg-cyan-600 text-white hover:bg-cyan-500 disabled:opacity-40">{saving ? 'Saving...' : isEdit ? 'Update' : 'Create'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// NotificationBell — Polling notifications (Suggestion #4)
+// ---------------------------------------------------------------------------
+function NotificationBell({ authHeaders, setCurrentView }) {
+  const [data, setData] = useState({ count: 0, events: [] });
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchNotifs = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/notifications/upcoming`, { headers: authHeaders() });
+        if (res.ok) setData(await res.json());
+      } catch (e) {}
+    };
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 300000); // 5 mins
+    return () => clearInterval(interval);
+  }, [authHeaders]);
+
+  return (
+    <div className="fixed top-3 right-4 sm:left-16 sm:right-auto z-[100]">
+      <button onClick={() => setOpen(!open)} className="relative p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100/80 backdrop-blur-md rounded-lg shadow-sm border border-slate-200/50 transition-all flex items-center justify-center">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+        {data.count > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />}
+      </button>
+      {open && (
+        <div className="absolute right-0 sm:left-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden z-[101]">
+          <div className="bg-slate-50 px-4 py-2 border-b border-slate-200">
+            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Upcoming Events ({data.count})</h3>
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {data.events.length === 0 ? (
+              <p className="p-4 text-xs text-slate-500 text-center">No upcoming events in the next {data.windowDays || 3} days.</p>
+            ) : (
+              data.events.map(ev => (
+                <div key={ev.id} onClick={() => { setOpen(false); setCurrentView('events'); }} className="p-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors">
+                  <p className="text-sm font-bold text-slate-800 line-clamp-1">{ev.title}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{ev.date} {ev.time && `• ${ev.time}`}</p>
+                  <p className="text-[10px] text-slate-400 font-mono mt-1">{ev.location || 'Concepcion Dos'}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FaqModule — (Suggestion #1)
+// ---------------------------------------------------------------------------
+function FaqModule({ authHeaders, authUser }) {
+  const [faqs, setFaqs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [expanded, setExpanded] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFaq, setEditFaq] = useState(null);
+
+  const canEdit = ['admin', 'chairman'].includes(authUser?.role);
+
+  const fetchFaqs = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/faq`, { headers: authHeaders() });
+      if (res.ok) setFaqs(await res.json());
+    } catch (e) { } finally { setLoading(false); }
+  };
+  useEffect(() => { fetchFaqs(); }, []);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const url = editFaq.id ? `${API_BASE}/api/faq/${editFaq.id}` : `${API_BASE}/api/faq`;
+    const method = editFaq.id ? 'PATCH' : 'POST';
+    try {
+      const res = await fetch(url, { method, headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(editFaq) });
+      if (res.ok) { setIsEditing(false); setEditFaq(null); fetchFaqs(); }
+    } catch (e) { alert('Error saving FAQ'); }
+  };
+
+  const handleArchive = async (id) => {
+    if (!confirm('Archive this FAQ?')) return;
+    try {
+      await fetch(`${API_BASE}/api/faq/${id}`, { method: 'DELETE', headers: authHeaders() });
+      fetchFaqs();
+    } catch (e) {}
+  };
+
+  const filtered = faqs.filter(f => (f.question + ' ' + f.answer).toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-y-auto">
+      <div className="px-6 py-8 max-w-4xl mx-auto w-full">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-display font-black text-slate-800 tracking-tight">Frequently Asked Questions</h1>
+            <p className="text-slate-500 mt-1">Information about aSK//YOUTH and SK Programs</p>
+          </div>
+          {canEdit && (
+            <button onClick={() => { setEditFaq({ question:'', answer:'', category:'general', display_order:0, status:'published' }); setIsEditing(true); }} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-all text-sm">
+              + New FAQ
+            </button>
+          )}
+        </div>
+
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search FAQs..." className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all mb-6 shadow-sm" />
+
+        {loading ? <div className="animate-pulse flex flex-col gap-4">{[1,2,3].map(i => <div key={i} className="h-16 bg-slate-200 rounded-xl w-full" />)}</div> : (
+          <div className="space-y-3">
+            {filtered.map(faq => (
+              <div key={faq.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <div onClick={() => setExpanded(expanded === faq.id ? null : faq.id)} className="px-5 py-4 cursor-pointer flex justify-between items-center group">
+                  <div className="flex items-center gap-3">
+                    <span className="text-blue-500 font-bold opacity-50 group-hover:opacity-100 transition-opacity">Q.</span>
+                    <h3 className="font-bold text-slate-800">{faq.question}</h3>
+                    {faq.status !== 'published' && <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded-full uppercase font-bold">{faq.status}</span>}
+                  </div>
+                  <svg className={`w-5 h-5 text-slate-400 transition-transform ${expanded === faq.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                </div>
+                {expanded === faq.id && (
+                  <div className="px-5 pb-5 pt-2 border-t border-slate-50 bg-slate-50/50">
+                    <div className="flex gap-3">
+                      <span className="text-slate-400 font-bold opacity-50">A.</span>
+                      <p className="text-slate-600 text-sm leading-relaxed">{faq.answer}</p>
+                    </div>
+                    {canEdit && (
+                      <div className="mt-4 flex gap-2 justify-end">
+                        <button onClick={() => { setEditFaq(faq); setIsEditing(true); }} className="text-xs text-blue-600 font-bold hover:underline">Edit</button>
+                        <button onClick={() => handleArchive(faq.id)} className="text-xs text-red-500 font-bold hover:underline">Archive</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+            {filtered.length === 0 && <p className="text-center text-slate-500 py-8">No FAQs found.</p>}
+          </div>
+        )}
+      </div>
+
+      {isEditing && editFaq && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <form onSubmit={handleSave} className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-4">{editFaq.id ? 'Edit FAQ' : 'Add FAQ'}</h3>
+            <div className="space-y-3">
+              <div><label className="text-xs font-bold text-slate-500">Question</label><input required value={editFaq.question} onChange={e => setEditFaq(p => ({...p, question: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
+              <div><label className="text-xs font-bold text-slate-500">Answer</label><textarea required rows={4} value={editFaq.answer} onChange={e => setEditFaq(p => ({...p, answer: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
+              <div className="grid grid-cols-3 gap-3">
+                <div><label className="text-xs font-bold text-slate-500">Category</label><input value={editFaq.category} onChange={e => setEditFaq(p => ({...p, category: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
+                <div><label className="text-xs font-bold text-slate-500">Order</label><input type="number" value={editFaq.display_order} onChange={e => setEditFaq(p => ({...p, display_order: parseInt(e.target.value)||0}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
+                <div><label className="text-xs font-bold text-slate-500">Status</label><select value={editFaq.status} onChange={e => setEditFaq(p => ({...p, status: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none"><option>published</option><option>draft</option><option>archived</option></select></div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-lg">Cancel</button>
+              <button type="submit" className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg">Save</button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SystemHealthTab — Admin Dashboard (Suggestion #3)
+// ---------------------------------------------------------------------------
+function SystemHealthTab({ authHeaders }) {
+  const [health, setHealth] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchHealth = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/system-health`, { headers: authHeaders() });
+      if (res.ok) setHealth(await res.json());
+    } catch (e) {} finally { setLoading(false); }
+  };
+  useEffect(() => { fetchHealth(); const int = setInterval(fetchHealth, 45000); return () => clearInterval(int); }, []);
+
+  const handleAction = async (endpoint, payload = {}) => {
+    if (!confirm('Proceed with this administrative action?')) return;
+    try {
+      const res = await fetch(`${API_BASE}${endpoint}`, { method: 'POST', headers: authHeaders({'Content-Type':'application/json'}), body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (res.ok) alert('Success: ' + JSON.stringify(data));
+      else alert('Failed: ' + data.error);
+    } catch(e) { alert('Request failed.'); }
+  };
+
+  if (loading) return <div className="p-6 text-slate-400">Loading system metrics...</div>;
+  if (!health) return <div className="p-6 text-red-400">Failed to load system health.</div>;
+
+  return (
+    <div className="p-4 sm:p-6 space-y-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <p className="text-xs font-bold text-slate-500 uppercase">Memory Usage</p>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className={`text-2xl font-black ${health.ramUsagePct > 85 ? 'text-red-500' : 'text-cyan-400'}`}>{health.ramUsagePct}%</span>
+            <span className="text-xs text-slate-400">{health.freeMemGB}GB free</span>
+          </div>
+        </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <p className="text-xs font-bold text-slate-500 uppercase">Python Engine</p>
+          <div className="mt-2 flex items-center gap-2">
+            <span className={`w-3 h-3 rounded-full ${health.pythonToolsOnline ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="text-lg font-bold text-white">{health.pythonToolsOnline ? 'Online' : 'Offline'}</span>
+          </div>
+        </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <p className="text-xs font-bold text-slate-500 uppercase">Vector DB (HNSW)</p>
+          <div className="mt-2">
+            <span className="text-lg font-bold text-cyan-400">{health.hnswChunkCount}</span> <span className="text-xs text-slate-400">chunks</span>
+            <p className="text-[10px] text-slate-500 mt-1">{health.hnswIndexSizeMB || '<1'} MB</p>
+          </div>
+        </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <p className="text-xs font-bold text-slate-500 uppercase">SQLite DB</p>
+          <div className="mt-2">
+            <span className="text-lg font-bold text-cyan-400">{health.dbSizeMB || '<1'} MB</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <h3 className="text-sm font-bold text-white mb-4">Maintenance Actions</h3>
+        <div className="flex flex-wrap gap-3">
+          <button onClick={() => handleAction('/api/admin/backup-db')} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold rounded-lg transition-colors">
+            Backup Database
+          </button>
+          <button onClick={() => handleAction('/api/admin/purge-logs', { days: 30 })} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold rounded-lg transition-colors">
+            Purge Logs (>30 days)
+          </button>
+          {health.orphanedEventLogs > 0 && (
+            <div className="px-4 py-2 bg-amber-900/30 border border-amber-800 text-amber-400 text-xs font-bold rounded-lg flex items-center gap-2">
+              ⚠️ {health.orphanedEventLogs} orphaned logs detected
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -445,7 +692,9 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                     </td>
                     <td className="px-4 py-3">{ev.location || '—'}</td>
                     <td className="px-4 py-3">
-                      <span className="text-xs bg-cyan-900/50 text-cyan-300 px-2 py-0.5 rounded-full">{ev.category}</span>
+                      <span className="text-xs bg-cyan-900/50 text-cyan-300 px-2 py-0.5 rounded-full">
+                        {ev.category === 'others' && ev.category_other_label ? `Others: ${ev.category_other_label}` : ev.category}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${
@@ -986,7 +1235,8 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
         {[
           { id: 'overview', label: 'Analytics', icon: '📊' },
           { id: 'users', label: 'Users', icon: '👥' },
-          ...(effectiveRole === 'admin' ? [{ id: 'logs', label: 'Audit', icon: '📜' }] : [])
+          ...(effectiveRole === 'admin' ? [{ id: 'logs', label: 'Audit', icon: '📜' }] : []),
+          ...(['admin', 'chairman'].includes(effectiveRole) ? [{ id: 'health', label: 'System Health', icon: '🖥️' }] : [])
         ].map(tab => (
           <button
             key={tab.id}
@@ -1317,6 +1567,11 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
               </div>
             )}
           </div>
+        )}
+
+        {/* --- SYSTEM HEALTH TAB (Admin/Chairman Only) --- */}
+        {activeTab === 'health' && ['admin', 'chairman'].includes(effectiveRole) && (
+          <SystemHealthTab authHeaders={authHeaders} />
         )}
       </div>
 
@@ -2191,6 +2446,7 @@ function App() {
       { id: 'suggestions', label: 'Suggestions', emoji: '💡', roles: ['admin','chairman','officer','youth'] },
       { id: 'events', label: 'Event Management', emoji: '📅', roles: ['admin','chairman','officer'] },
       { id: 'reports', label: 'Official Reports', emoji: '🗂️', roles: ['admin','chairman','officer'] },
+      { id: 'faq', label: 'FAQ', emoji: '❓', roles: ['admin','chairman','officer','youth'] },
       { id: 'admin', label: 'Admin Dashboard', emoji: '🛡️', roles: ['admin','chairman'] },
     ];
     return modules.filter(m => m.roles.includes(role));
@@ -2754,7 +3010,12 @@ function App() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
           </button>
+          
+        {/* Navigation Bell */}
+        <NotificationBell authHeaders={authHeaders} setCurrentView={setCurrentView} />
+
         {currentView === 'events' && <EventsAnalyticsModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} setCurrentView={setCurrentView} />}
+        {currentView === 'faq' && <FaqModule authHeaders={authHeaders} authUser={authUser} />}
         {currentView === 'reports' && <ReportsModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />}
         {currentView === 'admin' && <AdminDashboardModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />}
         {currentView === 'scan' && <ScanAttendance authUser={authUser} />}

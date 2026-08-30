@@ -2716,7 +2716,16 @@ function App() {
         });
       }
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      if (!response.ok) {
+        let errorDetail = response.statusText || '';
+        try {
+          const errBody = await response.json();
+          errorDetail = errBody.error || errBody.message || JSON.stringify(errBody);
+        } catch (_) {
+          try { errorDetail = await response.text() || errorDetail; } catch (_) {}
+        }
+        throw new Error(`HTTP ${response.status}: ${errorDetail}`);
+      }
 
       const reader  = response.body.getReader();
       const decoder = new TextDecoder();

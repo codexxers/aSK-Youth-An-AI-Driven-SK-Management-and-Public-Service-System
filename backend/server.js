@@ -1599,7 +1599,7 @@ const GLOBAL_SCOPES = {
 // Track seen conversation IDs for the one-time notification nudge (Task 4.3)
 const _seenConversations = new Set();
 
-async function buildRagContext(currentQuery, documentsData, conversationId = null, activeRole = 'youth') {
+async function buildRagContext(currentQuery, documentsData, conversationId = null, activeRole = 'youth', sendEvent = null) {
     let retrievedChunks  = [];
     let finalUserPrompt  = currentQuery;
 
@@ -1644,6 +1644,7 @@ async function buildRagContext(currentQuery, documentsData, conversationId = nul
         const combinedText = documentsData.map(d => d.documentText).join('\n\n');
         if (combinedText.length > 3000) {
             try {
+                if (sendEvent) sendEvent({ type: 'phase', phase: 'INDEXING_DOCUMENTS', message: 'Generating document summary...' });
                 const sumRes = await axios.post(`${PYTHON_SERVICE_URL}/summarize`, {
                     text: combinedText.slice(0, 10000), // cap input to avoid overwhelming the model
                     max_length: 200
@@ -1664,6 +1665,7 @@ async function buildRagContext(currentQuery, documentsData, conversationId = nul
 
     // 1. Index any newly uploaded document chunks into the persistent store
     if (documentsData.length > 0) {
+        if (sendEvent) sendEvent({ type: 'phase', phase: 'INDEXING_DOCUMENTS', message: 'Embedding document chunks...' });
         const allChunks = [];
         for (const doc of documentsData) {
             const chunks = chunkText(doc.documentText);
@@ -2026,11 +2028,11 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
         aborted = true;
     });
 
-    // Keepalive: send a comment every 15 s to prevent proxy/browser timeouts.
+    // Keepalive: send a comment every 10 s to prevent proxy/browser timeouts.
     const keepAlive = setInterval(() => {
         if (aborted || res.writableEnded) return clearInterval(keepAlive);
         try { res.write(': keepalive\n\n'); } catch (_) {}
-    }, 15000);
+    }, 10000);
 
     const sendEvent = (data) => {
         if (!aborted && !res.writableEnded) {
@@ -2049,8 +2051,13 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
 
         // Extract text from uploaded files
         const documentsData = [];
-        for (const file of filesArr) {
+        if (filesArr.length > 0) {
+            sendEvent({ type: 'phase', phase: 'INDEXING_DOCUMENTS', message: 'Processing uploaded documents...' });
+        }
+        for (let i = 0; i < filesArr.length; i++) {
+            const file = filesArr[i];
             try {
+                sendEvent({ type: 'phase', phase: 'INDEXING_DOCUMENTS', message: `Reading file ${i + 1} of ${filesArr.length}...` });
                 const extracted = await extractTextFromFile(file.buffer, file.mimetype, file.originalname);
                 documentsData.push({ documentText: extracted, documentName: file.originalname });
             } catch (e) {
@@ -2061,16 +2068,14 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
         const currentQuery = messages[messages.length - 1].content;
 
         // Phase 1: Indexing & retrieval
-        if (documentsData.length > 0) {
-            sendEvent({ type: 'phase', phase: 'INDEXING_DOCUMENTS', message: 'Processing uploaded documents...' });
-        } else {
+        if (documentsData.length === 0) {
             sendEvent({ type: 'phase', phase: 'RETRIEVING_CONTEXT', message: 'Searching knowledge base...' });
         }
 
         const conversationId = req.body.conversationId || null;
         const activeRole = resolveActiveRole(req);
         const { finalUserPrompt, eventContext, retrievedChunks } =
-            await buildRagContext(currentQuery, documentsData, conversationId, activeRole);
+            await buildRagContext(currentQuery, documentsData, conversationId, activeRole, sendEvent);
 
         if (retrievedChunks.length > 0) {
             sendEvent({ type: 'retrieved', chunks: retrievedChunks });

@@ -11,7 +11,7 @@
 
 ## Primary Purpose & Target Problem Solved
 
-aSK//YOUTH AI is a full-stack, locally-hosted AI assistant and management platform built for the **Sangguniang Kabataan (SK) of Barangay Concepcion Dos, Marikina City, Philippines**. The SK is the youth governance body of the Philippine barangay system.
+aSK//YOUTH AI is a full-stack, cloud-backed AI assistant and management platform built for the **Sangguniang Kabataan (SK) of Barangay Concepcion Dos, Marikina City, Philippines**. The SK is the youth governance body of the Philippine barangay system.
 
 The system solves five core problems faced by youth local government units:
 
@@ -712,25 +712,27 @@ The `/api/chat/stream` `onToken` callback maintains a stateful `streamBuf` and `
 
 ---
 
-## `backend/llm_config.mjs` — GPU Model Loader
+## `backend/llm_engine.js` — Cloud AI Fallback Cascade Engine
 
-Implements VRAM-aware model loading:
-1. Tries GPU backends in order: `getLlama({gpu:'cuda'})` → `getLlama({gpu:'vulkan'})` → `getLlama({})` (CPU)
-2. Within selected backend, tries GPU layer counts: `[99, 32, 28, 24]` descending
-3. First successful `loadModel()` + `createContext()` pair stored as module-level singletons: `_model`, `_ctx`, `_contextSize`, `_gpuLayers`
-4. Exports `initModelAndContext()` (called once at startup) and `checkMemoryHealth()` (called every 60s)
+The system has migrated away from local LLM inference to a resilient, cloud-based AI API architecture.
 
-### Hardware Fallback & Memory Ladder
+### System Requirements & Accessibility
+Offloading AI inference to the cloud significantly lowers the CPU, RAM, and GPU requirements for the host server. This makes the system highly accessible and cost-effective for barangay-level deployment on standard commodity hardware.
 
-The initialization routine dynamically tests hardware capabilities to avoid Out-Of-Memory (OOM) crashes on 6GB VRAM GPUs (target budget: 5.8 GB).
-- **VRAM Threshold Trigger:** If allocating a specific layer count fails or CUDA driver rejects allocation, the catch block triggers the next step down.
-- **Layer Fallbacks:** 
-  1. `99` (Full offload - requires ~8GB+ VRAM)
-  2. `32` (Partial offload - target for 6GB VRAM)
-  3. `28` (Partial offload - safer 6GB configuration)
-  4. `24` (Minimal offload)
-  5. `CPU` (0 layers - fallback if no compatible GPU is detected)
-- **Memory Monitoring Lifecycle:** `checkMemoryHealth()` runs every 60 seconds using Node's `os.freemem()`. If available RAM drops below 10% (90% ceiling reached), a warning is logged to `system_logs`.
+### API Key Security & Data Flow
+- **Zero Client Exposure:** API keys (`GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`) are managed entirely via backend `.env` variables and are **never** exposed to the React frontend.
+- **Request Flow:** 
+  1. The user submits a prompt on the React frontend.
+  2. The Node.js Express backend intercepts the prompt.
+  3. The backend retrieves RAG context from the SQLite vector database.
+  4. The backend securely constructs the final comprehensive prompt and sends a server-to-server HTTP request to the external AI API.
+  5. The external API response is streamed back to the frontend via SSE.
+
+### Fallback Cascade Architecture
+To guarantee high availability, the engine implements a multi-tier fallback cascade:
+1. **Tier 1 (Primary):** Google Gemini (`gemini-2.0-flash`) via `@google/generative-ai` SDK.
+2. **Tier 2 (Fallback):** Groq (`llama-3.3-70b-versatile`) via `groq-sdk`. Triggered instantly if Tier 1 times out or errors.
+3. **Tier 3 (Failsafe):** OpenRouter (`meta-llama/llama-3.3-70b-instruct:free`). Triggered if both primary tiers fail.
 
 ---
 

@@ -43,7 +43,7 @@ async function syncFaqToRag() {
             text: `Q: ${r.question}\nA: ${r.answer}`,
             documentName: 'FAQ Database',
             chunkIdx: r.id,
-            conversationId: 'global_public'
+            conversationId: r.visibility === 'restricted' ? 'global_admin' : 'global_public'
         }));
         
         // Since we cannot safely write to hnsw.index while server.js is holding it,

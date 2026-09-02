@@ -2477,16 +2477,18 @@ app.delete('/conversations/:id', (req, res) => {
 // ── FAQ API routes (Panelist Suggestion #1) ─────────────────────────────────
 // ===========================================================================
 
-// GET /api/faq — all authenticated users; youth/guest see published only
+// GET /api/faq — all authenticated users; youth/guest see published and public only
 app.get('/api/faq', (req, res) => {
     try {
         const role = resolveActiveRole(req);
         const elevatedRoles = ['admin', 'system_admin', 'chairman', 'officer'];
         let rows;
         if (elevatedRoles.includes(role)) {
+            // Elevated roles see all entries (public and restricted)
             rows = db.prepare('SELECT * FROM faq_entries ORDER BY display_order ASC, created_at ASC').all();
         } else {
-            rows = db.prepare("SELECT * FROM faq_entries WHERE status='published' ORDER BY display_order ASC, created_at ASC").all();
+            // Guests and youth only see public AND published entries
+            rows = db.prepare("SELECT * FROM faq_entries WHERE status='published' AND visibility='public' ORDER BY display_order ASC, created_at ASC").all();
         }
         res.json(rows);
     } catch (err) {
@@ -2501,11 +2503,11 @@ app.post('/api/faq', (req, res) => {
     if (!['admin', 'system_admin', 'chairman'].includes(role))
         return res.status(403).json({ error: 'Forbidden' });
     try {
-        const { question, answer, category = 'general', display_order = 0, status = 'published' } = req.body;
+        const { question, answer, category = 'general', display_order = 0, status = 'published', visibility = 'public' } = req.body;
         if (!question || !answer) return res.status(400).json({ error: 'question and answer are required' });
         const result = db.prepare(
-            'INSERT INTO faq_entries (question, answer, category, display_order, status) VALUES (?, ?, ?, ?, ?)'
-        ).run(question.trim(), answer.trim(), category, Number(display_order), status);
+            'INSERT INTO faq_entries (question, answer, category, display_order, status, visibility) VALUES (?, ?, ?, ?, ?, ?)'
+        ).run(question.trim(), answer.trim(), category, Number(display_order), status, visibility);
         const actor = req.headers['x-actor'] || 'Admin';
         writeLog(actor, role, 'create_faq', question.slice(0, 60), 'FAQ entry created', req.ip);
         res.status(201).json({ id: result.lastInsertRowid, success: true });
@@ -2522,7 +2524,7 @@ app.patch('/api/faq/:id', (req, res) => {
         return res.status(403).json({ error: 'Forbidden' });
     try {
         const { id } = req.params;
-        const { question, answer, category, display_order, status } = req.body;
+        const { question, answer, category, display_order, status, visibility } = req.body;
         const updates = [];
         const params = [];
         if (question !== undefined) { updates.push('question = ?'); params.push(question.trim()); }
@@ -2530,6 +2532,7 @@ app.patch('/api/faq/:id', (req, res) => {
         if (category !== undefined){ updates.push('category = ?'); params.push(category);         }
         if (display_order !== undefined) { updates.push('display_order = ?'); params.push(Number(display_order)); }
         if (status !== undefined) { updates.push('status = ?'); params.push(status); }
+        if (visibility !== undefined) { updates.push('visibility = ?'); params.push(visibility); }
         if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
         updates.push('updated_at = CURRENT_TIMESTAMP');
         params.push(id);

@@ -341,15 +341,14 @@ function FaqModule({ authHeaders, authUser }) {
     <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-y-auto">
       <div className="px-6 py-8 max-w-4xl mx-auto w-full">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-display font-black text-slate-800 tracking-tight">Frequently Asked Questions</h1>
-            <p className="text-slate-500 mt-1">Information about aSK//YOUTH and SK Programs</p>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2"><span className="text-3xl">❓</span> Frequently Asked Questions</h2>
+            {canEdit && (
+              <button onClick={() => { setEditFaq({ question:'', answer:'', category:'general', display_order:0, status:'published', visibility:'public' }); setIsEditing(true); }} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-all text-sm">
+                + New FAQ
+              </button>
+            )}
           </div>
-          {canEdit && (
-            <button onClick={() => { setEditFaq({ question:'', answer:'', category:'general', display_order:0, status:'published' }); setIsEditing(true); }} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-all text-sm">
-              + New FAQ
-            </button>
-          )}
         </div>
 
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search FAQs..." className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all mb-6 shadow-sm" />
@@ -361,8 +360,11 @@ function FaqModule({ authHeaders, authUser }) {
                 <div onClick={() => setExpanded(expanded === faq.id ? null : faq.id)} className="px-5 py-4 cursor-pointer flex justify-between items-center group">
                   <div className="flex items-center gap-3">
                     <span className="text-blue-500 font-bold opacity-50 group-hover:opacity-100 transition-opacity">Q.</span>
-                    <h3 className="font-bold text-slate-800">{faq.question}</h3>
-                    {faq.status !== 'published' && <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded-full uppercase font-bold">{faq.status}</span>}
+                    <div className="flex-1 pr-4">
+                      <h3 className="font-bold text-slate-800">{faq.question}</h3>
+                      {faq.status !== 'published' && <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded-full uppercase font-bold">{faq.status}</span>}
+                      {faq.visibility === 'restricted' && <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-800 text-[10px] rounded-full uppercase font-bold">RESTRICTED</span>}
+                    </div>
                   </div>
                   <svg className={`w-5 h-5 text-slate-400 transition-transform ${expanded === faq.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                 </div>
@@ -394,10 +396,11 @@ function FaqModule({ authHeaders, authUser }) {
             <div className="space-y-3">
               <div><label className="text-xs font-bold text-slate-500">Question</label><input required value={editFaq.question} onChange={e => setEditFaq(p => ({...p, question: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
               <div><label className="text-xs font-bold text-slate-500">Answer</label><textarea required rows={4} value={editFaq.answer} onChange={e => setEditFaq(p => ({...p, answer: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div><label className="text-xs font-bold text-slate-500">Category</label><input value={editFaq.category} onChange={e => setEditFaq(p => ({...p, category: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
                 <div><label className="text-xs font-bold text-slate-500">Order</label><input type="number" value={editFaq.display_order} onChange={e => setEditFaq(p => ({...p, display_order: parseInt(e.target.value)||0}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
                 <div><label className="text-xs font-bold text-slate-500">Status</label><select value={editFaq.status} onChange={e => setEditFaq(p => ({...p, status: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none"><option>published</option><option>draft</option><option>archived</option></select></div>
+                <div><label className="text-xs font-bold text-slate-500">Visibility</label><select value={editFaq.visibility} onChange={e => setEditFaq(p => ({...p, visibility: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none"><option>public</option><option>restricted</option></select></div>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">

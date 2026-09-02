@@ -147,7 +147,7 @@ User (Youth / SK Officer / Admin)
 | Chunking | Paragraph-boundary split, max 600 chars, 100-char overlap |
 | Top-K retrieval | Default 5 (configurable via TOP_K env var) |
 | Min similarity threshold | 0.20 cosine score |
-| Thread isolation | Chunks tagged with conversationId; cross-thread chunks filtered out |
+| Thread isolation | Chunks tagged with conversationId; cross-thread chunks filtered out unless conversationId matches a GLOBAL_SCOPES key (e.g. global_admin, global_public) |
 | Semantic gatekeeper | isCasualQuery() skips vector search for trivial greetings |
 
 ### Python Tool Microservices (Flask, PM2-managed)
@@ -372,11 +372,10 @@ sequenceDiagram
 
 | Task | Interval | Location | Purpose |
 |---|---|---|---|
-| Memory health check | Every 60 seconds | server.js setInterval | Logs warning if RAM > 90% ceiling |
 | Python tools status poll | Startup at 8s + every 45s | server.js setInterval | Sets `pythonToolsOnline` flag by pinging ROUTER_URL/services |
 | Python AI layer health check | Once at startup with 30s delay | server.js setTimeout | Logs connectivity status of port 8000 |
 | HNSW snapshot | Non-blocking setImmediate after addChunks | HNSWVectorStore._save() | Persists index + metadata to disk after each upload batch |
-| SSE keepalive | Every 15 seconds per active connection | server.js setInterval inside SSE handler | Sends `: keepalive` comment to prevent proxy timeout |
+| SSE keepalive | Every 10 seconds per active connection | server.js setInterval inside SSE handler | Sends `: keepalive` comment to prevent proxy timeout |
 
 ---
 
@@ -393,12 +392,12 @@ sequenceDiagram
 | id | INTEGER | PRIMARY KEY AUTOINCREMENT | Unique event ID |
 | title | TEXT | NOT NULL | Event name |
 | description | TEXT | | Full event description |
-| category | TEXT | | One of: sports, seminar, scholarship, assembly, community, livelihood, general, cultural, health |
+| category | TEXT | | One of: sports, seminar, scholarship, assembly, community, livelihood, general, cultural, health, others |
 | date | TEXT | | ISO date string YYYY-MM-DD |
 | time | TEXT | DEFAULT '' | Start time HH:MM |
 | location | TEXT | | Venue name/address |
 | organizer | TEXT | | Organizing SK body or committee |
-| status | TEXT | DEFAULT 'upcoming' | One of: upcoming, active, completed |
+| status | TEXT | DEFAULT 'upcoming' | One of: upcoming, active, completed (UI labels: Not Started / Active / Completed) |
 | requirements | TEXT | | Participation requirements |
 | contact | TEXT | | Contact information |
 | attendees | INTEGER | DEFAULT 0 | Total attendee count (aggregated from event_logs) |
@@ -473,6 +472,19 @@ sequenceDiagram
 | address | TEXT | | Attendee address |
 | timestamp | DATETIME | DEFAULT CURRENT_TIMESTAMP | Scan timestamp |
 | status | TEXT | DEFAULT 'attended' | Attendance status |
+
+## Table: `faq_entries`
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | INTEGER | PRIMARY KEY AUTOINCREMENT | Unique FAQ entry ID |
+| question | TEXT | NOT NULL | The FAQ question text |
+| answer | TEXT | NOT NULL | The FAQ answer text |
+| category | TEXT | DEFAULT 'general' | Category of the FAQ |
+| display_order | INTEGER | DEFAULT 0 | Ordering index for UI display |
+| status | TEXT | DEFAULT 'published' CHECK IN ('published','draft','archived') | Status of the FAQ |
+| created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | Submission timestamp |
+| updated_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | Last update timestamp |
 
 ## Table: `chunk_embeddings`
 
@@ -607,6 +619,9 @@ END;
 | `/api/admin/logs` | GET | Query: page, limit, actor, action | Returns paginated `{logs[], total, page, totalPages}` |
 | `/api/admin/participation` | GET | — | Returns events with attendee breakdown per event |
 | `/api/admin/budget` | GET | — | Returns budget SUM grouped by category |
+| `/api/admin/system-health` | GET | — | Returns diagnostic health checks |
+| `/api/admin/backup-db` | POST | — | Triggers a SQLite database backup |
+| `/api/admin/purge-logs` | POST | — | Purges old system and event logs |
 
 ## User Management
 
@@ -624,6 +639,21 @@ END;
 | `/api/suggestions` | GET | — | Returns all suggestions ordered by created_at DESC |
 | `/api/suggestions` | POST | Body: `{content, category?, submitter_name?, submitter_role?}` | Creates suggestion, returns `{id, success:true}` |
 | `/api/suggestions/:id` | PATCH | Body: `{status?, admin_response?, responded_by?}` | Admin responds to or updates suggestion status |
+
+## FAQ Management
+
+| Endpoint Path | Method | Payload/Params | Purpose |
+|---|---|---|---|
+| `/api/faq` | GET | — | Returns all FAQ entries |
+| `/api/faq` | POST | Body: `{question, answer, category, display_order, status}` | Creates a new FAQ entry |
+| `/api/faq/:id` | PATCH | Body: `{question?, answer?, category?, display_order?, status?}` | Updates an existing FAQ entry |
+| `/api/faq/:id` | DELETE | — | Soft or hard deletes an FAQ entry |
+
+## Notifications
+
+| Endpoint Path | Method | Payload/Params | Purpose |
+|---|---|---|---|
+| `/api/notifications/upcoming` | GET | — | Returns upcoming events for notification polling |
 
 ## Conversation Management (In-Memory Server State)
 
@@ -671,7 +701,7 @@ This is the most critical file. It is a monolithic Express application that perf
 
 Assembles the final system prompt from four parts in order:
 1. `buildRuntimeInjection(role, pythonToolsOnline)` — injects `ACTIVE_ROLE`, `SYSTEM_TIMESTAMP` (UTC+8 from server clock via timestamp_util.cjs), `PYTHON_TOOLS` flag
-2. Optional client date override block for timezone-accurate responses
+2. Optional client date override block (`clientDateString`) for timezone-accurate responses from the LLM
 3. `response_style.md` content — extracted between `<!-- SYSTEM_PROMPT_START -->` and `<!-- SYSTEM_PROMPT_END -->` markers at startup
 4. `eventContext` — live SQL event data as `[DATABASE: EVENTS]` block with explicit anti-hallucination instructions
 
@@ -681,7 +711,7 @@ Runs before every LLM call. Merges three information sources:
 
 **1. Vector semantic search:** Embeds the user query, queries HNSW index, filters by conversationId thread isolation and 0.20 cosine score minimum, injects top-K chunks as `<chunk id="N" source="...">` XML blocks with strict "answer ONLY from these passages" instruction.
 
-**2. SQL events fusion:** `isEventQuery()` tests the query against 60+ regex keywords (event, program, schedule, budget, kabataan, attendees, etc.). If matched, `fetchEventsAsContext()` retrieves events from SQLite formatted as an authoritative `[DATABASE: EVENTS]` block. Month/year filtering parses the query for specific month names and YYYY patterns. Empty results inject explicit "no events" instructions to prevent hallucination.
+**2. SQL events fusion:** `isEventQuery()` tests the query against 60+ regex keywords (event, program, schedule, budget, kabataan, attendees, etc.). If matched, `fetchEventsAsContext()` retrieves events from SQLite formatted as an authoritative `[DATABASE: EVENTS]` block. Month/year filtering parses the query for specific month names and YYYY patterns (Note: this relies strictly on static text matching in the query, NOT `clientDateString`). Empty results inject explicit "no events" instructions to prevent hallucination.
 
 **3. Thread document re-injection:** If vector search found no high-scoring chunks but the thread has stored documents (from previous uploads in the same conversation), those documents are re-injected as `[THREAD DOCUMENT CONTEXT]` blocks. This ensures the AI never "forgets" uploaded documents.
 
@@ -798,8 +828,11 @@ Single-file React application. All views are controlled by `currentView` state:
 |---|---|---|
 | chatbot | inline | Main chat: streaming SSE, file upload, conversation sidebar, RAG source display |
 | events | EventsAnalyticsModule | Plotly dashboard + full events CRUD table + QR modal + attendance log modal |
+| faq | FaqModule | Managing and viewing Frequently Asked Questions |
+| reports | ReportsModule | Generating system reports |
 | admin | AdminModule | System stats, paginated audit logs, user management, suggestions management |
 | scan | ScanAttendance (imported) | Camera QR scanner using jsqr library with fullscreen result overlay |
+| suggestions | SuggestionsModule | Feedback board with public vs admin views |
 
 **Key inline components:**
 - `ExportResponseButton` — Per-message DOCX/PDF export popover via `/api/export/document`
@@ -844,10 +877,12 @@ Uses `useCamera.js` hook (getUserMedia) to access device camera. Captures video 
 | PORT | 3001 | Node.js Express server listen port |
 | CORS_ORIGINS | http://localhost:5174,https://ask-youth.vercel.app,https://askyouth.online,https://www.askyouth.online | Comma-separated allowed CORS origins |
 | MAX_FILE_SIZE_MB | 10 | Maximum per-file upload size (Multer limit) |
-| MAX_FILES | 5 | Maximum files per upload request (Multer limit) |
+| MAX_FILES | 8 | Maximum files per upload request (Multer limit) |
 | TOP_K | 5 | HNSW nearest-neighbor results to retrieve |
 | VECTOR_STORE_DIR | data | Directory (relative to backend/) for HNSW index + metadata |
 | GRAMMAR_ENFORCEMENT | false | If true, runs second Cloud AI Engine pass to rewrite responses (slow) |
+| GLOBAL_KB_RELEVANCE_THRESHOLD | 0.35 | Relevance threshold for global scopes |
+| UPCOMING_EVENT_WINDOW_DAYS | 3 | Used for notifying about upcoming events |
 | JWT_SECRET | askyouth_super_secret_jwt_key_2026 | **SECRET** — HMAC key for JWT signing. Change in production! |
 | ADMIN_CREATION_TOKEN | SECRET_ADMIN_TOKEN_123 | **SECRET** — Token required to create admin users or reset passwords |
 | TRUST_PROXY | (not set = enabled) | Set to false or 0 to disable trust proxy (only when not behind Cloudflare) |

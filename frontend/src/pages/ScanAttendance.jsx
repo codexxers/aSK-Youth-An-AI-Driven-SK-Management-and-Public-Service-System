@@ -260,10 +260,10 @@ export default function ScanAttendance({ authUser }) {
 
   if (cameraError) {
     return (
-      <main style={{ backgroundColor: 'var(--color-bg)', minHeight: '100vh', paddingTop: 'calc(var(--navbar-h) + 2rem)' }}>
+      <main className="min-h-screen bg-slate-950 pt-16 sm:pt-20">
         <div className="max-w-md mx-auto px-4 text-center mt-12">
-          <p className="text-xl font-bold mb-3" style={{ color: 'var(--color-text)' }}>Camera Unavailable</p>
-          <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>{cameraError}</p>
+          <p className="text-xl font-bold mb-3 text-white">Camera Unavailable</p>
+          <p className="text-sm mb-6 text-slate-400">{cameraError}</p>
           <button onClick={() => startCamera(facingMode)} className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg text-sm">
             Retry
           </button>
@@ -273,7 +273,7 @@ export default function ScanAttendance({ authUser }) {
   }
 
   return (
-    <main style={{ backgroundColor: 'var(--color-bg)', minHeight: '100vh', paddingTop: 'calc(var(--navbar-h) + 2rem)' }}>
+    <main className="min-h-screen bg-slate-950 pt-16 sm:pt-20 pb-8">
       <ResultOverlay result={result} onDismiss={() => setResult(null)} />
 
       {/* Youth Details Form Overlay */}
@@ -324,10 +324,10 @@ export default function ScanAttendance({ authUser }) {
       )}
 
       <div className="max-w-xl mx-auto px-4 pb-12">
-        <h1 className="text-2xl font-black mb-2 text-center" style={{ color: 'var(--color-text)', fontFamily: "'DM Sans Display', 'DM Sans', sans-serif" }}>
+        <h1 className="text-2xl font-black mb-2 text-center text-white" style={{ fontFamily: "'DM Sans Display', 'DM Sans', sans-serif" }}>
           Scan Attendance
         </h1>
-        <p className="text-sm text-center mb-8" style={{ color: 'var(--color-text-muted)' }}>
+        <p className="text-sm text-slate-400 text-center mb-8">
           Point your camera at the Event QR code shown by the SK Officer.
         </p>
 
@@ -371,8 +371,7 @@ export default function ScanAttendance({ authUser }) {
         <div className="mt-8 flex justify-center">
           <button
             onClick={() => setFacingMode(f => (f === 'environment' ? 'user' : 'environment'))}
-            className="flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-transform active:scale-95"
-            style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
+            className="flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-transform active:scale-95 bg-slate-800 border border-slate-700 text-white hover:bg-slate-700"
           >
             🔄 Flip Camera
           </button>

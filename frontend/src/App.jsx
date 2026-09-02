@@ -339,16 +339,20 @@ function FaqModule({ authHeaders, authUser }) {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-y-auto">
-      <div className="px-6 py-8 max-w-4xl mx-auto w-full">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2"><span className="text-3xl">❓</span> Frequently Asked Questions</h2>
-            {canEdit && (
-              <button onClick={() => { setEditFaq({ question:'', answer:'', category:'general', display_order:0, status:'published', visibility:'public' }); setIsEditing(true); }} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-all text-sm">
-                + New FAQ
-              </button>
-            )}
-          </div>
+      <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-4xl mx-auto w-full">
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-2 min-w-0">
+            <span className="text-2xl sm:text-3xl shrink-0">❓</span>
+            <span className="truncate">Frequently Asked Questions</span>
+          </h1>
+          {canEdit && (
+            <button
+              onClick={() => { setEditFaq({ question:'', answer:'', category:'general', display_order:0, status:'published', visibility:'public' }); setIsEditing(true); }}
+              className="shrink-0 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-all text-sm min-h-[40px]"
+            >
+              + New FAQ
+            </button>
+          )}
         </div>
 
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search FAQs..." className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all mb-6 shadow-sm" />
@@ -357,16 +361,18 @@ function FaqModule({ authHeaders, authUser }) {
           <div className="space-y-3">
             {filtered.map(faq => (
               <div key={faq.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                <div onClick={() => setExpanded(expanded === faq.id ? null : faq.id)} className="px-5 py-4 cursor-pointer flex justify-between items-center group">
-                  <div className="flex items-center gap-3">
-                    <span className="text-blue-500 font-bold opacity-50 group-hover:opacity-100 transition-opacity">Q.</span>
-                    <div className="flex-1 pr-4">
-                      <h3 className="font-bold text-slate-800">{faq.question}</h3>
-                      {faq.status !== 'published' && <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded-full uppercase font-bold">{faq.status}</span>}
-                      {faq.visibility === 'restricted' && <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-800 text-[10px] rounded-full uppercase font-bold">RESTRICTED</span>}
+                <div onClick={() => setExpanded(expanded === faq.id ? null : faq.id)} className="px-4 sm:px-5 py-4 cursor-pointer flex justify-between items-center gap-2 group min-h-[56px]">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <span className="text-blue-500 font-bold opacity-50 group-hover:opacity-100 transition-opacity shrink-0">Q.</span>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-bold text-slate-800 text-sm sm:text-base">{faq.question}</h3>
+                      <div className="flex flex-wrap gap-1 mt-0.5">
+                        {faq.status !== 'published' && <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded-full uppercase font-bold">{faq.status}</span>}
+                        {faq.visibility === 'restricted' && <span className="px-2 py-0.5 bg-red-100 text-red-800 text-[10px] rounded-full uppercase font-bold">RESTRICTED</span>}
+                      </div>
                     </div>
                   </div>
-                  <svg className={`w-5 h-5 text-slate-400 transition-transform ${expanded === faq.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                  <svg className={`w-5 h-5 text-slate-400 transition-transform shrink-0 ${expanded === faq.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                 </div>
                 {expanded === faq.id && (
                   <div className="px-5 pb-5 pt-2 border-t border-slate-50 bg-slate-50/50">
@@ -391,7 +397,7 @@ function FaqModule({ authHeaders, authUser }) {
 
       {isEditing && editFaq && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <form onSubmit={handleSave} className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
+          <form onSubmit={handleSave} className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-slate-800 mb-4">{editFaq.id ? 'Edit FAQ' : 'Add FAQ'}</h3>
             <div className="space-y-3">
               <div><label className="text-xs font-bold text-slate-500">Question</label><input required value={editFaq.question} onChange={e => setEditFaq(p => ({...p, question: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
@@ -596,9 +602,9 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
   return (
     <div className="flex flex-col h-full bg-slate-950 text-white overflow-auto relative">
       {/* Header */}
-      <div className="h-16 shrink-0 border-b border-slate-800 bg-slate-900/95 backdrop-blur-xl flex items-center px-4 sm:px-6 justify-between gap-4 sticky top-0 z-30">
-        <span className="text-lg font-bold tracking-wide truncate">📅 Events & Attendance</span>
-        <div className="flex flex-wrap gap-2 mb-2 sm:mb-0">
+      <div className="shrink-0 border-b border-slate-800 bg-slate-900/95 backdrop-blur-xl flex flex-wrap items-center px-4 sm:px-6 py-3 gap-x-4 gap-y-2 min-h-[4rem] sticky top-0 z-30">
+        <span className="text-base sm:text-lg font-bold tracking-wide truncate flex-1 min-w-0">📅 Events &amp; Attendance</span>
+        <div className="flex flex-wrap gap-2">
           {['dashboard','events'].map(t => (
             <button key={t} onClick={() => setMainTab(t)} className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-lg text-[11px] sm:text-sm font-bold uppercase tracking-wider transition-all ${mainTab === t ? 'bg-cyan-600 text-white shadow-[0_0_15px_rgba(6,182,212,0.4)]' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>
               {t === 'dashboard' ? '📊 Dashboard' : '📋 Events'}
@@ -923,9 +929,11 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
   return (
     <div className="flex flex-col h-full bg-slate-950 text-white overflow-auto relative">
       {/* Header */}
-        <span className="ml-10 text-lg font-bold tracking-wide truncate">🗂️ Official Reports — Document Generator</span>
+      <div className="shrink-0 border-b border-slate-800 bg-slate-900/95 backdrop-blur-xl flex items-center px-4 sm:px-6 py-3 min-h-[4rem] sticky top-0 z-30">
+        <span className="ml-10 text-base sm:text-lg font-bold tracking-wide truncate">🗂️ Official Reports — Document Generator</span>
+      </div>
 
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 p-4 sm:p-6 overflow-auto">
         <div className="max-w-2xl mx-auto space-y-6">
           {/* Template selector */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -3035,28 +3043,27 @@ function App() {
         {currentView === 'chat' && (<>
            
            {/* Top Info Header */}
-           <div className="h-16 shrink-0 border-b border-slate-300 bg-white/40 backdrop-blur flex items-center justify-between px-4 sm:px-8">
-             <div className="flex items-center gap-4 ml-10">
-
+           <div className="h-14 sm:h-16 shrink-0 border-b border-slate-300 bg-white/40 backdrop-blur flex items-center justify-between px-4 sm:px-8 gap-2">
+             <div className="flex items-center gap-2 sm:gap-4 ml-10 min-w-0">
                <button
                   onClick={() => window.location.reload()}
-                  className="select-none text-lg sm:text-2xl font-display font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-cyan-600 drop-shadow-[0_2px_10px_rgba(0,100,255,0.2)] hover:from-cyan-500 hover:to-blue-500 transition-all duration-200 cursor-pointer"
+                  className="select-none text-base sm:text-2xl font-display font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-cyan-600 drop-shadow-[0_2px_10px_rgba(0,100,255,0.2)] hover:from-cyan-500 hover:to-blue-500 transition-all duration-200 cursor-pointer whitespace-nowrap"
                 >
                   aSK//YOUTH.AI
                </button>
              </div>
              
              {/* Status Badge */}
-             <div className="flex flex-col items-end">
-               <div className="flex items-center gap-3">
-                 <span className={`text-xs font-mono font-bold tracking-wider ${loading ? 'text-cyan-500' : 'text-blue-700'}`}>
+             <div className="flex flex-col items-end shrink-0 max-w-[50%] sm:max-w-none">
+               <div className="flex items-center gap-2 sm:gap-3">
+                 <span className={`text-xs font-mono font-bold tracking-wider ${loading ? 'text-cyan-500' : 'text-blue-700'} hidden xs:block sm:block`}>
                     {loading
                       ? streamPhase === 'INDEXING_DOCUMENTS'  ? 'INDEXING...'
                       : streamPhase === 'RETRIEVING_CONTEXT'  ? 'SEARCHING...'
                       : 'GENERATING...'
-                      : 'SYSTEM ONLINE'
+                      : 'ONLINE'
                     }</span>
-                 <span className="relative flex h-3 w-3">
+                 <span className="relative flex h-3 w-3 shrink-0">
                     {loading ? (
                         <>
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>

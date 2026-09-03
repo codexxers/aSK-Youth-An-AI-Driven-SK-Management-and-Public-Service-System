@@ -114,14 +114,21 @@ function chunkText(text, maxChars = 600, overlapChars = 100) {
 // fallback in case the Python service is unreachable.
 // ---------------------------------------------------------------------------
 let _embedder = null;
+let _embedderPromise = null; // inflight lock — prevents N concurrent callers from each spawning a model instance
 async function getEmbedder() {
-    if (!_embedder) {
+    if (_embedder) return _embedder; // fast path: model already loaded
+    if (!_embedderPromise) {
+        // First caller: start loading. All subsequent callers await the same promise.
         console.log('[RAG] Initializing local embedding model (Xenova/all-MiniLM-L6-v2)...');
         env.cacheDir = path.join(__dirname, '..', '.cache', 'xenova');
-        _embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', { quantized: true });
-        console.log('[RAG] Embedding model ready.');
+        _embedderPromise = pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', { quantized: true })
+            .then(pipe => {
+                _embedder = pipe;
+                console.log('[RAG] Embedding model ready.');
+                return pipe;
+            });
     }
-    return _embedder;
+    return _embedderPromise; // concurrent callers await the same in-flight promise
 }
 
 // Xenova fallback — used only when Python service is unreachable
@@ -165,7 +172,10 @@ function computeHash(text) {
 // RAG: Batch embed — tries Python service first (single call for all texts),
 // then falls back to Xenova one-at-a-time if Python is unreachable.
 // ---------------------------------------------------------------------------
-async function embedBatch(texts, batchSize = 8) {
+// batchSize=2: controls how many Xenova fallback embeds run per slice.
+// The Python path is unaffected (sends all texts in one HTTP call).
+// Keep this low on free-tier deployments to limit peak RAM at boot time.
+async function embedBatch(texts, batchSize = 2) {
     // Try Python batch embedding first (much faster — single HTTP call)
     try {
         const res = await axios.post(`${PYTHON_SERVICE_URL}/embed`, { texts }, { timeout: 30000 });
@@ -174,12 +184,15 @@ async function embedBatch(texts, batchSize = 8) {
     } catch (err) {
         console.warn('[RAG] Python batch embed unavailable, falling back to Xenova:', err.message);
     }
-    // Xenova fallback — batch in groups
+    // Xenova fallback — sequential within each slice to cap peak memory on free tier.
+    // Promise.all was replaced with a for-loop so at most `batchSize` model calls are
+    // in-flight simultaneously (and with the singleton fix, only one model is loaded).
     const results = [];
     for (let i = 0; i < texts.length; i += batchSize) {
         const slice = texts.slice(i, i + batchSize);
-        const vecs  = await Promise.all(slice.map(t => embedXenova(t)));
-        results.push(...vecs);
+        for (const t of slice) {
+            results.push(await embedXenova(t));
+        }
     }
     return results;
 }
@@ -671,6 +684,16 @@ if (faqCount.c === 0) {
     });
     seedFaqs();
     console.log('[aSK Youth] Starter FAQ entries seeded (8 entries).');
+}
+
+// ── Boot diagnostics — timestamped row counts for incident investigation ─────
+try {
+    const _bootUsers  = db.prepare('SELECT COUNT(*) as c FROM users').get().c;
+    const _bootEvents = db.prepare('SELECT COUNT(*) as c FROM events').get().c;
+    const _bootFaqs   = db.prepare("SELECT COUNT(*) as c FROM faq_entries WHERE status='published'").get().c;
+    console.log(`[aSK Boot] ${new Date().toISOString()} — users: ${_bootUsers}, events: ${_bootEvents}, published_faqs: ${_bootFaqs}`);
+} catch (_bootErr) {
+    console.warn('[aSK Boot] Row count diagnostics failed:', _bootErr.message);
 }
 
 // Helper function to write system logs safely

@@ -50,6 +50,7 @@ const SUPABASE_URL         = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SUPABASE_BUCKET      = process.env.SUPABASE_BUCKET || 'db-snapshots';
 const SNAPSHOT_KEEP        = 5;   // rolling window: keep 5 most recent snapshots
+const SNAPSHOT_FILE_PREFIX = 'snapshot-'; // shared filename filter for both list calls
 // ---------------------------------------------------------------------------
 
 // =============================================================================
@@ -219,15 +220,29 @@ async function restoreFromSupabase() {
 
     const dbPath = path.join(__dirname, 'data', 'events.db');
 
-    console.log('[Snapshot] Attempting restore from Supabase Storage...');
+    console.log(`[Snapshot] Listing bucket: "${SUPABASE_BUCKET}" with prefix: "" (root level)`);
     try {
         // List snapshots, sorted descending by name (ISO timestamp = lexicographic = chronological)
+        // prefix: '' lists the bucket ROOT. Supabase interprets prefix as a folder path, not a
+        // filename filter — 'snapshot-' would look for a subfolder called 'snapshot-', which
+        // does not exist. Client-side .filter() handles the name filtering instead.
         const listRes = await axios.post(
             `${SUPABASE_URL}/storage/v1/object/list/${SUPABASE_BUCKET}`,
-            { prefix: 'snapshot-', limit: 10, sortBy: { column: 'name', order: 'desc' } },
+            { prefix: '', limit: 100, sortBy: { column: 'name', order: 'desc' } },
             { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' }, timeout: 15000 }
         );
-        const files = (listRes.data || []).filter(f => f.name && f.name.startsWith('snapshot-'));
+
+        // Distinguish a Supabase API error (object response) from a genuinely empty bucket (array).
+        // Previously both were silently treated as 'empty', hiding auth/bucket-name errors.
+        if (!Array.isArray(listRes.data)) {
+            console.error(`[Snapshot] ⚠ List call returned unexpected non-array response: ${JSON.stringify(listRes.data)}`);
+            console.error('[Snapshot] ⚠ This is a Supabase API error, not an empty bucket — skipping restore.');
+            return;
+        }
+
+        const files = listRes.data.filter(f => f.name && f.name.startsWith(SNAPSHOT_FILE_PREFIX));
+        console.log(`[Snapshot] List response: ${listRes.data.length} total object(s), ${files.length} snapshot(s) found.`);
+
         if (files.length === 0) {
             console.log('[Snapshot] No snapshots found in bucket — starting fresh (expected on first boot).');
             return;
@@ -302,12 +317,15 @@ async function pushSnapshotToSupabase() {
         console.log(`[Snapshot] Pushed ${filename} (${fileBuffer.length} bytes) to Supabase.`);
 
         // Rolling cleanup: delete snapshots beyond the SNAPSHOT_KEEP newest
+        // prefix: '' lists the bucket root — see comment in restoreFromSupabase() for why
         const listRes = await axios.post(
             `${SUPABASE_URL}/storage/v1/object/list/${SUPABASE_BUCKET}`,
-            { prefix: 'snapshot-', limit: 100, sortBy: { column: 'name', order: 'desc' } },
+            { prefix: '', limit: 100, sortBy: { column: 'name', order: 'desc' } },
             { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' }, timeout: 10000 }
         );
-        const all = (listRes.data || []).filter(f => f.name && f.name.startsWith('snapshot-'));
+        const all = Array.isArray(listRes.data)
+            ? listRes.data.filter(f => f.name && f.name.startsWith(SNAPSHOT_FILE_PREFIX))
+            : [];
         const toDelete = all.slice(SNAPSHOT_KEEP).map(f => f.name);
         if (toDelete.length > 0) {
             await axios.delete(

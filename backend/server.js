@@ -217,14 +217,9 @@ async function restoreFromSupabase() {
         return;
     }
 
-    // Check if local DB already has usable content
     const dbPath = path.join(__dirname, 'data', 'events.db');
-    if (fs.existsSync(dbPath) && fs.statSync(dbPath).size > 8192) {
-        console.log('[Snapshot] Local database found — skipping restore.');
-        return;
-    }
 
-    console.log('[Snapshot] Local database missing or empty — attempting restore from Supabase Storage...');
+    console.log('[Snapshot] Attempting restore from Supabase Storage...');
     try {
         // List snapshots, sorted descending by name (ISO timestamp = lexicographic = chronological)
         const listRes = await axios.post(
@@ -246,10 +241,33 @@ async function restoreFromSupabase() {
         );
 
         if (!fs.existsSync(path.dirname(dbPath))) fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-        fs.writeFileSync(dbPath, Buffer.from(dlRes.data));
-        console.log(`[Snapshot] Restore complete — ${dlRes.data.byteLength} bytes written. Migrations will run next.`);
+
+        // Write to a temp file first, then validate before promoting to DB_PATH
+        const tmpPath = dbPath + '.download';
+        fs.writeFileSync(tmpPath, Buffer.from(dlRes.data));
+
+        // Validate: open with better-sqlite3 and probe — reject corrupt/incomplete downloads
+        let valid = false;
+        try {
+            const testDb = new Database(tmpPath, { readonly: true });
+            testDb.prepare('SELECT COUNT(*) FROM sqlite_master').get();
+            testDb.close();
+            valid = true;
+        } catch (valErr) {
+            console.error(`[Snapshot] ⚠ Downloaded snapshot FAILED validation: ${valErr.message}`);
+            console.error('[Snapshot] ⚠ Refusing to overwrite local DB with corrupt download — using local state.');
+            try { fs.unlinkSync(tmpPath); } catch (_) {}
+        }
+
+        if (valid) {
+            // Remove any stale WAL/SHM files from a prior session (they belong to the old DB, not the snapshot)
+            try { fs.unlinkSync(dbPath + '-wal'); } catch (_) {}
+            try { fs.unlinkSync(dbPath + '-shm'); } catch (_) {}
+            fs.renameSync(tmpPath, dbPath);
+            console.log(`[Snapshot] Restore complete — ${dlRes.data.byteLength} bytes written and validated. Migrations will run next.`);
+        }
     } catch (err) {
-        console.error('[Snapshot] Restore failed:', err.message, '— proceeding with empty database.');
+        console.error('[Snapshot] Restore failed:', err.message, '— proceeding with local database or empty state.');
     }
 }
 
@@ -2866,16 +2884,18 @@ app.listen(PORT, () => console.log(`Stable Cloud AI Fallback Engine running on h
 // timer hasn't fired yet would be lost permanently.
 // ---------------------------------------------------------------------------
 async function gracefulShutdown(signal) {
-    console.log(`[Snapshot] ${signal} received — pushing emergency snapshot before exit...`);
+    const shutdownStart = Date.now();
+    console.log(`[Snapshot] ${signal} received at ${new Date().toISOString()} — pushing emergency snapshot...`);
     if (_snapshotTimer) {
         clearTimeout(_snapshotTimer);
         _snapshotTimer = null;
     }
     try {
         await pushSnapshotToSupabase();
-        console.log('[Snapshot] Emergency snapshot pushed. Exiting cleanly.');
+        const elapsed = Date.now() - shutdownStart;
+        console.log(`[Snapshot] Emergency snapshot pushed in ${elapsed}ms. Exiting cleanly.`);
     } catch (e) {
-        console.error('[Snapshot] Emergency snapshot failed:', e.message, '— data since last snapshot may be lost.');
+        console.error(`[Snapshot] Emergency snapshot FAILED: ${e.message} — data since last snapshot may be lost.`);
     }
     process.exit(0);
 }

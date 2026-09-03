@@ -45,6 +45,11 @@ const ROUTER_URL   = process.env.ROUTER_URL   || 'http://localhost:5000/route';
 const CONTEXT_URL  = process.env.CONTEXT_URL  || 'http://localhost:5007/tools/context';
 const LANGUAGE_URL = process.env.LANGUAGE_URL || 'http://localhost:5008/tools/language/correct';
 let pythonToolsOnline = false;
+// Supabase Storage — snapshot persistence across ephemeral Render restarts
+const SUPABASE_URL         = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const SUPABASE_BUCKET      = process.env.SUPABASE_BUCKET || 'db-snapshots';
+const SNAPSHOT_KEEP        = 5;   // rolling window: keep 5 most recent snapshots
 // ---------------------------------------------------------------------------
 
 // =============================================================================
@@ -195,6 +200,118 @@ async function embedBatch(texts, batchSize = 2) {
         }
     }
     return results;
+}
+
+// ---------------------------------------------------------------------------
+// Supabase Storage — Snapshot helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * restoreFromSupabase — called at boot (via top-level await) BEFORE the DB is opened.
+ * Downloads the most recent snapshot from Supabase Storage to DB_PATH if the local
+ * file is missing or empty. Silently no-ops when Supabase is not configured.
+ */
+async function restoreFromSupabase() {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+        console.log('[Snapshot] Supabase not configured — skipping restore (running without persistence).');
+        return;
+    }
+
+    // Check if local DB already has usable content
+    const dbPath = path.join(__dirname, 'data', 'events.db');
+    if (fs.existsSync(dbPath) && fs.statSync(dbPath).size > 8192) {
+        console.log('[Snapshot] Local database found — skipping restore.');
+        return;
+    }
+
+    console.log('[Snapshot] Local database missing or empty — attempting restore from Supabase Storage...');
+    try {
+        // List snapshots, sorted descending by name (ISO timestamp = lexicographic = chronological)
+        const listRes = await axios.post(
+            `${SUPABASE_URL}/storage/v1/object/list/${SUPABASE_BUCKET}`,
+            { prefix: 'snapshot-', limit: 10, sortBy: { column: 'name', order: 'desc' } },
+            { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' }, timeout: 15000 }
+        );
+        const files = (listRes.data || []).filter(f => f.name && f.name.startsWith('snapshot-'));
+        if (files.length === 0) {
+            console.log('[Snapshot] No snapshots found in bucket — starting fresh (expected on first boot).');
+            return;
+        }
+
+        const latest = files[0].name;
+        console.log(`[Snapshot] Downloading ${latest}...`);
+        const dlRes = await axios.get(
+            `${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${latest}`,
+            { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` }, responseType: 'arraybuffer', timeout: 30000 }
+        );
+
+        if (!fs.existsSync(path.dirname(dbPath))) fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+        fs.writeFileSync(dbPath, Buffer.from(dlRes.data));
+        console.log(`[Snapshot] Restore complete — ${dlRes.data.byteLength} bytes written. Migrations will run next.`);
+    } catch (err) {
+        console.error('[Snapshot] Restore failed:', err.message, '— proceeding with empty database.');
+    }
+}
+
+/**
+ * pushSnapshotToSupabase — uploads current events.db to Supabase Storage.
+ * Keeps the SNAPSHOT_KEEP most recent files; deletes older ones automatically.
+ * Called via scheduleSnapshot() which debounces concurrent writes.
+ */
+async function pushSnapshotToSupabase() {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return;
+    const dbPath = path.join(__dirname, 'data', 'events.db');
+    if (!fs.existsSync(dbPath)) return;
+
+    try {
+        const fileBuffer = fs.readFileSync(dbPath);
+        const timestamp  = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename   = `snapshot-${timestamp}.db`;
+
+        await axios.post(
+            `${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${filename}`,
+            fileBuffer,
+            {
+                headers: {
+                    Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+                    'Content-Type': 'application/octet-stream',
+                    'x-upsert': 'true'
+                },
+                timeout: 30000,
+                maxBodyLength: Infinity
+            }
+        );
+        console.log(`[Snapshot] Pushed ${filename} (${fileBuffer.length} bytes) to Supabase.`);
+
+        // Rolling cleanup: delete snapshots beyond the SNAPSHOT_KEEP newest
+        const listRes = await axios.post(
+            `${SUPABASE_URL}/storage/v1/object/list/${SUPABASE_BUCKET}`,
+            { prefix: 'snapshot-', limit: 100, sortBy: { column: 'name', order: 'desc' } },
+            { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' }, timeout: 10000 }
+        );
+        const all = (listRes.data || []).filter(f => f.name && f.name.startsWith('snapshot-'));
+        const toDelete = all.slice(SNAPSHOT_KEEP).map(f => f.name);
+        if (toDelete.length > 0) {
+            await axios.delete(
+                `${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}`,
+                { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' }, data: { prefixes: toDelete }, timeout: 10000 }
+            );
+            console.log(`[Snapshot] Pruned ${toDelete.length} old snapshot(s).`);
+        }
+    } catch (err) {
+        console.error('[Snapshot] Push failed (non-fatal):', err.message);
+    }
+}
+
+/** scheduleSnapshot — debounced: collapses a burst of writes into one upload 8s later. */
+let _snapshotTimer = null;
+function scheduleSnapshot() {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return;
+    if (_snapshotTimer) clearTimeout(_snapshotTimer);
+    _snapshotTimer = setTimeout(() => {
+        _snapshotTimer = null;
+        pushSnapshotToSupabase().catch(e => console.error('[Snapshot] Scheduled push error:', e.message));
+    }, 8000);
 }
 
 // ---------------------------------------------------------------------------
@@ -473,6 +590,10 @@ const threadDocuments = new Map();
 // ---------------------------------------------------------------------------
 const DB_PATH = path.join(__dirname, 'data', 'events.db');
 if (!fs.existsSync(path.join(__dirname, 'data'))) fs.mkdirSync(path.join(__dirname, 'data'));
+
+// Restore-on-boot: runs before opening the DB so the restored file is what we open.
+// Top-level await works because server.js is an ES module (import at line 1).
+await restoreFromSupabase();
 
 const db = new Database(DB_PATH);
 db.exec(`
@@ -996,6 +1117,7 @@ app.post('/api/users', (req, res) => {
         const result = stmt.run(username.trim(), full_name.trim(), role, hash, status || 'active');
         writeLog(actor, actorRole, 'create_user', username, `Created account for ${full_name} (${role})`, ip);
         res.json({ id: result.lastInsertRowid, message: 'User created successfully' });
+        scheduleSnapshot();
     } catch (err) {
         if (err.message.includes('UNIQUE')) return res.status(400).json({ error: 'Username already exists' });
         res.status(500).json({ error: err.message });
@@ -1035,6 +1157,7 @@ app.patch('/api/users/:id', (req, res) => {
         db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...params);
         writeLog(actor, actorRole, 'update_user', targetUser.username, `Updated attributes: ${Object.keys(req.body).join(', ')}`, ip);
         res.json({ success: true });
+        scheduleSnapshot();
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -1053,6 +1176,7 @@ app.delete('/api/users/:id', (req, res) => {
         db.prepare("UPDATE users SET status = 'inactive' WHERE id = ?").run(id);
         writeLog(actor, actorRole, 'delete_user', targetUser.username, 'Deactivated user account', ip);
         res.json({ success: true });
+        scheduleSnapshot();
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -1077,6 +1201,7 @@ app.post('/api/suggestions', (req, res) => {
         const resDb = stmt.run(content.trim(), category || 'general', submitter_name || 'Anonymous', submitter_role || 'youth');
         writeLog(submitter_name || 'Anonymous', submitter_role || 'youth', 'create_suggestion', `ID ${resDb.lastInsertRowid}`, 'Submitted feedback', ip);
         res.json({ id: resDb.lastInsertRowid, success: true });
+        scheduleSnapshot();
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -1094,6 +1219,7 @@ app.patch('/api/suggestions/:id', (req, res) => {
           .run(status || 'reviewed', admin_response || '', responded_by || 'Admin', id);
         writeLog(actor, actorRole, 'update_suggestion', `ID ${id}`, `Status changed to ${status}`, ip);
         res.json({ success: true });
+        scheduleSnapshot();
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -1177,6 +1303,7 @@ app.post('/api/events', (req, res) => {
     const role  = req.headers['x-role'] || 'admin';
     writeLog(actor, role, 'create_event', title, `Created event ID ${result.lastInsertRowid}`, req.ip);
     res.json({ id: result.lastInsertRowid, message: 'Event created.' });
+    scheduleSnapshot();
 });
 
 // API to update an event
@@ -1193,6 +1320,7 @@ app.patch('/api/events/:id', (req, res) => {
     const role  = req.headers['x-role'] || 'admin';
     writeLog(actor, role, 'update_event', `Event ID ${id}`, `Updated fields: ${updates.join(', ')}`, req.ip);
     res.json({ success: true });
+    scheduleSnapshot();
 });
 
 // API to delete an event
@@ -1204,6 +1332,7 @@ app.delete('/api/events/:id', (req, res) => {
     const role  = req.headers['x-role'] || 'admin';
     writeLog(actor, role, 'delete_event', event?.title || `ID ${id}`, 'Deleted event record', req.ip);
     res.json({ success: true });
+    scheduleSnapshot();
 });
 
 // --- QR Attendance API Routes ---
@@ -1290,6 +1419,7 @@ app.post('/api/events/scan', (req, res) => {
         db.prepare('UPDATE events SET attendees = attendees + 1 WHERE id = ?').run(eventId);
 
         res.json({ status: 'success', message: 'Attendance recorded successfully!' });
+        scheduleSnapshot();
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -2534,6 +2664,7 @@ app.post('/api/faq', (req, res) => {
         const actor = req.headers['x-actor'] || 'Admin';
         writeLog(actor, role, 'create_faq', question.slice(0, 60), 'FAQ entry created', req.ip);
         res.status(201).json({ id: result.lastInsertRowid, success: true });
+        scheduleSnapshot();
     } catch (err) {
         console.error('[FAQ POST] Error:', err);
         res.status(500).json({ error: 'Failed to create FAQ entry' });
@@ -2562,6 +2693,7 @@ app.patch('/api/faq/:id', (req, res) => {
         const result = db.prepare(`UPDATE faq_entries SET ${updates.join(', ')} WHERE id = ?`).run(...params);
         if (result.changes === 0) return res.status(404).json({ error: 'FAQ entry not found' });
         res.json({ success: true });
+        scheduleSnapshot();
     } catch (err) {
         console.error('[FAQ PATCH] Error:', err);
         res.status(500).json({ error: 'Failed to update FAQ entry' });
@@ -2582,6 +2714,7 @@ app.delete('/api/faq/:id', (req, res) => {
         const actor = req.headers['x-actor'] || 'Admin';
         writeLog(actor, role, 'archive_faq', id, 'FAQ entry archived', req.ip);
         res.json({ success: true });
+        scheduleSnapshot();
     } catch (err) {
         console.error('[FAQ DELETE] Error:', err);
         res.status(500).json({ error: 'Failed to archive FAQ entry' });

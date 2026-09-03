@@ -303,7 +303,7 @@ async function pushSnapshotToSupabase() {
     }
 }
 
-/** scheduleSnapshot — debounced: collapses a burst of writes into one upload 8s later. */
+/** scheduleSnapshot — debounced: collapses a burst of writes into one upload 3s later. */
 let _snapshotTimer = null;
 function scheduleSnapshot() {
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return;
@@ -311,7 +311,7 @@ function scheduleSnapshot() {
     _snapshotTimer = setTimeout(() => {
         _snapshotTimer = null;
         pushSnapshotToSupabase().catch(e => console.error('[Snapshot] Scheduled push error:', e.message));
-    }, 8000);
+    }, 3000); // 3s debounce — short enough to beat most deploys
 }
 
 // ---------------------------------------------------------------------------
@@ -1699,6 +1699,10 @@ vectorStore.init()
         } catch (faqErr) {
             console.error('[VectorStore] FAQ Auto-seed error:', faqErr);
         }
+        // Push a boot-time snapshot after all seeding is complete.
+        // This guarantees at least one snapshot exists in Supabase after every
+        // successful boot — even if no user writes occur in this session.
+        scheduleSnapshot();
     })
     .catch(err => console.error('[VectorStore] Init error:', err));
 
@@ -2854,3 +2858,27 @@ app.get('/api/notifications/upcoming', (req, res) => {
 
 // ---------------------------------------------------------------------------
 app.listen(PORT, () => console.log(`Stable Cloud AI Fallback Engine running on http://localhost:${PORT}`));
+
+// ---------------------------------------------------------------------------
+// Graceful shutdown — push an emergency snapshot before the process exits.
+// Render sends SIGTERM before killing the container on every deploy, idle
+// timeout, or manual restart. Without this, any write whose 3-second debounce
+// timer hasn't fired yet would be lost permanently.
+// ---------------------------------------------------------------------------
+async function gracefulShutdown(signal) {
+    console.log(`[Snapshot] ${signal} received — pushing emergency snapshot before exit...`);
+    if (_snapshotTimer) {
+        clearTimeout(_snapshotTimer);
+        _snapshotTimer = null;
+    }
+    try {
+        await pushSnapshotToSupabase();
+        console.log('[Snapshot] Emergency snapshot pushed. Exiting cleanly.');
+    } catch (e) {
+        console.error('[Snapshot] Emergency snapshot failed:', e.message, '— data since last snapshot may be lost.');
+    }
+    process.exit(0);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT',  () => gracefulShutdown('SIGINT'));

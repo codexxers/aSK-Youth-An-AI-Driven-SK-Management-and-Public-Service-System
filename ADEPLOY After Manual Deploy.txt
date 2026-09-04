@@ -1,0 +1,50 @@
+2026-09-03T09:31:49.691209434Z 36 packages are looking for funding
+2026-09-03T09:31:49.69125535Z   run `npm fund` for details
+2026-09-03T09:31:49.709953952Z 
+2026-09-03T09:31:49.709967154Z 16 vulnerabilities (1 low, 4 moderate, 10 high, 1 critical)
+2026-09-03T09:31:49.709968659Z 
+2026-09-03T09:31:49.709970083Z To address issues that do not require attention, run:
+2026-09-03T09:31:49.709971537Z   npm audit fix
+2026-09-03T09:31:49.709972852Z 
+2026-09-03T09:31:49.7099742Z To address all issues (including breaking changes), run:
+2026-09-03T09:31:49.709976067Z   npm audit fix --force
+2026-09-03T09:31:49.709977332Z 
+2026-09-03T09:31:49.709978956Z Run `npm audit` for details.
+2026-09-03T09:31:50.251665118Z ==> Uploading build...
+2026-09-03T09:31:56.819134762Z ==> Uploaded in 5.5s. Compression took 1.1s
+2026-09-03T09:31:56.821189698Z ==> Build successful 🎉
+2026-09-03T09:31:59.287977036Z ==> Deploying...
+2026-09-03T09:31:59.635188884Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-09-03T09:32:13.365306611Z ==> Running 'node server.js'
+2026-09-03T09:32:18.269492163Z ◇ injecting env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+2026-09-03T09:32:20.570591408Z ◇ injecting env (0) from .env // tip: ⌘ enable debugging { debug: true }
+2026-09-03T09:32:20.667246719Z [VectorStore] hnswlib-node loaded (HNSW mode).
+2026-09-03T09:32:20.667659486Z [aSK Youth] System prompt loaded from response_style.md
+2026-09-03T09:32:20.670829647Z [Snapshot] Attempting restore from Supabase Storage...
+2026-09-03T09:32:21.466687743Z [Snapshot] No snapshots found in bucket — starting fresh (expected on first boot).
+2026-09-03T09:32:21.492672659Z Auto-completed 8 ABYIP events on startup.
+2026-09-03T09:32:21.492911965Z [aSK Youth] Events DB ready at /opt/render/project/src/backend/data/events.db
+2026-09-03T09:32:21.493634323Z [aSK Boot] 2026-09-03T09:32:21.493Z — users: 7, events: 21, published_faqs: 14
+2026-09-03T09:32:21.497711914Z [VectorStore] New HNSW index initialised.
+2026-09-03T09:32:21.49960602Z [VectorStore] Persistent index ready.
+2026-09-03T09:32:21.499616941Z [VectorStore] Global admin knowledge missing. Auto-seeding...
+2026-09-03T09:32:21.50051132Z [VectorStore] Embedding 8 new chunk(s)...
+2026-09-03T09:32:21.502450549Z [VectorStore] Auto-seeding complete.
+2026-09-03T09:32:21.50247109Z [VectorStore] FAQ knowledge missing. Auto-seeding...
+2026-09-03T09:32:21.502817803Z [VectorStore] Embedding 14 new chunk(s)...
+2026-09-03T09:32:21.565402Z Stable Cloud AI Fallback Engine running on http://localhost:3001
+2026-09-03T09:32:21.5664503Z [VectorStore] Snapshot saved (8 chunk(s)).
+2026-09-03T09:32:21.568169354Z [RAG] Python batch embed unavailable, falling back to Xenova: 
+2026-09-03T09:32:21.568313244Z [RAG] Initializing local embedding model (Xenova/all-MiniLM-L6-v2)...
+2026-09-03T09:32:28.675920922Z [RAG] Embedding model ready.
+2026-09-03T09:32:30.120745857Z ==> Your service is live 🎉
+2026-09-03T09:32:30.332743853Z ==> 
+2026-09-03T09:32:30.335488116Z ==> ///////////////////////////////////////////////////////////
+2026-09-03T09:32:30.338491845Z ==> 
+2026-09-03T09:32:30.341277999Z ==> Available at your primary URL https://askyouth-backend.onrender.com
+2026-09-03T09:32:30.343665915Z ==> 
+2026-09-03T09:32:30.346541301Z ==> ///////////////////////////////////////////////////////////
+2026-09-03T09:32:39.368693247Z [VectorStore] FAQ auto-seeding complete (14 chunks).
+2026-09-03T09:32:39.565030059Z [VectorStore] Snapshot saved (22 chunk(s)).
+2026-09-03T09:32:43.757738363Z [Snapshot] Pushed snapshot-2026-09-03T09-32-42-369Z.db (204800 bytes) to Supabase.
+2026-09-03T09:32:51.500193338Z [Python AI] Service at http://localhost:8000 is UNREACHABLE (). Python features (language detection, intent classification, embedding, summarization) will degrade to fallbacks.

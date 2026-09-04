@@ -2442,6 +2442,7 @@ function App() {
   const [authChecking, setAuthChecking] = useState(true);
 
   // ─── Thread & Chat State ──────────────────────────────────────────
+  const [lastModelUsed, setLastModelUsed] = useState(null);
   const [threads, setThreads] = useState([{ 
       id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2), 
       title: 'New Chat',
@@ -2948,6 +2949,7 @@ function App() {
               finalReply     = event.ai_data?.ai_message || streamingTextRef.current;
               finalDocuments = event.documents || null;
               finalChunks    = event.retrievedChunks?.length > 0 ? event.retrievedChunks : finalChunks;
+              if (event.modelUsed) setLastModelUsed({ model: event.modelUsed, tier: event.tier || 'gemini' });
             } else if (event.type === 'error') {
               sseError = event.message || 'Unknown server error.';
             }
@@ -2966,6 +2968,7 @@ function App() {
               finalReply     = event.ai_data?.ai_message || streamingTextRef.current;
               finalDocuments = event.documents || null;
               finalChunks    = event.retrievedChunks?.length > 0 ? event.retrievedChunks : finalChunks;
+              if (event.modelUsed) setLastModelUsed({ model: event.modelUsed, tier: event.tier || 'gemini' });
             } else if (event.type === 'error') {
               sseError = event.message || 'Unknown server error.';
             }
@@ -3261,7 +3264,14 @@ function App() {
                  <span className="font-mono text-[10px] font-normal tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-cyan-600 select-none tabular-nums">
                    {formatClock(now)}
                  </span>
-                 <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Qwen2.5-7B Model Active</span>
+                 <span className={`text-[10px] font-mono uppercase tracking-widest ${
+                  !lastModelUsed                      ? 'text-slate-500' :
+                  lastModelUsed.tier === 'gemini'     ? 'text-cyan-500'   :
+                  lastModelUsed.tier === 'groq'       ? 'text-amber-400'  :
+                  'text-red-400'
+                }`}>
+                  {lastModelUsed ? lastModelUsed.model.toUpperCase() + ' ACTIVE' : 'AI ENGINE STANDBY'}
+                </span>
                </div>
              </div>
            </div>

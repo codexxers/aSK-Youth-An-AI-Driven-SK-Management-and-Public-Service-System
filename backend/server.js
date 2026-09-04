@@ -1582,7 +1582,7 @@ app.post('/api/events/parse-document', upload.single('file'), async (req, res) =
                 const extractPrompt = `The following document text was extracted from an uploaded event file. Extract ONLY the fields listed below and return them as a single valid JSON object. Use null for any field you cannot find. Do not explain.\nFields needed: ${lowConfFields.join(', ')}\nDocument text:\n"""${rawTextSlice}"""\nRespond with ONLY the JSON object.`;
 
                 try {
-                    const aiReply = await generateResponse(
+                    const { text: aiReply } = await generateResponse(
                         'You are a structured data extractor. Return ONLY valid JSON. No explanation.',
                         extractPrompt,
                         [],
@@ -2193,7 +2193,7 @@ app.post('/api/chat', upload.array('files', MAX_FILES), async (req, res) => {
         console.log("Final Prompt sent to LLM:", finalUserPrompt.substring(0, 200) + "...");
 
         try {
-            let rawReply = await generateResponse(
+            let { text: rawReply } = await generateResponse(
                 fullSystemPrompt,
                 finalUserPrompt,
                 compressedRoleHistory,
@@ -2222,7 +2222,7 @@ app.post('/api/chat', upload.array('files', MAX_FILES), async (req, res) => {
                 }
                 if (originalMessage) {
                     try {
-                        const rewrittenBody = await generateResponse(
+                        const { text: rewrittenBody } = await generateResponse(
                             rewriterPrompt,
                             JSON.stringify({ user_language: "en", original_message: originalMessage }),
                             [],
@@ -2368,7 +2368,7 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
             let streamBuf = '';
             let activeTag = null; // null | 'think' | 'TOOL'
 
-            const rawReply = await generateResponse(
+            let { text: rawReply, modelUsed: usedModel, tier: usedTier } = await generateResponse(
                 fullSystemPrompt,
                 finalUserPrompt,
                 compressedRoleHistory,
@@ -2441,6 +2441,8 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
             sendEvent({
                 type: 'done',
                 ai_data: { ai_message: finalReply },
+                modelUsed: usedModel,
+                tier: usedTier,
                 documents: documentsData.length > 0
                     ? documentsData.map(d => ({ extractedText: d.documentText.slice(0, 4000), documentName: d.documentName }))
                     : null,

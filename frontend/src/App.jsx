@@ -414,10 +414,17 @@ function FaqModule({ authHeaders, authUser }) {
               <button type="submit" className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg">Save</button>
             </div>
           </form>
-        // ---------------------------------------------------------------------------
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // SystemHealthTab — Admin Dashboard (Suggestion #3)
 // ---------------------------------------------------------------------------
 function SystemHealthTab({ authHeaders }) {
+
   const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(true);
 

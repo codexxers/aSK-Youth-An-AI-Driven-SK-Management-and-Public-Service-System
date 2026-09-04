@@ -287,8 +287,54 @@ async function restoreFromSupabase() {
 }
 
 /**
+ * uploadSnapshotBuffer — shared upload primitive used by pushSnapshotToSupabase
+ * and the admin restore-backup endpoint.  Uploads `buffer` to the bucket under
+ * `${filenamePrefix}${timestamp}.db` and returns the resulting filename.
+ * Throws on network/auth failure so callers can handle it.
+ */
+async function uploadSnapshotBuffer(filenamePrefix, buffer) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename  = `${filenamePrefix}${timestamp}.db`;
+    await axios.post(
+        `${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${filename}`,
+        buffer,
+        {
+            headers: {
+                Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+                'Content-Type': 'application/octet-stream',
+                'x-upsert': 'true'
+            },
+            timeout: 30000,
+            maxBodyLength: Infinity
+        }
+    );
+    console.log(`[Snapshot] Uploaded ${filename} (${buffer.length} bytes) to Supabase.`);
+    return filename;
+}
+
+/**
+ * listBucketSnapshots — returns all root-level objects in the Supabase bucket,
+ * sorted newest-first.  Used by restoreFromSupabase, pushSnapshotToSupabase
+ * cleanup, and the admin /api/admin/backups endpoint.
+ * Returns an empty array if Supabase is unreachable or returns a non-array.
+ */
+async function listBucketSnapshots() {
+    const listRes = await axios.post(
+        `${SUPABASE_URL}/storage/v1/object/list/${SUPABASE_BUCKET}`,
+        { prefix: '', limit: 200, sortBy: { column: 'name', order: 'desc' } },
+        { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' }, timeout: 15000 }
+    );
+    if (!Array.isArray(listRes.data)) {
+        console.error(`[Snapshot] listBucketSnapshots: unexpected response: ${JSON.stringify(listRes.data)}`);
+        return [];
+    }
+    return listRes.data; // all root-level objects, newest-first
+}
+
+/**
  * pushSnapshotToSupabase — uploads current events.db to Supabase Storage.
- * Keeps the SNAPSHOT_KEEP most recent files; deletes older ones automatically.
+ * Keeps the SNAPSHOT_KEEP most recent SNAPSHOT_FILE_PREFIX files; safety
+ * snapshots (pre-restore-safety-*) are intentionally excluded from cleanup.
  * Called via scheduleSnapshot() which debounces concurrent writes.
  */
 async function pushSnapshotToSupabase() {
@@ -298,41 +344,19 @@ async function pushSnapshotToSupabase() {
 
     try {
         const fileBuffer = fs.readFileSync(dbPath);
-        const timestamp  = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename   = `snapshot-${timestamp}.db`;
+        await uploadSnapshotBuffer(SNAPSHOT_FILE_PREFIX, fileBuffer);
 
-        await axios.post(
-            `${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${filename}`,
-            fileBuffer,
-            {
-                headers: {
-                    Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-                    'Content-Type': 'application/octet-stream',
-                    'x-upsert': 'true'
-                },
-                timeout: 30000,
-                maxBodyLength: Infinity
-            }
-        );
-        console.log(`[Snapshot] Pushed ${filename} (${fileBuffer.length} bytes) to Supabase.`);
-
-        // Rolling cleanup: delete snapshots beyond the SNAPSHOT_KEEP newest
-        // prefix: '' lists the bucket root — see comment in restoreFromSupabase() for why
-        const listRes = await axios.post(
-            `${SUPABASE_URL}/storage/v1/object/list/${SUPABASE_BUCKET}`,
-            { prefix: '', limit: 100, sortBy: { column: 'name', order: 'desc' } },
-            { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' }, timeout: 10000 }
-        );
-        const all = Array.isArray(listRes.data)
-            ? listRes.data.filter(f => f.name && f.name.startsWith(SNAPSHOT_FILE_PREFIX))
-            : [];
-        const toDelete = all.slice(SNAPSHOT_KEEP).map(f => f.name);
+        // Rolling cleanup: prune routine snapshots beyond SNAPSHOT_KEEP newest.
+        // Safety snapshots (pre-restore-safety-*) are excluded — never auto-pruned.
+        const all = await listBucketSnapshots();
+        const routineOnly = all.filter(f => f.name && f.name.startsWith(SNAPSHOT_FILE_PREFIX));
+        const toDelete = routineOnly.slice(SNAPSHOT_KEEP).map(f => f.name);
         if (toDelete.length > 0) {
             await axios.delete(
                 `${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}`,
                 { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' }, data: { prefixes: toDelete }, timeout: 10000 }
             );
-            console.log(`[Snapshot] Pruned ${toDelete.length} old snapshot(s).`);
+            console.log(`[Snapshot] Pruned ${toDelete.length} old routine snapshot(s).`);
         }
     } catch (err) {
         console.error('[Snapshot] Push failed (non-fatal):', err.message);
@@ -2830,18 +2854,20 @@ app.get('/api/admin/system-health', async (req, res) => {
 });
 
 // POST /api/admin/backup-db — admin only
-app.post('/api/admin/backup-db', (req, res) => {
+// Unified: pushes to Supabase Storage (the same bucket as auto-snapshots).
+// The old local-file copy wrote to Render's ephemeral disk and was lost on every restart.
+app.post('/api/admin/backup-db', async (req, res) => {
     const role = resolveActiveRole(req);
     if (!['admin', 'system_admin'].includes(role))
         return res.status(403).json({ error: 'Forbidden' });
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY)
+        return res.status(503).json({ error: 'Supabase not configured — cannot backup remotely.' });
     try {
-        const backupDir = path.join(__dirname, 'data', 'backups');
-        if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
-        const backupPath = path.join(backupDir, `events.db.backup-${Date.now()}`);
-        fs.copyFileSync(DB_PATH, backupPath);
+        const fileBuffer = fs.readFileSync(DB_PATH);
+        const filename   = await uploadSnapshotBuffer(SNAPSHOT_FILE_PREFIX, fileBuffer);
         const actor = req.headers['x-actor'] || 'Admin';
-        writeLog(actor, role, 'backup_db', backupPath, 'Database backup created', req.ip);
-        res.json({ success: true, path: backupPath });
+        writeLog(actor, role, 'backup_db', filename, `On-demand snapshot pushed to Supabase (${fileBuffer.length} bytes)`, req.ip);
+        res.json({ success: true, filename, bytes: fileBuffer.length });
     } catch (err) {
         console.error('[Backup DB] Error:', err);
         res.status(500).json({ error: 'Backup failed: ' + err.message });
@@ -2865,6 +2891,127 @@ app.post('/api/admin/purge-logs', (req, res) => {
     } catch (err) {
         console.error('[Purge Logs] Error:', err);
         res.status(500).json({ error: 'Purge failed: ' + err.message });
+    }
+});
+
+// GET /api/admin/backups — admin only
+// Lists all snapshots (routine + safety) from Supabase Storage, newest-first.
+app.get('/api/admin/backups', async (req, res) => {
+    const role = resolveActiveRole(req);
+    if (!['admin', 'system_admin'].includes(role))
+        return res.status(403).json({ error: 'Forbidden' });
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY)
+        return res.status(503).json({ error: 'Supabase not configured.' });
+    try {
+        const all = await listBucketSnapshots();
+        const now = Date.now();
+        const snapshots = all
+            .filter(f => f.name && (f.name.startsWith(SNAPSHOT_FILE_PREFIX) || f.name.startsWith('pre-restore-safety-')))
+            .map(f => {
+                // Parse ISO timestamp from filename: snapshot-2026-09-04T07-32-42-369Z.db
+                const raw = f.name.replace(/^(snapshot-|pre-restore-safety-)/, '').replace(/\.db$/, '');
+                // Convert back: replace hyphens used for colons/dots (last 4 chars are 'Z')
+                // Format: YYYY-MM-DDTHH-MM-SS-mmmZ  →  YYYY-MM-DDTHH:MM:SS.mmmZ
+                const isoStr = raw
+                    .replace(/T(\d{2})-(\d{2})-(\d{2})-/, 'T$1:$2:$3.')
+                    .replace(/-Z$/, 'Z');
+                const ts = new Date(isoStr);
+                const isValid = !isNaN(ts.getTime());
+                const ageMs = isValid ? now - ts.getTime() : 0;
+
+                let relativeTime = 'unknown';
+                if (isValid) {
+                    const mins = Math.round(ageMs / 60000);
+                    if (mins < 2) relativeTime = 'just now';
+                    else if (mins < 60) relativeTime = `${mins} minutes ago`;
+                    else if (mins < 120) relativeTime = '1 hour ago';
+                    else if (mins < 1440) relativeTime = `${Math.round(mins / 60)} hours ago`;
+                    else relativeTime = `${Math.round(mins / 1440)} day(s) ago`;
+                }
+
+                return {
+                    filename: f.name,
+                    timestamp: isValid ? ts.toISOString() : null,
+                    relativeTime,
+                    size: f.metadata?.size ?? null,
+                    isSafety: f.name.startsWith('pre-restore-safety-')
+                };
+            });
+        res.json({ snapshots });
+    } catch (err) {
+        console.error('[List Backups] Error:', err);
+        res.status(500).json({ error: 'Failed to list backups: ' + err.message });
+    }
+});
+
+// POST /api/admin/restore-backup — admin only (not chairman)
+// Sequence:
+//   1. Validate the requested snapshot exists in the bucket.
+//   2. Take a pre-restore safety snapshot of the current live DB.
+//   3. Download the requested snapshot and re-upload it as the newest routine snapshot
+//      so the boot-time restoreFromSupabase() picks it up naturally on next start.
+//   4. Respond 202 with confirmation.
+//   5. After response flushes, exit so Render's supervisor restarts the process.
+app.post('/api/admin/restore-backup', async (req, res) => {
+    const role = resolveActiveRole(req);
+    if (!['admin', 'system_admin'].includes(role))
+        return res.status(403).json({ error: 'Forbidden' });
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY)
+        return res.status(503).json({ error: 'Supabase not configured.' });
+
+    const { snapshotFilename } = req.body || {};
+    if (!snapshotFilename || typeof snapshotFilename !== 'string')
+        return res.status(400).json({ error: 'snapshotFilename is required.' });
+
+    try {
+        // Step 1 — Validate: confirm the requested file actually exists in bucket
+        const all = await listBucketSnapshots();
+        const target = all.find(f => f.name === snapshotFilename);
+        if (!target)
+            return res.status(404).json({ error: `Snapshot "${snapshotFilename}" not found in bucket.` });
+
+        // Step 2 — Safety snapshot: push current live state before any changes
+        console.log('[Restore] Taking pre-restore safety snapshot...');
+        const currentBuffer = fs.readFileSync(DB_PATH);
+        const safetyFilename = await uploadSnapshotBuffer('pre-restore-safety-', currentBuffer);
+        console.log(`[Restore] Safety snapshot: ${safetyFilename}`);
+
+        // Step 3 — Download the requested historical snapshot and re-upload as newest routine snapshot.
+        // This makes it the "latest" from restoreFromSupabase()'s sort-by-name-desc perspective.
+        console.log(`[Restore] Downloading chosen snapshot: ${snapshotFilename}...`);
+        const dlRes = await axios.get(
+            `${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${snapshotFilename}`,
+            { headers: { Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` }, responseType: 'arraybuffer', timeout: 30000 }
+        );
+        const chosenBuffer = Buffer.from(dlRes.data);
+        console.log(`[Restore] Downloaded ${chosenBuffer.length} bytes. Re-uploading as latest routine snapshot...`);
+        const promotedFilename = await uploadSnapshotBuffer(SNAPSHOT_FILE_PREFIX, chosenBuffer);
+        console.log(`[Restore] Promoted as: ${promotedFilename}`);
+
+        // Step 4 — Respond before exiting
+        const actor = req.headers['x-actor'] || 'Admin';
+        writeLog(actor, role, 'restore_backup', snapshotFilename,
+            `Safety: ${safetyFilename} | Promoted: ${promotedFilename} | Restarting...`, req.ip);
+
+        res.status(202).json({
+            queued: true,
+            message: 'Safety snapshot taken. Restore queued. Service is restarting (~30\u201360s downtime).',
+            safetySnapshot: safetyFilename,
+            restoringTo: snapshotFilename,
+            promotedAs: promotedFilename
+        });
+
+        // Step 5 — Exit after response flushes so Render's supervisor restarts the process,
+        // triggering the full restoreFromSupabase() → validate → migrate → seed boot sequence.
+        res.on('finish', () => {
+            console.log('[Restore] Response sent. Triggering controlled restart...');
+            setTimeout(() => process.exit(0), 500);
+        });
+
+    } catch (err) {
+        console.error('[Restore Backup] Error:', err);
+        if (!res.headersSent)
+            res.status(500).json({ error: 'Restore failed: ' + err.message });
     }
 });
 

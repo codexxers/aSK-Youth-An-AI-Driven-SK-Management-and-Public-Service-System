@@ -414,18 +414,21 @@ function FaqModule({ authHeaders, authUser }) {
               <button type="submit" className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg">Save</button>
             </div>
           </form>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------
 // SystemHealthTab — Admin Dashboard (Suggestion #3)
 // ---------------------------------------------------------------------------
 function SystemHealthTab({ authHeaders }) {
   const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Restore Backup state
+  const [backups, setBackups] = useState(null);
+  const [backupsLoading, setBackupsLoading] = useState(false);
+  const [backupsError, setBackupsError] = useState(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [selectedBackup, setSelectedBackup] = useState(null); // snapshot object from picker
+  const [restoreStep, setRestoreStep] = useState(0); // 0=hidden, 1=confirm, 2=restoring
+  const [backupNowLoading, setBackupNowLoading] = useState(false);
 
   const fetchHealth = async () => {
     try {
@@ -444,6 +447,61 @@ function SystemHealthTab({ authHeaders }) {
       else alert('Failed: ' + data.error);
     } catch(e) { alert('Request failed.'); }
   };
+
+  const handleBackupNow = async () => {
+    if (!confirm('Push a snapshot of the current database to Supabase Storage now?')) return;
+    setBackupNowLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/backup-db`, { method: 'POST', headers: authHeaders({'Content-Type':'application/json'}), body: JSON.stringify({}) });
+      const data = await res.json();
+      if (res.ok) alert(`✅ Backup pushed!\nFile: ${data.filename}\nSize: ${Math.round(data.bytes/1024)} KB`);
+      else alert('Backup failed: ' + data.error);
+    } catch(e) { alert('Request failed.'); }
+    finally { setBackupNowLoading(false); }
+  };
+
+  const handleOpenPicker = async () => {
+    setShowPicker(true);
+    setBackupsLoading(true);
+    setBackupsError(null);
+    setSelectedBackup(null);
+    setRestoreStep(0);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/backups`, { headers: authHeaders() });
+      const data = await res.json();
+      if (res.ok) setBackups(data.snapshots || []);
+      else setBackupsError(data.error || 'Failed to load backups.');
+    } catch(e) { setBackupsError('Network error loading backups.'); }
+    finally { setBackupsLoading(false); }
+  };
+
+  const handleSelectSnapshot = (snap) => {
+    setSelectedBackup(snap);
+    setRestoreStep(1);
+  };
+
+  const handleConfirmRestore = async () => {
+    setRestoreStep(2);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/restore-backup`, {
+        method: 'POST',
+        headers: authHeaders({'Content-Type':'application/json'}),
+        body: JSON.stringify({ snapshotFilename: selectedBackup.filename })
+      });
+      // 202 Accepted is success — service will restart
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setRestoreStep(1);
+        alert('Restore failed: ' + (data.error || res.statusText));
+      }
+      // On success stay in step 2 (restoring overlay) — user waits ~60s then refreshes
+    } catch(e) {
+      setRestoreStep(1);
+      alert('Network error — restore may not have started. Check Render logs.');
+    }
+  };
+
+  const fmt = (bytes) => bytes != null ? `${Math.round(bytes / 1024)} KB` : '?';
 
   if (loading) return <div className="p-6 text-slate-400">Loading system metrics...</div>;
   if (!health) return <div className="p-6 text-red-400">Failed to load system health.</div>;
@@ -480,14 +538,31 @@ function SystemHealthTab({ authHeaders }) {
         </div>
       </div>
 
+      {/* Maintenance Actions */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
         <h3 className="text-sm font-bold text-white mb-4">Maintenance Actions</h3>
         <div className="flex flex-wrap gap-3">
-          <button onClick={() => handleAction('/api/admin/backup-db')} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold rounded-lg transition-colors">
-            Backup Database
+          <button
+            id="btn-backup-now"
+            onClick={handleBackupNow}
+            disabled={backupNowLoading}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+          >
+            {backupNowLoading ? 'Backing up…' : 'Backup Now'}
           </button>
-          <button onClick={() => handleAction('/api/admin/purge-logs', { days: 30 })} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold rounded-lg transition-colors">
-            Purge Logs (>30 days)
+          <button
+            id="btn-purge-logs"
+            onClick={() => handleAction('/api/admin/purge-logs', { days: 30 })}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold rounded-lg transition-colors"
+          >
+            Purge Logs (&gt;30 days)
+          </button>
+          <button
+            id="btn-restore-backup"
+            onClick={handleOpenPicker}
+            className="px-4 py-2 bg-amber-900/40 hover:bg-amber-900/60 border border-amber-700 text-amber-300 text-xs font-bold rounded-lg transition-colors"
+          >
+            🗃 Restore Backup
           </button>
           {health.orphanedEventLogs > 0 && (
             <div className="px-4 py-2 bg-amber-900/30 border border-amber-800 text-amber-400 text-xs font-bold rounded-lg flex items-center gap-2">
@@ -496,9 +571,106 @@ function SystemHealthTab({ authHeaders }) {
           )}
         </div>
       </div>
+
+      {/* ── Backup Picker Panel ── */}
+      {showPicker && restoreStep === 0 && (
+        <div className="bg-slate-900 border border-amber-800/50 rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-amber-300">🗃 Available Snapshots</h3>
+            <button onClick={() => setShowPicker(false)} className="text-slate-500 hover:text-slate-300 text-xs font-bold">✕ Close</button>
+          </div>
+          {backupsLoading && <p className="text-slate-400 text-sm">Loading snapshots…</p>}
+          {backupsError && <p className="text-red-400 text-sm">{backupsError}</p>}
+          {!backupsLoading && !backupsError && backups && (
+            backups.length === 0
+              ? <p className="text-slate-500 text-sm">No snapshots found in bucket.</p>
+              : (
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {backups.map((snap) => (
+                    <button
+                      key={snap.filename}
+                      onClick={() => handleSelectSnapshot(snap)}
+                      className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
+                        snap.isSafety
+                          ? 'bg-blue-950/40 border-blue-800/60 hover:bg-blue-900/40'
+                          : 'bg-slate-800 border-slate-700 hover:bg-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-white truncate">{snap.filename}</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            {snap.timestamp ? new Date(snap.timestamp).toLocaleString() : 'Unknown time'}
+                            {' · '}
+                            {fmt(snap.size)}
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0 flex flex-col items-end gap-1">
+                          <span className="text-[11px] font-bold text-slate-300">{snap.relativeTime}</span>
+                          {snap.isSafety && (
+                            <span className="text-[10px] bg-blue-800/60 text-blue-300 px-1.5 py-0.5 rounded font-bold">Safety</span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )
+          )}
+        </div>
+      )}
+
+      {/* ── Confirm Step (Step 1) ── */}
+      {restoreStep === 1 && selectedBackup && (
+        <div className="bg-slate-900 border border-red-800/60 rounded-xl p-5 space-y-4">
+          <h3 className="text-sm font-bold text-red-400">⚠ Confirm Restore</h3>
+          <div className="bg-slate-800 rounded-lg p-4 space-y-1">
+            <p className="text-xs font-bold text-slate-300">Restoring to:</p>
+            <p className="text-sm font-mono text-amber-300 break-all">{selectedBackup.filename}</p>
+            <p className="text-xs text-slate-400">
+              {selectedBackup.timestamp ? new Date(selectedBackup.timestamp).toLocaleString() : 'Unknown time'}
+              {' · '}{fmt(selectedBackup.size)} · {selectedBackup.relativeTime}
+            </p>
+          </div>
+          <div className="text-xs text-slate-400 space-y-1.5">
+            <p>⚠ <strong className="text-red-400">Everything written after this snapshot will be permanently discarded</strong> — events, users, changes, all of it.</p>
+            <p>✅ A safety snapshot of the <strong className="text-white">current live state</strong> will be taken automatically before restoring, so you can undo this if needed.</p>
+            <p>⏳ The system will <strong className="text-white">restart and be unavailable for ~30–60 seconds</strong>.</p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setRestoreStep(0); setSelectedBackup(null); }}
+              className="px-4 py-2 text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              id="btn-confirm-restore"
+              onClick={handleConfirmRestore}
+              className="px-4 py-2 text-xs font-bold text-white bg-red-700 hover:bg-red-600 border border-red-600 rounded-lg transition-colors"
+            >
+              Yes, Restore This Backup
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Restoring Overlay (Step 2) ── */}
+      {restoreStep === 2 && (
+        <div className="bg-slate-900 border border-amber-700/60 rounded-xl p-6 text-center space-y-3">
+          <div className="text-3xl animate-pulse">⏳</div>
+          <h3 className="text-sm font-bold text-amber-300">Restoring backup…</h3>
+          <p className="text-xs text-slate-400">Safety snapshot taken. The service is restarting.</p>
+          <p className="text-xs text-slate-500">This page will be <strong className="text-slate-300">unavailable for ~30–60 seconds</strong>. Please wait before refreshing.</p>
+          {selectedBackup && (
+            <p className="text-[11px] font-mono text-slate-500 mt-2 break-all">Restoring to: {selectedBackup.filename}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
+
 
 function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar, setCurrentView }) {
   const [mainTab, setMainTab] = useState('dashboard'); // 'dashboard' | 'events'

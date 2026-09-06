@@ -1420,35 +1420,39 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
         </div>
       </div>
 
-      {/* Tabs navigation */}
-      <div className="px-3 sm:px-6 pt-2 sm:pt-4 flex gap-1 sm:gap-2 border-b border-slate-800/60 overflow-x-auto scrollbar-none">
-        {[
-          { id: 'overview', label: 'Analytics', icon: '📊' },
-          { id: 'users', label: 'Users', icon: '👥' },
-          ...(effectiveRole === 'admin' ? [{ id: 'logs', label: 'Audit', icon: '📜' }] : []),
-          ...(['admin', 'chairman'].includes(effectiveRole) ? [{ id: 'health', label: 'System Health', icon: '🖥️' }] : [])
-        ].map(tab => (
+      {/* Tabs navigation — horizontally scrollable on mobile; fade-right indicates overflow */}
+      <div className="relative shrink-0">
+        <div className="px-3 sm:px-6 pt-2 sm:pt-4 flex flex-nowrap gap-1 sm:gap-2 border-b border-slate-800/60 overflow-x-auto scrollbar-none">
+          {[
+            { id: 'overview', label: 'Analytics', icon: '📊' },
+            { id: 'users', label: 'Users', icon: '👥' },
+            ...(effectiveRole === 'admin' ? [{ id: 'logs', label: 'Audit', icon: '📜' }] : []),
+            ...(['admin', 'chairman'].includes(effectiveRole) ? [{ id: 'health', label: 'System Health', icon: '🖥️' }] : [])
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`shrink-0 flex items-center gap-2 px-3 sm:px-4 py-2 border-b-2 font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'border-cyan-500 text-cyan-400 bg-slate-900/40 rounded-t-lg'
+                  : 'border-transparent text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              <span>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-3 sm:px-4 py-2 border-b-2 font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'border-cyan-500 text-cyan-400 bg-slate-900/40 rounded-t-lg'
-                : 'border-transparent text-slate-500 hover:text-slate-300'
-            }`}
+            onClick={fetchDashboardData}
+            disabled={loading}
+            className="ml-auto my-auto p-1.5 text-slate-500 hover:text-cyan-400 transition-colors rounded-lg hover:bg-slate-900 shrink-0"
+            title="Refresh Data"
           >
-            <span>{tab.icon}</span>
-            {tab.label}
+            <svg className={`w-4 h-4 ${loading ? 'animate-spin text-cyan-500' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           </button>
-        ))}
-        <button
-          onClick={fetchDashboardData}
-          disabled={loading}
-          className="ml-auto my-auto p-1.5 text-slate-500 hover:text-cyan-400 transition-colors rounded-lg hover:bg-slate-900 shrink-0"
-          title="Refresh Data"
-        >
-          <svg className={`w-4 h-4 ${loading ? 'animate-spin text-cyan-500' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-        </button>
+        </div>
+        {/* Right-edge scroll fade — signals that more tabs exist off screen on mobile */}
+        <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-slate-900 to-transparent sm:hidden" aria-hidden />
       </div>
 
       {/* Tab content wrappers */}
@@ -2885,6 +2889,20 @@ function App() {
     pendingChunksRef.current = [];
 
     try {
+      // Fix 1B: Retry once on network-level errors (TypeError: Load failed / Failed to fetch)
+      // before surfacing the failure to the user. Applies to both file and JSON paths.
+      const fetchWithRetry = async (url, opts, retries = 1, delayMs = 2000) => {
+        try { return await fetch(url, opts); }
+        catch (err) {
+          if (retries > 0 && err instanceof TypeError) {
+            console.warn('[Chat] Network error, retrying in', delayMs, 'ms…', err.message);
+            await new Promise(r => setTimeout(r, delayMs));
+            return fetchWithRetry(url, opts, retries - 1, delayMs);
+          }
+          throw err;
+        }
+      };
+
       let response;
       const clientDateString = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Asia/Singapore',
@@ -2898,9 +2916,9 @@ function App() {
         formData.append('conversationId', activeThreadId);
         formData.append('clientDateString', clientDateString);
         selectedFiles.forEach(f => formData.append('files', f));
-        response = await fetch(`${API_BASE}/api/chat/stream`, { method: 'POST', headers: authHeaders(), body: formData });
+        response = await fetchWithRetry(`${API_BASE}/api/chat/stream`, { method: 'POST', headers: authHeaders(), body: formData });
       } else {
-        response = await fetch(`${API_BASE}/api/chat/stream`, {
+        response = await fetchWithRetry(`${API_BASE}/api/chat/stream`, {
           method: 'POST',
           headers: authHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ messages: newHistory, conversationId: activeThreadId, clientDateString })

@@ -53,6 +53,31 @@ const SNAPSHOT_KEEP        = 5;   // rolling window: keep 5 most recent snapshot
 const SNAPSHOT_FILE_PREFIX = 'snapshot-'; // shared filename filter for both list calls
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Static reply cache — exact normalized-string matches skip RAG + LLM entirely.
+// Lives in-process memory only; clears on restart (these are canned answers).
+// Keyed by: lowercase, trimmed, punctuation stripped, whitespace collapsed.
+// ---------------------------------------------------------------------------
+const STATIC_REPLY_CACHE = new Map([
+    ['whats your jurisdiction',
+        'My jurisdiction is exclusively Barangay Concepcion Dos, Marikina City. All SK events I assist with are held within this area unless otherwise specified.'],
+    ['what is your jurisdiction',
+        'My jurisdiction is exclusively Barangay Concepcion Dos, Marikina City. All SK events I assist with are held within this area unless otherwise specified.'],
+    ['what is your area',
+        'My jurisdiction is exclusively Barangay Concepcion Dos, Marikina City. All SK events I assist with are held within this area unless otherwise specified.'],
+    ['who are you',
+        'I am aSK Youth, an AI-powered assistant for the Sangguniang Kabataan of Barangay Concepcion Dos, Marikina City. I can help with SK events, programs, FAQs, and administrative assistance.'],
+    ['what can you do',
+        'I can answer questions about SK programs and events, provide information on youth activities in Barangay Concepcion Dos, and assist with general SK administrative inquiries.'],
+    ['what are you',
+        'I am aSK Youth, an AI-powered assistant for the Sangguniang Kabataan of Barangay Concepcion Dos, Marikina City. I can help with SK events, programs, FAQs, and administrative assistance.'],
+]);
+
+function normalizeCacheKey(q) {
+    return q.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+
 // =============================================================================
 // CRITICAL: response_style.md dictates the AI persona, jurisdiction, and formatting.
 // Location: response_styles/response_style.md (project root)
@@ -2291,11 +2316,17 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
         aborted = true;
     });
 
-    // Keepalive: send a comment every 10 s to prevent proxy/browser timeouts.
+    // Immediate ping: keeps the connection alive through cold-start / embedding
+    // model load delays before the first real token is sent. Without this, a
+    // client with a 2-3s timeout drops the connection before the backend is ready.
+    try { res.write(': ping\n\n'); } catch (_) {}
+
+    // Keepalive: send a comment every 5 s to prevent proxy/browser timeouts.
+    // (Reduced from 10 s — cold-start stalls observed up to 6 s in production.)
     const keepAlive = setInterval(() => {
         if (aborted || res.writableEnded) return clearInterval(keepAlive);
         try { res.write(': keepalive\n\n'); } catch (_) {}
-    }, 10000);
+    }, 5000);
 
     const sendEvent = (data) => {
         if (!aborted && !res.writableEnded) {
@@ -2329,6 +2360,27 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
         }
 
         const currentQuery = messages[messages.length - 1].content;
+        // Fix 1B: Request-in log — lets us distinguish "never arrived" vs "arrived but errored"
+        console.log(`[SSE] Request received — thread:${req.body?.conversationId || 'none'} query-len:${currentQuery?.length || 0} at ${new Date().toISOString()}`);
+
+        // Fix 2: Static reply cache — skip RAG + LLM for known common queries
+        const _cacheKey = normalizeCacheKey(currentQuery || '');
+        const _cachedReply = STATIC_REPLY_CACHE.get(_cacheKey);
+        if (_cachedReply) {
+            console.log('[Cache] Hit for key:', _cacheKey);
+            sendEvent({ type: 'phase', phase: 'GENERATING', message: 'Generating response...' });
+            sendEvent({ type: 'token', token: _cachedReply });
+            sendEvent({
+                type: 'done',
+                ai_data: { ai_message: _cachedReply },
+                modelUsed: 'cache',
+                tier: 'cache',
+                documents: null,
+                retrievedChunks: []
+            });
+            clearInterval(keepAlive);
+            return res.end();
+        }
 
         // Phase 1: Indexing & retrieval
         if (documentsData.length === 0) {

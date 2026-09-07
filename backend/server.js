@@ -58,20 +58,34 @@ const SNAPSHOT_FILE_PREFIX = 'snapshot-'; // shared filename filter for both lis
 // Lives in-process memory only; clears on restart (these are canned answers).
 // Keyed by: lowercase, trimmed, punctuation stripped, whitespace collapsed.
 // ---------------------------------------------------------------------------
-const STATIC_REPLY_CACHE = new Map([
-    ['whats your jurisdiction',
-        'My jurisdiction is exclusively Barangay Concepcion Dos, Marikina City. All SK events I assist with are held within this area unless otherwise specified.'],
-    ['what is your jurisdiction',
-        'My jurisdiction is exclusively Barangay Concepcion Dos, Marikina City. All SK events I assist with are held within this area unless otherwise specified.'],
-    ['what is your area',
-        'My jurisdiction is exclusively Barangay Concepcion Dos, Marikina City. All SK events I assist with are held within this area unless otherwise specified.'],
-    ['who are you',
-        'I am aSK Youth, an AI-powered assistant for the Sangguniang Kabataan of Barangay Concepcion Dos, Marikina City. I can help with SK events, programs, FAQs, and administrative assistance.'],
-    ['what can you do',
-        'I can answer questions about SK programs and events, provide information on youth activities in Barangay Concepcion Dos, and assist with general SK administrative inquiries.'],
-    ['what are you',
-        'I am aSK Youth, an AI-powered assistant for the Sangguniang Kabataan of Barangay Concepcion Dos, Marikina City. I can help with SK events, programs, FAQs, and administrative assistance.'],
-]);
+const STATIC_REPLY_CACHE = [
+    {
+        answer: 'My jurisdiction is exclusively Barangay Concepcion Dos, Marikina City. All SK events I assist with are held within this area unless otherwise specified.',
+        aliases: [
+            'whats your jurisdiction',
+            'what is your jurisdiction',
+            'what is your area',
+            'jurisdiction',
+            'jurisdiction?',
+            'where do you operate',
+            'what area do you cover',
+            'area of operation'
+        ]
+    },
+    {
+        answer: 'I am aSK Youth, an AI-powered assistant for the Sangguniang Kabataan of Barangay Concepcion Dos, Marikina City. I can help with SK events, programs, FAQs, and administrative assistance.',
+        aliases: [
+            'who are you',
+            'what are you'
+        ]
+    },
+    {
+        answer: 'I can answer questions about SK programs and events, provide information on youth activities in Barangay Concepcion Dos, and assist with general SK administrative inquiries.',
+        aliases: [
+            'what can you do'
+        ]
+    }
+];
 
 function normalizeCacheKey(q) {
     return q.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
@@ -2359,13 +2373,26 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
             }
         }
 
-        const currentQuery = messages[messages.length - 1].content;
+        const currentQuery = messages[messages.length - 1].content || '';
         // Fix 1B: Request-in log — lets us distinguish "never arrived" vs "arrived but errored"
-        console.log(`[SSE] Request received — thread:${req.body?.conversationId || 'none'} query-len:${currentQuery?.length || 0} at ${new Date().toISOString()}`);
+        console.log(`[SSE] Request received — thread:${req.body?.conversationId || 'none'} query-len:${currentQuery.length} at ${new Date().toISOString()}`);
 
         // Fix 2: Static reply cache — skip RAG + LLM for known common queries
-        const _cacheKey = normalizeCacheKey(currentQuery || '');
-        const _cachedReply = STATIC_REPLY_CACHE.get(_cacheKey);
+        const _cacheKey = normalizeCacheKey(currentQuery);
+        let _cachedReply = null;
+        for (const entry of STATIC_REPLY_CACHE) {
+            if (entry.aliases.includes(_cacheKey)) {
+                _cachedReply = entry.answer;
+                break;
+            }
+        }
+        // Secondary keyword check if the query is casual
+        if (!_cachedReply && isCasualQuery(currentQuery)) {
+            if (_cacheKey.includes('jurisdiction') || _cacheKey.includes('areaofoperation')) {
+                _cachedReply = STATIC_REPLY_CACHE[0].answer;
+            }
+        }
+
         if (_cachedReply) {
             console.log('[Cache] Hit for key:', _cacheKey);
             sendEvent({ type: 'phase', phase: 'GENERATING', message: 'Generating response...' });

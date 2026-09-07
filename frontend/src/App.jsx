@@ -1199,6 +1199,11 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   const effectiveRole = authUser?.role || 'admin';
   const [stats, setStats] = useState({ totalEvents: 0, totalAttendees: 0, totalBudget: 0, pendingSuggestions: 0, activeUsers: 0 });
   const [participationData, setParticipationData] = useState([]);
+  
+  // Leaderboard states
+  const [leaderboardSortBy, setLeaderboardSortBy] = useState('attendees'); // 'date' | 'attendees' | 'budget'
+  const [leaderboardSortAsc, setLeaderboardSortAsc] = useState(false); // false = desc
+  const [leaderboardLimit, setLeaderboardLimit] = useState(10); // 'All' handled conditionally
   const [budgetData, setBudgetData] = useState([]);
   const [users, setUsers] = useState([]);
   const [logs, setLogs] = useState([]);
@@ -1394,6 +1399,23 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
     link.remove();
   };
 
+  // Leaderboard sorting and limiting
+  let sortedParticipationData = [...participationData];
+  sortedParticipationData.sort((a, b) => {
+    let valA = a[leaderboardSortBy] || 0;
+    let valB = b[leaderboardSortBy] || 0;
+    if (leaderboardSortBy === 'date') {
+      valA = new Date(a.date || 0).getTime() || 0;
+      valB = new Date(b.date || 0).getTime() || 0;
+    }
+    if (valA < valB) return leaderboardSortAsc ? -1 : 1;
+    if (valA > valB) return leaderboardSortAsc ? 1 : -1;
+    return 0;
+  });
+  if (leaderboardLimit !== 'All') {
+    sortedParticipationData = sortedParticipationData.slice(0, parseInt(leaderboardLimit));
+  }
+
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-950 text-white overflow-y-auto relative">
       {/* Dynamic ambient header glow */}
@@ -1491,16 +1513,47 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Participation Bar Chart */}
               <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex flex-col h-[360px]">
-                <h3 className="text-xs font-mono text-slate-400 uppercase tracking-wider mb-2 font-bold flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-cyan-500" /> Event Attendance Leaderboard
-                </h3>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
+                  <h3 className="text-xs font-mono text-slate-400 uppercase tracking-wider font-bold flex items-center gap-2 m-0">
+                    <span className="w-2 h-2 rounded-full bg-cyan-500" /> Event Attendance Leaderboard
+                  </h3>
+                  <div className="flex items-center gap-2 text-[10px] font-mono shrink-0">
+                    <span className="text-slate-500">Sort:</span>
+                    <select
+                      value={leaderboardSortBy}
+                      onChange={e => setLeaderboardSortBy(e.target.value)}
+                      className="bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-slate-300 focus:outline-none focus:border-cyan-500"
+                    >
+                      <option value="date">Date</option>
+                      <option value="attendees">Attendees</option>
+                      <option value="budget">Budget</option>
+                    </select>
+                    <button
+                      onClick={() => setLeaderboardSortAsc(!leaderboardSortAsc)}
+                      className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-cyan-400 transition-colors"
+                      title={leaderboardSortAsc ? "Ascending" : "Descending"}
+                    >
+                      {leaderboardSortAsc ? '▲' : '▼'}
+                    </button>
+                    <span className="text-slate-500 ml-2 border-l border-slate-800 pl-2">Show:</span>
+                    <select
+                      value={leaderboardLimit}
+                      onChange={e => setLeaderboardLimit(e.target.value)}
+                      className="bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-slate-300 focus:outline-none focus:border-cyan-500"
+                    >
+                      <option value="5">Top 5</option>
+                      <option value="10">Top 10</option>
+                      <option value="All">All</option>
+                    </select>
+                  </div>
+                </div>
                 <div className="flex-1 w-full relative">
-                  {participationData.length > 0 ? (
+                  {sortedParticipationData.length > 0 ? (
                     <Plot
                       data={[{
                         type: 'bar',
-                        x: participationData.map(d => d.title.substring(0,15) + (d.title.length > 15 ? '…' : '')),
-                        y: participationData.map(d => d.attendees),
+                        x: sortedParticipationData.map(d => d.title.substring(0,15) + (d.title.length > 15 ? '…' : '')),
+                        y: sortedParticipationData.map(d => d.attendees),
                         marker: { color: '#06b6d4', opacity: 0.85, line: { color: '#0891b2', width: 1 } }
                       }]}
                       layout={{

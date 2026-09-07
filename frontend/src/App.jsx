@@ -437,6 +437,12 @@ function SystemHealthTab({ authHeaders }) {
   const [restoreStep, setRestoreStep] = useState(0); // 0=hidden, 1=confirm, 2=restoring
   const [backupNowLoading, setBackupNowLoading] = useState(false);
 
+  // AI Log Viewer state
+  const [aiLogs, setAiLogs] = useState(null);      // null = never loaded
+  const [aiLogsLoading, setAiLogsLoading] = useState(false);
+  const [aiLogsError, setAiLogsError] = useState(null);
+  const [aiLogFilter, setAiLogFilter] = useState(''); // source filter
+
   const fetchHealth = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/admin/system-health`, { headers: authHeaders() });
@@ -509,6 +515,18 @@ function SystemHealthTab({ authHeaders }) {
   };
 
   const fmt = (bytes) => bytes != null ? `${Math.round(bytes / 1024)} KB` : '?';
+
+  const fetchAiLogs = async () => {
+    setAiLogsLoading(true);
+    setAiLogsError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/ai-logs`, { headers: authHeaders() });
+      const data = await res.json();
+      if (res.ok) setAiLogs(data.entries || []);
+      else setAiLogsError(data.error || 'Failed to load logs.');
+    } catch (e) { setAiLogsError('Network error.'); }
+    finally { setAiLogsLoading(false); }
+  };
 
   if (loading) return <div className="p-6 text-slate-400">Loading system metrics...</div>;
   if (!health) return <div className="p-6 text-red-400">Failed to load system health.</div>;
@@ -674,6 +692,82 @@ function SystemHealthTab({ authHeaders }) {
           )}
         </div>
       )}
+
+      {/* ── AI / Server Log Viewer ── */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <span className="text-cyan-400">📡</span> AI / Server Log Viewer
+            <span className="text-[10px] font-mono text-slate-500 font-normal ml-1">last 250 entries · in-memory only</span>
+          </h3>
+          <div className="flex items-center gap-2">
+            <select
+              value={aiLogFilter}
+              onChange={e => setAiLogFilter(e.target.value)}
+              className="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-[10px] font-mono text-slate-300 focus:outline-none focus:border-cyan-500"
+            >
+              <option value="">All sources</option>
+              {['SSE','Cache','RAG','Snapshot','VectorStore','Python AI'].map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            <button
+              onClick={fetchAiLogs}
+              disabled={aiLogsLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-bold font-mono rounded-lg transition-colors disabled:opacity-50"
+            >
+              <svg className={`w-3 h-3 ${aiLogsLoading ? 'animate-spin text-cyan-400' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              {aiLogsLoading ? 'Loading…' : 'Refresh'}
+            </button>
+          </div>
+        </div>
+
+        {aiLogsError && (
+          <div className="bg-red-950/40 border border-red-800 text-red-300 p-3 rounded-lg text-[11px] font-mono">
+            ⚠ {aiLogsError}
+          </div>
+        )}
+
+        {aiLogs === null && !aiLogsLoading && !aiLogsError && (
+          <p className="text-slate-500 text-xs font-mono text-center py-4">Click Refresh to load the live server log buffer.</p>
+        )}
+
+        {aiLogs !== null && (() => {
+          const filtered = aiLogFilter ? aiLogs.filter(e => e.source === aiLogFilter) : aiLogs;
+          return filtered.length === 0 ? (
+            <p className="text-slate-500 text-center py-6 text-xs font-mono">No entries{aiLogFilter ? ` for source "${aiLogFilter}"` : ''} in buffer.</p>
+          ) : (
+            <div className="max-h-80 overflow-y-auto rounded-lg border border-slate-800 font-mono text-[10px]">
+              <table className="w-full border-collapse">
+                <thead className="sticky top-0 bg-slate-950 z-10">
+                  <tr className="text-slate-500 text-[9px] uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left w-24">Time</th>
+                    <th className="px-3 py-2 text-left w-14">Level</th>
+                    <th className="px-3 py-2 text-left w-20">Source</th>
+                    <th className="px-3 py-2 text-left">Message</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((entry, i) => (
+                    <tr key={i} className={`border-t border-slate-800/60 ${i % 2 === 0 ? 'bg-slate-900/30' : 'bg-slate-950/30'}`}>
+                      <td className="px-3 py-1.5 text-slate-500 whitespace-nowrap">{new Date(entry.ts).toLocaleTimeString()}</td>
+                      <td className="px-3 py-1.5">
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                          entry.level === 'warn'  ? 'bg-amber-900/50 text-amber-300' :
+                          entry.level === 'error' ? 'bg-red-900/50 text-red-300' :
+                                                    'bg-slate-800 text-slate-400'
+                        }`}>{entry.level}</span>
+                      </td>
+                      <td className="px-3 py-1.5 text-cyan-400 font-bold whitespace-nowrap">{entry.source}</td>
+                      <td className="px-3 py-1.5 text-slate-300 break-all">{entry.message}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
+      </div>
     </div>
   );
 }

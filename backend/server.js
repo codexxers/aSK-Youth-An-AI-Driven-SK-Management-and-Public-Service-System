@@ -91,6 +91,23 @@ function normalizeCacheKey(q) {
     return q.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
 }
 
+// ---------------------------------------------------------------------------
+// AI / Server log ring buffer (Part 3) — fixed-size in-memory circular log.
+// Max 250 short entries. Total footprint ~50–80 KB at capacity. No disk writes.
+// Exposed via GET /api/admin/ai-logs (admin/chairman only).
+// ---------------------------------------------------------------------------
+const LOG_RING_MAX = 250;
+const AI_LOG_RING  = [];
+
+function logAI(level, source, message) {
+    const entry = { ts: new Date().toISOString(), level, source, message: String(message).slice(0, 300) };
+    if (AI_LOG_RING.length >= LOG_RING_MAX) AI_LOG_RING.shift(); // drop oldest
+    AI_LOG_RING.push(entry);
+    // Preserve existing console output — ring buffer is additive, not a replacement.
+    if (level === 'warn')  console.warn(`[${source}] ${message}`);
+    else if (level === 'error') console.error(`[${source}] ${message}`);
+    else                   console.log(`[${source}] ${message}`);
+}
 
 // =============================================================================
 // CRITICAL: response_style.md dictates the AI persona, jurisdiction, and formatting.
@@ -318,7 +335,7 @@ async function restoreFromSupabase() {
             try { fs.unlinkSync(dbPath + '-wal'); } catch (_) {}
             try { fs.unlinkSync(dbPath + '-shm'); } catch (_) {}
             fs.renameSync(tmpPath, dbPath);
-            console.log(`[Snapshot] Restore complete — ${dlRes.data.byteLength} bytes written and validated. Migrations will run next.`);
+            logAI('info', 'Snapshot', `Restore complete — ${dlRes.data.byteLength} bytes written and validated. Migrations will run next.`);
         }
     } catch (err) {
         console.error('[Snapshot] Restore failed:', err.message, '— proceeding with local database or empty state.');
@@ -347,7 +364,7 @@ async function uploadSnapshotBuffer(filenamePrefix, buffer) {
             maxBodyLength: Infinity
         }
     );
-    console.log(`[Snapshot] Uploaded ${filename} (${buffer.length} bytes) to Supabase.`);
+    logAI('info', 'Snapshot', `Uploaded ${filename} (${buffer.length} bytes) to Supabase.`);
     return filename;
 }
 
@@ -1178,6 +1195,23 @@ app.get('/api/admin/budget', (req, res) => {
     }
 });
 
+// GET /api/admin/ai-logs — returns the in-memory ring buffer newest-first.
+// Gated: valid JWT + admin or chairman role only. No disk reads — pure in-memory.
+app.get('/api/admin/ai-logs', (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Unauthorized — missing token' });
+    }
+    let decoded;
+    try { decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET); }
+    catch { return res.status(401).json({ error: 'Unauthorized — invalid token' }); }
+    const role = decoded.role || req.headers['x-role'] || '';
+    if (!['admin', 'system_admin', 'chairman'].includes(role)) {
+        return res.status(403).json({ error: 'Forbidden — admin or chairman access required' });
+    }
+    res.json({ entries: [...AI_LOG_RING].reverse(), total: AI_LOG_RING.length, max: LOG_RING_MAX });
+});
+
 // --- User Management API Routes ---
 app.get('/api/users', (req, res) => {
     try {
@@ -1815,7 +1849,7 @@ async function checkPythonService() {
         const res = await axios.get(`${PYTHON_SERVICE_URL}/health`, { timeout: 3000 });
         console.log(`[Python AI] Service is UP at ${PYTHON_SERVICE_URL}:`, JSON.stringify(res.data));
     } catch (err) {
-        console.warn(`[Python AI] Service at ${PYTHON_SERVICE_URL} is UNREACHABLE (${err.message}). Python features (language detection, intent classification, embedding, summarization) will degrade to fallbacks.`);
+        logAI('warn', 'Python AI', `Service at ${PYTHON_SERVICE_URL} is UNREACHABLE (${err.message}). Python features will degrade to fallbacks.`);
     }
 }
 // Delay the health check so Python models have time to load (~15-20s for all 3 models)
@@ -1968,7 +2002,7 @@ async function buildRagContext(currentQuery, documentsData, conversationId = nul
 
     const skipVectorSearch = isCasual && documentsData.length === 0 && storedDocs.length === 0;
     if (skipVectorSearch) {
-        console.log('[RAG] Gatekeeper: casual/short query — skipping vector search.');
+        logAI('info', 'RAG', 'Gatekeeper: casual/short query — skipping vector search.');
     } else if (vectorStore.hasChunks()) {
         const queryVec  = await embed(currentQuery);
         const rawRanked = await vectorStore.search(queryVec, TOP_K);
@@ -2326,7 +2360,7 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
     // disconnects from the SSE stream. res.on('close') fires only when the client
     // genuinely closes the response connection.
     res.on('close', () => {
-        console.log('[SSE] res.close fired — client disconnected');
+        logAI('info', 'SSE', 'res.close fired — client disconnected');
         aborted = true;
     });
 
@@ -2375,7 +2409,9 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
 
         const currentQuery = messages[messages.length - 1].content || '';
         // Fix 1B: Request-in log — lets us distinguish "never arrived" vs "arrived but errored"
-        console.log(`[SSE] Request received — thread:${req.body?.conversationId || 'none'} query-len:${currentQuery.length} at ${new Date().toISOString()}`);
+        const _reqThread = req.body?.conversationId || 'none';
+        logAI('info', 'SSE', `Request received — thread:${_reqThread} query-len:${currentQuery.length}`);
+        console.log(`[SSE] Request received — thread:${_reqThread} query-len:${currentQuery.length} at ${new Date().toISOString()}`);
 
         // Fix 2: Static reply cache — skip RAG + LLM for known common queries
         const _cacheKey = normalizeCacheKey(currentQuery);
@@ -2394,7 +2430,7 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
         }
 
         if (_cachedReply) {
-            console.log('[Cache] Hit for key:', _cacheKey);
+            logAI('info', 'Cache', `Hit for key: "${_cacheKey}"`);
             sendEvent({ type: 'phase', phase: 'GENERATING', message: 'Generating response...' });
             sendEvent({ type: 'token', token: _cachedReply });
             sendEvent({
@@ -2505,7 +2541,7 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
             );
 
             if (!activeTag && streamBuf) sendEvent({ type: 'token', token: streamBuf });
-            console.log('\n[SSE Generation Complete]');
+            logAI('info', 'SSE', 'Generation complete.');
 
             let finalReply = String(rawReply).replace(/<think>[\s\S]*?<\/think>/g, '').trim();
             const { finalReply: processed, toolUsed } = await postProcessAIResponse(finalReply, {

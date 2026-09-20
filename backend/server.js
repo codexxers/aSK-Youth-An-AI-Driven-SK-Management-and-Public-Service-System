@@ -1907,26 +1907,19 @@ async function buildRagContext(currentQuery, documentsData, conversationId = nul
     let retrievedChunks  = [];
     let finalUserPrompt  = currentQuery;
 
-    // --- Python AI Layer: Language Detection (Feature 4) ---
-    // Guard: only inject Filipino flag when:
-    //   1. Detector confidence >= 0.85 (low confidence = likely misclassification on short English)
-    //   2. Query does not start with clear English words (hello, hi, may, can, what, how, etc.)
-    // This prevents "hello" / "May I ask" / English sentences from triggering Filipino replies.
+    // --- Fix 1: Deterministic Language Override ---
+    // Instead of relying on unreliable Python detection or letting the LLM guess,
+    // we use a hard keyword check to explicitly instruct the model.
     let languageFlag = '';
-    const ENGLISH_START = /^(hello|hi|hey|good\s|may i|can i|what|how|who|when|where|why|is |are |do |does |could|would|please|i |my |the |a |an |can you|tell me|show|give|help|yes|no|ok|okay|sure|thanks|thank)/i;
-    try {
-        const langRes = await axios.post(`${PYTHON_SERVICE_URL}/detect-language`, { text: currentQuery }, { timeout: 3000 });
-        const confidence = langRes.data.confidence ?? 0;
-        const isClearlyEnglish = ENGLISH_START.test(currentQuery.trim());
-        if (langRes.data.is_filipino && confidence >= 0.85 && !isClearlyEnglish) {
-            languageFlag = '\n\n[Language instruction: The user is writing in Filipino/Tagalog. Respond in the same language unless they switch.]';
-            console.log(`[Python AI] Language detected: ${langRes.data.language} (Filipino) — confidence: ${confidence}`);
-        } else if (langRes.data.is_filipino) {
-            console.log(`[Python AI] Filipino detection skipped — confidence ${confidence} < 0.85 or message appears English.`);
-        }
-    } catch (err) {
-        // Non-fatal — continue without language detection
-        console.warn('[Python AI] Language detection unavailable:', err.message);
+    const TAGALOG_MARKERS = ["po", "opo", "kumusta", "paano", "mga", "ang", "ng", "sa", "salamat", "magandang", "ako", "ikaw", "ito", "yan", "hindi", "oo"];
+    const hasTagalog = TAGALOG_MARKERS.some(marker => new RegExp(`\\b${marker}\\b`, 'i').test(currentQuery));
+    
+    if (hasTagalog) {
+        languageFlag = '\n\n[Language instruction: The user is writing in Filipino/Tagalog. Respond in the same language unless they switch.]';
+        console.log(`[aSK Youth] Language deterministic check: Filipino marker found.`);
+    } else {
+        languageFlag = '\n\n[Language instruction: You MUST respond in English for this turn. Do not use Tagalog unless the user explicitly used Tagalog keywords in this exact message.]';
+        console.log(`[aSK Youth] Language deterministic check: No Filipino markers. Forcing English.`);
     }
 
     // 0. Persist newly uploaded documents into the thread-scoped store
@@ -2180,6 +2173,13 @@ ${c.text}
             
             finalUserPrompt += `\n\n[BACKGROUND_REFERENCE — INTERNAL, ADMIN-TIER ONLY, DO NOT CITE UNLESS RULES BELOW SAY SO]\n${adminBlocks}`;
         }
+    }
+
+    // --- Fix 2: Admin/Officer Draft Override ---
+    // Explicitly countermand the global "redirect to Secretariat" instruction for authorized roles,
+    // allowing them to freely draft new unscheduled proposals using user-provided parameters.
+    if (['system_admin', 'chairman', 'officer'].includes(activeRole)) {
+        finalUserPrompt += `\n\n[ROLE OVERRIDE: As an ${activeRole}, you are fully AUTHORIZED to draft new, unscheduled event or program proposals using the parameters provided by the user (title, date, budget, participants, etc.). Ignore the rule to "redirect proposals to the Secretariat". You may use any provided background references as optional context, but never use them as grounds to refuse drafting a new proposal.]`;
     }
 
     // Task 4.3 — One-time chat nudge for upcoming events on first message of a new conversation

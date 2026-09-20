@@ -2839,6 +2839,7 @@ function App() {
   const [streamingContent, setStreamingContent] = useState('');
   const streamingTextRef = useRef('');
   const pendingChunksRef = useRef([]);
+  const abortControllerRef = useRef(null);
 
   const handleTextareaChange = (e) => {
     setInputText(e.target.value);
@@ -3035,6 +3036,13 @@ function App() {
     setStreamingContent('');
     pendingChunksRef.current = [];
 
+    // Fix 3: Cancel any prior connection state before sending a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
     try {
       // Fix 1B: Retry once on network-level errors (TypeError: Load failed / Failed to fetch)
       // before surfacing the failure to the user. Applies to both file and JSON paths.
@@ -3063,12 +3071,13 @@ function App() {
         formData.append('conversationId', activeThreadId);
         formData.append('clientDateString', clientDateString);
         selectedFiles.forEach(f => formData.append('files', f));
-        response = await fetchWithRetry(`${API_BASE}/api/chat/stream`, { method: 'POST', headers: authHeaders(), body: formData });
+        response = await fetchWithRetry(`${API_BASE}/api/chat/stream`, { method: 'POST', headers: authHeaders(), body: formData, signal });
       } else {
         response = await fetchWithRetry(`${API_BASE}/api/chat/stream`, {
           method: 'POST',
           headers: authHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify({ messages: newHistory, conversationId: activeThreadId, clientDateString })
+          body: JSON.stringify({ messages: newHistory, conversationId: activeThreadId, clientDateString }),
+          signal
         });
       }
 

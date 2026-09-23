@@ -1658,7 +1658,9 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                       data={[{
                         type: 'bar',
                         x: sortedParticipationData.map(d => d.title.substring(0,15) + (d.title.length > 15 ? '…' : '')),
-                        y: sortedParticipationData.map(d => d.attendees),
+                        y: sortedParticipationData.map(d => leaderboardSortBy === 'budget' ? (Number(d.budget_allotted) || 0) : (Number(d.attendees) || 0)),
+                        text: sortedParticipationData.map(d => `<b>${d.title}</b><br>Date: ${d.date ? new Date(d.date).toLocaleDateString() : 'N/A'}<br>Attendees: ${d.attendees || 0}<br>Budget: ₱${(Number(d.budget_allotted) || 0).toLocaleString()}`),
+                        hoverinfo: 'text',
                         marker: { color: '#06b6d4', opacity: 0.85, line: { color: '#0891b2', width: 1 } }
                       }]}
                       layout={{

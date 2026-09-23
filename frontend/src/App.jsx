@@ -575,13 +575,13 @@ function SystemHealthTab({ authHeaders }) {
           >
             {backupNowLoading ? 'Backing up…' : 'Backup Now'}
           </button>
-          <button
+          {/* <button
             id="btn-purge-logs"
             onClick={() => handleAction('/api/admin/purge-logs', { days: 30 })}
             className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold rounded-lg transition-colors"
           >
             Purge Logs (&gt;30 days)
-          </button>
+          </button> */}
           <button
             id="btn-restore-backup"
             onClick={handleOpenPicker}
@@ -1400,9 +1400,9 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   // Handle Add User
   const handleCreateUser = async (e) => {
     e.preventDefault();
-    // Admin role creation requires token
-    if (newUser.role === 'admin' && !newUserToken.trim()) {
-      alert('A privileged authorization token is required to create an Admin account.');
+    // Account creation requires token (as another safeguard for administrating accounts)
+    if (!newUserToken.trim()) {
+      alert('A privileged authorization token is required to create an account.');
       return;
     }
     try {
@@ -1496,12 +1496,23 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   // Leaderboard sorting and limiting
   let sortedParticipationData = [...participationData];
   sortedParticipationData.sort((a, b) => {
-    let valA = a[leaderboardSortBy] || 0;
-    let valB = b[leaderboardSortBy] || 0;
+    let valA = 0;
+    let valB = 0;
+    
     if (leaderboardSortBy === 'date') {
       valA = new Date(a.date || 0).getTime() || 0;
       valB = new Date(b.date || 0).getTime() || 0;
+    } else if (leaderboardSortBy === 'budget') {
+      valA = Number(a.budget_allotted) || 0;
+      valB = Number(b.budget_allotted) || 0;
+    } else if (leaderboardSortBy === 'attendees') {
+      valA = Number(a.attendees) || 0;
+      valB = Number(b.attendees) || 0;
+    } else {
+      valA = a[leaderboardSortBy] || 0;
+      valB = b[leaderboardSortBy] || 0;
     }
+
     if (valA < valB) return leaderboardSortAsc ? -1 : 1;
     if (valA > valB) return leaderboardSortAsc ? 1 : -1;
     return 0;
@@ -1543,7 +1554,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             { id: 'overview', label: 'Analytics', icon: '📊' },
             { id: 'users', label: 'Users', icon: '👥' },
             ...(effectiveRole === 'admin' ? [{ id: 'logs', label: 'Audit', icon: '📜' }] : []),
-            ...(['admin', 'chairman'].includes(effectiveRole) ? [{ id: 'health', label: 'System Health', icon: '🖥️' }] : [])
+            ...(['admin'].includes(effectiveRole) ? [{ id: 'health', label: 'System Health', icon: '🩺' }] : [])
           ].map(tab => (
             <button
               key={tab.id}
@@ -1609,7 +1620,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
               <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex flex-col h-[360px]">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
                   <h3 className="text-xs font-mono text-slate-400 uppercase tracking-wider font-bold flex items-center gap-2 m-0">
-                    <span className="w-2 h-2 rounded-full bg-cyan-500" /> Event Attendance Leaderboard
+                    <span className="w-2 h-2 rounded-full bg-cyan-500" /> Event Statistics
                   </h3>
                   <div className="flex items-center gap-2 text-[10px] font-mono shrink-0">
                     <span className="text-slate-500">Sort:</span>
@@ -1910,8 +1921,8 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
           </div>
         )}
 
-        {/* --- SYSTEM HEALTH TAB (Admin/Chairman Only) --- */}
-        {activeTab === 'health' && ['admin', 'chairman'].includes(effectiveRole) && (
+        {/* --- SYSTEM HEALTH TAB (Admin Only) --- */}
+        {activeTab === 'health' && ['admin'].includes(effectiveRole) && (
           <SystemHealthTab authHeaders={authHeaders} />
         )}
       </div>
@@ -1975,12 +1986,11 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
                 />
               </div>
-              {/* Admin token — only shown when Admin tier selected */}
-              {newUser.role === 'admin' && (
-                <div className="border border-red-800/50 bg-red-950/20 rounded-lg p-3 space-y-2">
-                  <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest">🔐 Admin Authorization Required</p>
-                  <p className="text-slate-500 text-[10px]">Creating an Admin account requires a privileged authorization token.</p>
-                  <input
+              {/* Token — now required for all account creations */}
+              <div className="border border-red-800/50 bg-red-950/20 rounded-lg p-3 space-y-2">
+                <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest">🔐 Authorization Required</p>
+                <p className="text-slate-500 text-[10px]">Creating an account requires a privileged authorization token.</p>
+                <input
                     type="password"
                     value={newUserToken}
                     onChange={e => setNewUserToken(e.target.value)}
@@ -1988,7 +1998,6 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     className="w-full bg-slate-950 border border-red-800/50 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500 text-xs"
                   />
                 </div>
-              )}
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"

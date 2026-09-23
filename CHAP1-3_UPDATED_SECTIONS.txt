@@ -1,0 +1,291 @@
+================================================================================
+aSK YOUTH — CHAP 1-3 UPDATED SECTIONS
+Full replacement text — paste directly into the manuscript document
+================================================================================
+
+All sections below are written in the same academic tone and paragraph style as
+the original document. Replace only the indicated sections; all other parts of
+the chapter remain unchanged.
+
+================================================================================
+SECTION 1 — SCOPE AND LIMITATION OF THE STUDY
+(Replaces the current Scope and Limitation section, pages 4-5)
+================================================================================
+
+Scope and Limitation of the Study
+
+The scope of the study is to develop the "aSK Youth: An AI-Driven SK Management
+and Public Service System" to enhance the administrative efficiency and data
+reliability of Sangguniang Kabataan operations in Barangay Concepcion Dos.
+
+   The proposed study will automate the generation of various administrative
+   records and reports required for SK project implementation and official
+   compliance.
+
+   The proposed study will utilize a localized dataset of historical records and
+   RA 10742 to provide context-aware AI budget recommendations.
+
+   The proposed study will incorporate a digital verification system for
+   monitoring registrations and attendance during SK-led youth events.
+
+   The proposed study will develop a web-based architecture using React.js and
+   Node.js, integrated with cloud-hosted AI API services, and optimized for
+   mobile responsiveness.
+
+   The proposed study will offer AI-driven chatbot assistance to streamline
+   internal SK communications and information dissemination.
+
+The limitations of the study which are not included in the study are the
+following:
+
+   The proposed study will not include administrative functionality for areas
+   beyond Barangay Concepcion Dos.
+
+   The proposed study will not involve integration with other local government
+   units (LGUs) or non-SK operations.
+
+   The proposed study will not incorporate advanced features such as biometric
+   verification, multi-language support, or real-time video.
+
+   The proposed study will not guarantee 100% AI accuracy if there is a lack of
+   quality or completeness in the historical SK data provided.
+
+   The proposed study will require a stable internet connection for all system
+   modules, as AI processing and data storage are handled through cloud-based
+   services and external AI API providers.
+
+   The proposed study's AI-powered features are dependent on the availability
+   and continuity of the external AI API services utilized by the system; service
+   interruptions from the provider may temporarily affect AI response capability.
+
+
+================================================================================
+SECTION 2 — TECHNICAL BACKGROUND
+(Replaces the current Technical Background section, pages 29-30)
+================================================================================
+
+Technical Background
+
+The study utilizes a multi-layered software architecture consisting of React.js
+(v18.0) for the frontend and Node.js (v20.x) for server-side logic, integrated
+with cloud-hosted AI API services. React.js was selected for its superior
+component-based rendering, which is essential for maintaining a highly responsive
+mobile interface for SK officials. Instead of relying on traditional, monolithic
+API structures, the system leverages external AI APIs to provide the specialized
+intelligence required for administrative tasks such as document automation and
+context-aware conversational querying. Tailwind CSS is utilized for UI design
+to ensure minimal load times on mobile devices, while VS Code serves as the
+primary integrated development environment for developing the automated workflows
+and AI-assisted interactions.
+
+The AI layer of the system is powered through API-based access to large language
+model services, eliminating the need for on-premises AI hardware or dedicated
+local computing infrastructure. This approach allows the system to deliver
+AI-driven capabilities — including natural language understanding, context-aware
+responses, and automated document generation — through standard web service calls
+to cloud AI providers. The architecture is specifically designed to be
+hardware-agnostic for the end-user, ensuring that the framework is universally
+accessible via standard smartphones, tablets, or desktop browsers without
+requiring specialized equipment investments from the Barangay.
+
+Regarding deployment, the backend server is hosted on a managed cloud platform,
+while the frontend interface is served through a static web hosting platform.
+Persistent data storage is handled by an embedded database, with automated cloud
+backup facilitated through an object storage service to ensure data durability
+and recovery across service restarts. This cloud-native deployment model removes
+the need for physical server maintenance at the barangay premises, reduces
+operational costs, and ensures the system remains consistently accessible as long
+as a stable internet connection is available. Through these design choices, SK
+officials are able to execute AI-driven administrative functions from their
+existing devices without necessitating any high-end equipment investments from
+the Barangay.
+
+
+================================================================================
+SECTION 3 — REQUIREMENT SPECIFICATION: HARDWARE AND SOFTWARE SPECIFICATION
+(Replaces the current section of the same title, pages 54-56,
+ including Operating System Requirements and Special Software Requirements)
+================================================================================
+
+Requirement Specification: Hardware and Software Specification
+
+To ensure the reliability, accessibility, and efficient performance of the
+proposed AI-driven SK Barangay Assistant application, the researchers identified
+the necessary technical requirements for system development, deployment, and
+end-user operation. The system is primarily designed for desktop and personal
+computer environments to support administrative and organizational tasks
+efficiently. In addition, the application is developed with responsive design
+principles to maintain compatibility across mobile devices and tablets, allowing
+users to access system features through different platforms when needed.
+
+Since the application utilizes cloud-based services for data processing, storage,
+and AI-powered functionalities, all major computational processes — including AI
+inference, database management, and file storage — are handled remotely on
+managed cloud infrastructure. Therefore, the local technical requirements for
+end-users primarily emphasize stable internet connectivity, a compatible web
+browser, and adequate device performance to ensure consistent and seamless system
+operation across all supported devices.
+
+Operating System Requirements
+
+   End-user client (browser): Any common desktop or mobile operating system that
+   supports a current web browser is sufficient for accessing the system. This
+   includes Windows 10 or 11, macOS, Android 10 and later, and iOS or iPadOS
+   current releases.
+
+   Backend server (cloud-hosted): The Node.js backend application is deployed on
+   a managed cloud hosting platform. The operating system environment is fully
+   managed by the platform provider and requires no installation or configuration
+   by the end-user or the beneficiary institution.
+
+   Frontend (cloud-hosted): The built React application, composed of static files
+   produced after the build process, is deployed on a managed static web hosting
+   platform. Viewing the system requires only a modern browser; no web server
+   software installation is required on the user's or institution's own machine.
+
+Special Software Requirements
+
+   End-user client: A modern web browser — such as Google Chrome, Microsoft
+   Edge, Mozilla Firefox, or Apple Safari on the current stable release channel
+   — with JavaScript enabled and support for real-time data streaming for the AI
+   chat functionality. Optional PDF viewing capability is recommended for
+   exported documents or reports provided by the system as downloadable files.
+
+   Backend (cloud-hosted): The backend service runs on a Node.js LTS environment
+   hosted on a managed cloud platform. An embedded database satisfies all local
+   persistence requirements, eliminating the need for a separate database server
+   installation. Cloud AI API credentials and storage service credentials are
+   configured as environment variables on the hosting platform, enabling secure
+   access to AI services and automated database backup operations.
+
+   Cloud services: A managed cloud hosting account is required for deploying and
+   running the backend Node.js application. A separate static web hosting account
+   is required for building and serving the React frontend. A cloud object
+   storage service is required for automated database snapshot backups. Access
+   credentials for the cloud AI API service provider are required to enable all
+   AI-powered functionalities within the system.
+
+
+================================================================================
+SECTION 4 — HARDWARE AND CLOUD SPECIFICATIONS
+(Replaces the current Hardware and Cloud Specifications section, pages 56-57)
+================================================================================
+
+Hardware and Cloud Specifications
+
+Hardware requirements for the aSK Youth system are minimal for end-users, as
+all AI processing, database operations, and application logic are handled by
+managed cloud infrastructure rather than on the user's local device.
+
+   End-user client: A device with a dual-core processor or better, a minimum of
+   4 GB of RAM (with 8 GB recommended for smooth operation when working with
+   analytics charts and extended conversation threads), a stable Wi-Fi or wired
+   Ethernet connection, and a display suitable for reading and typing are
+   sufficient for end-user access. Tablets and mobile phones should meet their
+   respective operating system vendor's minimum requirements for running a
+   current web browser.
+
+   Frontend hosting (cloud platform): Performance and global content delivery for
+   the frontend web application are managed entirely by the cloud hosting
+   platform's edge network infrastructure. No dedicated hardware is consumed for
+   hosting the frontend; the end-user's browser connects directly to the globally
+   distributed hosting infrastructure managed by the platform provider.
+
+   Backend server (cloud-hosted): The Node.js backend is hosted on a managed
+   cloud server that handles all API requests, database read and write operations,
+   knowledge base management, and communication with cloud AI services on behalf
+   of all connected users. No physical server hardware needs to be procured,
+   installed, or maintained by the Barangay or the beneficiary institution.
+
+   AI processing (cloud-hosted): All artificial intelligence language model
+   inference is performed remotely through cloud-hosted AI API services over
+   standard encrypted connections. This design means no specialized computing
+   hardware, no locally installed model files, and no dedicated AI processing
+   equipment is required at the deployment site or on the devices of SK officials
+   and youth constituents.
+
+   Database and storage (cloud-hosted): The primary database resides on the cloud
+   backend server. Automated snapshot backups are periodically uploaded to a
+   cloud object storage service, ensuring data persistence and recoverability
+   without dependency on local disk retention or physical storage hardware at
+   the barangay.
+
+   Network (cloud hosting): Broadband connectivity with at least 10 Mbps upload
+   and download speed is recommended for the cloud hosting environment to ensure
+   stable API communication, timely service health checks, and reliable document
+   upload and download operations for all connected users.
+
+
+================================================================================
+SECTION 5 — NETWORK REQUIREMENTS
+(Replaces the current Network Requirements section, pages 57-58)
+================================================================================
+
+Network Requirements
+
+To ensure the reliable operation, accessibility, and real-time performance of the
+proposed AI-driven SK Barangay Assistant application, a stable internet
+connection is required for all supported devices. Since the system utilizes
+cloud-based infrastructure, remote database services, and AI-powered processing
+delivered through external API services, continuous network connectivity is
+essential for seamless data transmission, system synchronization, and user
+interaction.
+
+A stable internet connection with a minimum bandwidth of 10 Mbps through a Wi-Fi
+or wired Ethernet connection is recommended for desktop and laptop users. While
+bandwidth capacity may vary depending on simultaneous usage, consistent network
+stability is essential as the system relies on remote cloud servers for
+AI-assisted responses, document generation, budget estimation, and data retrieval
+functionalities.
+
+Mobile and Tablet Devices. Mobile devices and tablets require a reliable Wi-Fi
+or mobile data connection — with a 4G LTE or better connection recommended — to
+access the web-based interface, retrieve organizational records, submit user
+requests, and receive AI-generated recommendations in real time. This ensures
+continuous accessibility for SK officials and youth constituents who may need to
+access the system outside standard workstation environments, such as during
+community events or field activities.
+
+External Network Connectivity. A dependable Internet Service Provider (ISP) with
+stable connectivity and minimal network latency is required to support real-time
+synchronization between user devices, the cloud-hosted backend server, and the
+external AI service providers utilized by the system. This ensures that budget
+records, development plans, generated documents, and AI-powered recommendations
+are processed and delivered accurately without significant delay. In the event of
+a network interruption, AI-dependent features — such as the chatbot and document
+generation — will be temporarily unavailable until connectivity is restored, as
+these functions rely on live communication with external cloud AI services.
+
+
+================================================================================
+SECTION 6 — AGILE DEVELOPMENT: DEVELOPMENT AND DEPLOYMENT BULLETS
+(In the Research Methodology chapter, Agile Development section, page 59,
+ replace only the "Development" and "Deployment" bullets)
+================================================================================
+
+Development — Implement the system modules using React.js for the frontend,
+Node.js for the backend, and cloud-hosted AI API services integrated into the
+AI chatbot and document automation modules.
+
+Deployment — Deploy the system using cloud-hosting platforms, with the React
+frontend served through a managed static hosting service and the Node.js backend
+hosted on a managed cloud server, supported by a cloud object storage service
+configured for automated database backups. System access is made available to
+SK officials and youth constituents of Barangay Concepcion Dos through any
+standard internet-connected device with a compatible web browser.
+
+
+================================================================================
+SECTION 7 — DATA GATHERING PROCEDURE: STEP 5
+(In the Data Gathering Procedure table, page 64, replace only Step 5)
+================================================================================
+
+Phase 5 — Deploy the system on cloud-hosting platforms and conduct user training
+sessions for SK officials and youth constituents of Barangay Concepcion Dos,
+orienting all participants on system navigation, role-based features, and the
+AI-assisted functionalities available within the aSK Youth application.
+
+
+================================================================================
+END OF UPDATED SECTIONS
+================================================================================

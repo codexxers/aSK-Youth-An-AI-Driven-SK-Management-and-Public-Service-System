@@ -2303,7 +2303,7 @@ function LoginPage({ apiBase, onLogin }) {
   const [lockedSecs, setLockedSecs] = useState(0);           // 0 = not locked
 
   // Countdown ticker for lockout display
-  React.useEffect(() => {
+  useEffect(() => {
     if (lockedSecs <= 0) return;
     const t = setTimeout(() => setLockedSecs(s => Math.max(0, s - 1)), 1000);
     return () => clearTimeout(t);

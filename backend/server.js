@@ -946,6 +946,39 @@ function writeLog(actor, role, action, target, details, ip) {
 // --- Authentication & Session Routes ---
 const JWT_SECRET = process.env.JWT_SECRET || 'askyouth_super_secret_jwt_key_2026';
 
+// ---------------------------------------------------------------------------
+// Login lockout — in-memory per-username tracking.
+// 5 consecutive failures → 15-minute lockout. Resets on correct login or expiry.
+// ---------------------------------------------------------------------------
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_LOCKOUT_MS   = 15 * 60 * 1000; // 15 minutes
+const loginAttempts      = new Map(); // username → { count, lockedUntil }
+
+function checkLockout(username) {
+    const entry = loginAttempts.get(username);
+    if (!entry) return null;
+    if (entry.lockedUntil && Date.now() < entry.lockedUntil) {
+        const remainingSec = Math.ceil((entry.lockedUntil - Date.now()) / 1000);
+        return { locked: true, remainingSec };
+    }
+    return null;
+}
+
+function recordFailedAttempt(username) {
+    const entry = loginAttempts.get(username) || { count: 0, lockedUntil: null };
+    entry.count += 1;
+    if (entry.count >= LOGIN_MAX_ATTEMPTS) {
+        entry.lockedUntil = Date.now() + LOGIN_LOCKOUT_MS;
+        console.warn(`[Auth] Account locked: ${username} (${entry.count} failed attempts).`);
+    }
+    loginAttempts.set(username, entry);
+    return entry;
+}
+
+function clearFailedAttempts(username) {
+    loginAttempts.delete(username);
+}
+
 app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
     const ip = req.ip || req.socket.remoteAddress;
@@ -953,15 +986,35 @@ app.post('/api/auth/login', (req, res) => {
         writeLog('Unknown', 'guest', 'login_fail', username, 'Missing credentials', ip);
         return res.status(400).json({ error: 'Username and password required' });
     }
+
+    // Check lockout BEFORE touching the DB — avoids timing leaks
+    const lockoutStatus = checkLockout(username);
+    if (lockoutStatus && lockoutStatus.locked) {
+        const mins = Math.ceil(lockoutStatus.remainingSec / 60);
+        writeLog(username, 'guest', 'login_fail', username, `Account locked — ${lockoutStatus.remainingSec}s remaining`, ip);
+        return res.status(429).json({
+            error: `Account temporarily locked due to too many failed attempts. Try again in ${mins} minute${mins !== 1 ? 's' : ''}.`,
+            locked: true,
+            remainingSec: lockoutStatus.remainingSec
+        });
+    }
+
     const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
     if (!user || !bcrypt.compareSync(password, user.password_hash)) {
-        writeLog(username, 'guest', 'login_fail', username, 'Invalid credentials', ip);
-        return res.status(401).json({ error: 'Invalid username or password' });
+        const entry = recordFailedAttempt(username);
+        const attemptsLeft = LOGIN_MAX_ATTEMPTS - entry.count;
+        writeLog(username, 'guest', 'login_fail', username, `Invalid credentials (attempt ${entry.count}/${LOGIN_MAX_ATTEMPTS})`, ip);
+        if (entry.lockedUntil) {
+            return res.status(401).json({ error: `Invalid credentials. Account locked for 15 minutes.`, locked: true, remainingSec: Math.ceil((entry.lockedUntil - Date.now()) / 1000) });
+        }
+        return res.status(401).json({ error: `Invalid username or password. ${attemptsLeft} attempt${attemptsLeft !== 1 ? 's' : ''} remaining before lockout.`, attemptsLeft });
     }
     if (user.status === 'inactive') {
         writeLog(username, user.role, 'login_fail', username, 'Account inactive', ip);
-        return res.status(403).json({ error: 'Account is deactivated' });
+        return res.status(403).json({ error: 'Account is deactivated. Contact the System Administrator.' });
     }
+    // Successful — clear failed attempts
+    clearFailedAttempts(username);
     const token = jwt.sign({ id: user.id, username: user.username, role: user.role, full_name: user.full_name }, JWT_SECRET, { expiresIn: '24h' });
     writeLog(user.full_name, user.role, 'login_success', user.username, 'Successful authentication', ip);
     const { password_hash, ...safeUser } = user;
@@ -1268,10 +1321,17 @@ app.patch('/api/users/:id', (req, res) => {
         const targetUser = db.prepare('SELECT username FROM users WHERE id = ?').get(id);
         if (!targetUser) return res.status(404).json({ error: 'User not found' });
 
+        // Authorization token required for ALL modifications (not just password changes)
+        const expectedToken = process.env.ADMIN_CREATION_TOKEN || 'SECRET_ADMIN_TOKEN_123';
+        if (!admin_token || admin_token !== expectedToken) {
+            return res.status(401).json({ error: 'Invalid or missing admin authorization token. All account modifications require the admin token.' });
+        }
+
         if (password) {
-            const expectedToken = process.env.ADMIN_CREATION_TOKEN || 'SECRET_ADMIN_TOKEN_123';
-            if (!admin_token || admin_token !== expectedToken) {
-                return res.status(401).json({ error: 'Invalid or missing admin authorization token for password change' });
+            // Additional password-change validation: confirm match is done on client side,
+            // but we also enforce minimum length server-side.
+            if (password.length < 6) {
+                return res.status(400).json({ error: 'New password must be at least 6 characters.' });
             }
         }
 
@@ -1288,7 +1348,7 @@ app.patch('/api/users/:id', (req, res) => {
 
         params.push(id);
         db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...params);
-        writeLog(actor, actorRole, 'update_user', targetUser.username, `Updated attributes: ${Object.keys(req.body).join(', ')}`, ip);
+        writeLog(actor, actorRole, 'update_user', targetUser.username, `Updated attributes: ${Object.keys(req.body).filter(k => k !== 'admin_token').join(', ')}`, ip);
         res.json({ success: true });
         scheduleSnapshot();
     } catch (err) {

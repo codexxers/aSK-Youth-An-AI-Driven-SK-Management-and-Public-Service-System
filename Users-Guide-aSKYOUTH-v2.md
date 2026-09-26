@@ -15,10 +15,11 @@ aSK Youth is a web-based platform. You do not need to download or install any ap
 - **Hardware:** For QR code scanning, a device with a working camera is required.
 
 ### 1.3 User Roles Explained
-aSK Youth divides its features across three distinct roles to ensure data privacy and ease of use.
-- **Youth (Guest / Resident Level):** The default role for registered residents. You can view the calendar, register for events, scan QR codes for attendance, submit suggestions, and chat with the AI about public SK matters.
-- **SK Officer (Management Level):** For elected SK officials. You have access to the Youth features, plus the ability to create events, generate QR codes, estimate project budgets using AI, and automate the drafting of official documents (like Resolutions and Minutes).
-- **System Admin (Oversight Level):** For IT staff and the SK Chairperson. You have access to all features, plus user management, role assignments, system health monitoring, and the ability to export comprehensive PDF/DOCX reports.
+aSK Youth divides its features across four distinct roles to ensure data privacy and ease of use.
+- **Youth (Guest / Resident Level):** The default role for all youth residents. Access the system without a personal account. View the SK calendar, track QR attendance, submit suggestions, and chat with the AI about public SK matters.
+- **SK Officer (Management Level):** For elected SK officials. Includes all Youth features, plus the ability to create events, generate QR codes, draft AI-assisted project proposals in Chat, and access the Document Automation and Budget tools.
+- **SK Chairperson (Executive Level):** For the elected SK Chairperson. Includes all Officer features, plus the ability to view full budget analytics, create and edit FAQ entries, and access resolution management.
+- **System Admin (Oversight Level):** For IT administrators. Includes access to all features, plus user management, role assignments, audit logs, system health monitoring, and authorized account creation.
 
 ### 1.4 Accessing the System (Youth)
 There is no need to register or create an account if you are a youth resident of Barangay Concepcion Dos. A guest user account is available by default for your convenience.
@@ -26,7 +27,7 @@ There is no need to register or create an account if you are a youth resident of
 **To access the system as a Youth:**
 1. Open your web browser and navigate to the aSK Youth URL.
 2. Click the **Continue as Youth** button on the welcome screen.
-3. You will immediately access the Youth Dashboard.
+3. You will immediately be logged in as a Youth user and gain access to Youth-level pages.
 
 *[INSERT FULL-PAGE SCREENSHOT: Login Page highlighting the "Continue as Youth" button with callout letter A]*
 
@@ -40,7 +41,7 @@ Security is a top priority. Official accounts for SK Officers and the Chairperso
 4. Click **Sign In**.
 
 **Security Lockout Policy:**
-If you enter an incorrect password **five (5) consecutive times**, your account will be temporarily locked for **15 minutes**. This prevents brute-force attacks. You must wait for the timer to expire before trying again.
+If you enter an incorrect password **five (5) consecutive times**, your account will be temporarily locked for **15 minutes**. A countdown timer will appear on the login screen. You must wait for the timer to expire before trying again. After each failed attempt, the system will display how many attempts remain before the lockout triggers. Contact the System Admin to resolve lockouts immediately if urgent.
 
 *[INSERT FULL-PAGE SCREENSHOT: Login Page and Lockout Warning message with callout letters A, B, C]*
 
@@ -69,9 +70,8 @@ No matter your role, the main interface is built around three core areas:
 
 ### 2.1 Youth Dashboard Overview
 When a Youth user logs in, the system presents a streamlined dashboard. The goal is to get you involved in community events as quickly as possible.
-- **Upcoming Events Panel:** Shows a countdown to the next SK activity.
-- **Recent Announcements:** Displays bulletins from the SK Chairperson.
-- **Quick Links:** Buttons to jump directly to Event Registration or the Suggestion Box.
+- **Upcoming Events Panel:** Shows events scheduled in the near future.
+- **Quick Links:** Buttons to jump directly to the Events tab or the Suggestion Box.
 
 *[INSERT FULL-PAGE SCREENSHOT: Youth Dashboard highlighting the welcome message and quick links]*
 
@@ -97,7 +97,7 @@ You can upload a document and ask the AI to explain it to you.
 
 #### 2.2.4 Chat Limitations & Network Dependency
 - **Cloud Dependency:** The AI requires a stable internet connection. If your connection drops, the chat will fail to send. The system will automatically attempt to retry the connection.
-- **Cold Starts:** If the AI has not been used by anyone for a while, your first message might take 5–10 seconds longer to process as the cloud engine "wakes up."
+- **Cold Starts:** If the AI has not been used by anyone for a while, your first message might take 5–30 seconds longer to process as the cloud engine "wakes up."
 
 *[INSERT FULL-PAGE SCREENSHOT: Chat interface showing a bilingual conversation and a document upload]*
 
@@ -110,14 +110,13 @@ The Events module lets you see everything the SK has planned for the year.
 
 *[INSERT FULL-PAGE SCREENSHOT: Events catalog with filter dropdowns highlighted]*
 
-### 2.4 Registering for Upcoming Events
-When you find an event you want to attend, registering is just one click.
+### 2.4 Attending SK Events
+When you find an event you want to attend, participation is done by physically attending and scanning the QR code at the venue.
 1. Click on the event card to open its details.
 2. Review the date, time, location, and requirements.
-3. Click the **Register** button.
-4. You will receive a notification confirming your slot.
+3. Attend the event and scan the QR code at the entrance to record your attendance.
 
-*[INSERT FULL-PAGE SCREENSHOT: Event details modal with the Register button highlighted]*
+*[INSERT FULL-PAGE SCREENSHOT: Event details page showing event information and categories]*
 
 ### 2.5 Tracking Your Event Attendance via QR
 To prove you attended an event, aSK Youth uses QR codes instead of paper sign-up sheets.
@@ -189,6 +188,8 @@ The AI analyzes past events in Barangay Concepcion Dos to estimate costs for mea
 4. Check the box if meals are required.
 5. Click **Calculate Budget**.
 
+> *Note: The AI Budget Estimator is a planned feature. In the current live deployment, the base document and budget export tools are available, but the AI-driven cost prediction model requires additional setup.*
+
 #### 3.3.3 Interpreting Warnings
 If your estimated budget exceeds typical barangay limits, the AI will flag a warning. It will cite RA 10742 guidelines to ensure your funds are allocated to the correct mandatory categories (e.g., 10% for youth development).
 
@@ -201,10 +202,12 @@ Officers spend hours drafting resolutions. aSK Youth automates this.
 1. Go to the **Document Automation** tab.
 2. Choose a template: Project Brief, SK Resolution, Meeting Minutes, or Certificate.
 
-#### 3.4.2 Letting AI Draft Content
-1. Fill in the basic bullet points (e.g., "Meeting about summer league, agreed to allocate 50k, adjourned at 5pm").
-2. Click **AI Expand**.
-3. The AI will convert your short notes into formal, highly professional government paragraphs.
+#### 3.4.2 Drafting Content via AI Chat
+Rather than a standalone "AI Expand" button, SK Officers can use the integrated **AI Chat** to draft formal document content:
+1. Open the **Chat** tab.
+2. Type a request such as: "Draft a resolution for our summer sports league with a budget of ₱50,000."
+3. The AI will produce a formal, government-style draft that you can copy into the document template.
+4. As an Officer or Chairperson, the AI is authorized to produce full event proposals and document drafts without redirecting you to the Secretariat.
 
 #### 3.4.3 Previewing and Exporting
 1. Review the generated text in the preview pane.
@@ -223,13 +226,13 @@ When an Officer uses the Chat tab, the AI recognizes your authority.
 
 ## PART 4: THE SYSTEM ADMIN EXPERIENCE (Oversight & Configuration)
 
-### 4.1 Admin Dashboard (System Health & Logs)
+### 4.1 Admin Dashboard Overview
 The Admin Dashboard provides a bird's-eye view of the entire system.
-- **System Telemetry:** Shows server uptime and API request counts.
+- **Event Statistics:** An interactive bar chart showing event participation, sortable by Date, Attendees, or Budget. Toggle ascending or descending and limit to Top 5, Top 10, or All events.
 - **Total Users:** A breakdown of registered accounts by role.
-- **Audit Feed:** A live scrolling log of every action taken in the system.
+- **Overview Stats:** Total events, total attendees, pending suggestions, and total budget allotted.
 
-*[INSERT FULL-PAGE SCREENSHOT: System Admin Dashboard with Telemetry charts]*
+*[INSERT FULL-PAGE SCREENSHOT: System Admin Dashboard with Event Statistics chart and summary metrics]*
 
 ### 4.2 User Management
 Admins must verify and manage all accounts to ensure only legitimate residents access the system.
@@ -340,9 +343,11 @@ Developed as a capstone project for the College of Computer Studies, Our Lady of
 
 **Development Team:**
 - Generoso B. Estrabon IV
-- Jade M. Quilar
+
+**Documentation Team**
 - Daniel D. Kuan Wong
 - Rich Mon P. Sy
+- Jade M. Quilar
 
 **Supervised by:** [adviser name]
 

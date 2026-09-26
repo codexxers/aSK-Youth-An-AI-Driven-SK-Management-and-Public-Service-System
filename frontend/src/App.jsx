@@ -1315,6 +1315,10 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   const [editUser, setEditUser] = useState(null);
   const [editUserConfirmPw, setEditUserConfirmPw] = useState('');
   const [editUserToken, setEditUserToken] = useState('');
+  // Two-step deletion state
+  const [deleteTarget, setDeleteTarget] = useState(null);  // { id, username } | null
+  const [deleteStep, setDeleteStep] = useState(1);         // 1 = first confirm, 2 = type username
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
   // Derived: is there already a chairman?
   const hasChairman = users.some(u => u.role === 'chairman' && u.status === 'active');
 
@@ -1427,14 +1431,15 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   const handleUpdateUser = async (e) => {
     e.preventDefault();
     if (!editUser) return;
-    // If changing password, require confirm match and token
+    // Token is ALWAYS required for any account modification
+    if (!editUserToken.trim()) {
+      alert('An authorization token is required to modify any account.');
+      return;
+    }
+    // If changing password, also validate match
     if (editUser.password) {
       if (editUser.password !== editUserConfirmPw) {
         alert('Passwords do not match. Please confirm the new password.');
-        return;
-      }
-      if (!editUserToken.trim()) {
-        alert('An authorization token is required to change a password.');
         return;
       }
     }
@@ -1446,12 +1451,13 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
           full_name: editUser.full_name,
           role: editUser.role,
           status: editUser.status,
-          ...(editUser.password ? { password: editUser.password, admin_token: editUserToken } : {})
+          admin_token: editUserToken,
+          ...(editUser.password ? { password: editUser.password } : {})
         })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update user');
-      alert('User updated successfully!');
+      alert('Account updated successfully.');
       setEditUser(null);
       setEditUserConfirmPw('');
       setEditUserToken('');
@@ -1461,18 +1467,31 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
     }
   };
 
-  // Handle Delete/Deactivate User
-  const handleDeleteUser = async (id) => {
-    if (!confirm('Are you sure you want to deactivate this user?')) return;
+  // Handle Delete — 2-step confirmation
+  const openDeleteFlow = (user) => {
+    setDeleteTarget(user);
+    setDeleteStep(1);
+    setDeleteConfirmInput('');
+  };
+  const cancelDelete = () => {
+    setDeleteTarget(null);
+    setDeleteStep(1);
+    setDeleteConfirmInput('');
+  };
+  const handleDeleteUser = async () => {
+    if (!deleteTarget) return;
     try {
-      const res = await fetch(`${API_BASE}/api/users/${id}`, {
+      const res = await fetch(`${API_BASE}/api/users/${deleteTarget.id}`, {
         method: 'DELETE',
         headers: authHeaders({ 'X-Actor': authUser?.full_name || 'Admin', 'X-Role': effectiveRole })
       });
-      if (!res.ok) throw new Error('Failed to deactivate user');
+      if (!res.ok) throw new Error('Failed to deactivate account');
+      cancelDelete();
       fetchDashboardData();
     } catch (err) {
       alert(err.message);
+    }
+  };
     }
   };
 
@@ -1802,7 +1821,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                           </button>
                           {usr.username !== 'admin' && (
                             <button
-                              onClick={() => handleDeleteUser(usr.id)}
+                              onClick={() => openDeleteFlow(usr)}
                               className="px-2 py-1 bg-red-950/60 hover:bg-red-900 text-red-400 rounded text-[10px] font-bold uppercase transition-colors"
                             >
                               Deactivate
@@ -2083,36 +2102,38 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   />
                 </div>
                 {editUser.password && (
-                  <>
-                    <div>
-                      <label className="text-slate-400 block mb-1">Confirm New Password</label>
-                      <input
-                        type="password"
-                        value={editUserConfirmPw}
-                        onChange={e => setEditUserConfirmPw(e.target.value)}
-                        placeholder="••••••••"
-                        className={`w-full bg-slate-950 border rounded px-3 py-2 text-white focus:outline-none ${
-                          editUserConfirmPw && editUser.password !== editUserConfirmPw
-                            ? 'border-red-600 focus:border-red-500'
-                            : 'border-slate-700 focus:border-cyan-500'
-                        }`}
-                      />
-                      {editUserConfirmPw && editUser.password !== editUserConfirmPw && (
-                        <p className="mt-1 text-red-500 text-[10px]">Passwords do not match</p>
-                      )}
-                    </div>
-                    <div className="border border-amber-800/50 bg-amber-950/20 rounded p-2 space-y-1">
-                      <p className="text-amber-400 text-[10px] font-bold uppercase tracking-widest">🔐 Authorization Token Required</p>
-                      <input
-                        type="password"
-                        value={editUserToken}
-                        onChange={e => setEditUserToken(e.target.value)}
-                        placeholder="Enter admin authorization token…"
-                        className="w-full bg-slate-950 border border-amber-800/50 rounded px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-                      />
-                    </div>
-                  </>
+                  <div>
+                    <label className="text-slate-400 block mb-1">Confirm New Password</label>
+                    <input
+                      type="password"
+                      value={editUserConfirmPw}
+                      onChange={e => setEditUserConfirmPw(e.target.value)}
+                      placeholder="••••••••"
+                      className={`w-full bg-slate-950 border rounded px-3 py-2 text-white focus:outline-none ${
+                        editUserConfirmPw && editUser.password !== editUserConfirmPw
+                          ? 'border-red-600 focus:border-red-500'
+                          : 'border-slate-700 focus:border-cyan-500'
+                      }`}
+                    />
+                    {editUserConfirmPw && editUser.password !== editUserConfirmPw && (
+                      <p className="mt-1 text-red-500 text-[10px]">Passwords do not match</p>
+                    )}
+                  </div>
                 )}
+              </div>
+
+              {/* Authorization token — ALWAYS required for any modification */}
+              <div className="border border-amber-800/50 bg-amber-950/20 rounded-lg p-3 space-y-1">
+                <p className="text-amber-400 text-[10px] font-bold uppercase tracking-widest">🔐 Authorization Token Required</p>
+                <p className="text-amber-700/80 text-[9px]">Required for all account modifications, including role changes and status updates.</p>
+                <input
+                  type="password"
+                  required
+                  value={editUserToken}
+                  onChange={e => setEditUserToken(e.target.value)}
+                  placeholder="Enter admin authorization token…"
+                  className="w-full bg-slate-950 border border-amber-800/50 rounded px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                />
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
@@ -2134,9 +2155,75 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
           </div>
         </div>
       )}
+
+      {/* ── Two-step Account Deletion Modal ── */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={cancelDelete} />
+          <div className="relative bg-slate-900 border border-red-900/60 rounded-xl p-6 w-full max-w-sm shadow-2xl space-y-4 z-10">
+            {deleteStep === 1 ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">⚠️</span>
+                  <h3 className="text-sm font-mono font-bold text-red-400 uppercase tracking-wider">Delete This Account?</h3>
+                </div>
+                <p className="text-slate-300 text-xs font-mono leading-relaxed">
+                  You are about to deactivate the account{' '}
+                  <span className="text-cyan-400 font-bold">{deleteTarget.username}</span>{' '}
+                  ({deleteTarget.full_name}). This will immediately revoke their system access.
+                </p>
+                <p className="text-slate-500 text-[10px]">This action can be reversed by setting the account status back to Active.</p>
+                <div className="flex justify-end gap-2 pt-1">
+                  <button onClick={cancelDelete} className="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white rounded text-xs font-mono transition-colors">Cancel</button>
+                  <button onClick={() => setDeleteStep(2)} className="px-4 py-1.5 bg-red-700 hover:bg-red-600 text-white font-bold rounded text-xs font-mono transition-colors">Proceed</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🔒</span>
+                  <h3 className="text-sm font-mono font-bold text-red-400 uppercase tracking-wider">Confirm Deletion</h3>
+                </div>
+                <p className="text-slate-300 text-xs font-mono leading-relaxed">
+                  To confirm, type the username{' '}
+                  <span className="text-cyan-400 font-bold">{deleteTarget.username}</span>{' '}
+                  in the field below.
+                </p>
+                <input
+                  type="text"
+                  value={deleteConfirmInput}
+                  onChange={e => setDeleteConfirmInput(e.target.value)}
+                  placeholder={`Type "${deleteTarget.username}" to confirm`}
+                  autoFocus
+                  className={`w-full bg-slate-950 border rounded px-3 py-2 text-white text-xs font-mono focus:outline-none ${
+                    deleteConfirmInput && deleteConfirmInput !== deleteTarget.username
+                      ? 'border-red-600 focus:border-red-500'
+                      : 'border-slate-700 focus:border-cyan-500'
+                  }`}
+                />
+                {deleteConfirmInput && deleteConfirmInput !== deleteTarget.username && (
+                  <p className="text-red-500 text-[10px] font-mono">Username does not match.</p>
+                )}
+                <div className="flex justify-end gap-2 pt-1">
+                  <button onClick={cancelDelete} className="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white rounded text-xs font-mono transition-colors">Cancel</button>
+                  <button
+                    onClick={handleDeleteUser}
+                    disabled={deleteConfirmInput !== deleteTarget.username}
+                    className="px-4 py-1.5 bg-red-700 hover:bg-red-600 disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed text-white font-bold rounded text-xs font-mono transition-colors"
+                  >
+                    Deactivate Account
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+
 
 // ---------------------------------------------------------------------------
 // Phase 6-A: LoginPage — Glassmorphic dark SK-themed login screen
@@ -2148,9 +2235,19 @@ function LoginPage({ apiBase, onLogin }) {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [attemptsLeft, setAttemptsLeft] = useState(null);    // null = not yet tried
+  const [lockedSecs, setLockedSecs] = useState(0);           // 0 = not locked
+
+  // Countdown ticker for lockout display
+  React.useEffect(() => {
+    if (lockedSecs <= 0) return;
+    const t = setTimeout(() => setLockedSecs(s => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [lockedSecs]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (lockedSecs > 0) return; // prevent submit while locked
     if (!username.trim() || !password.trim()) {
       setError('Please enter both username and password.');
       return;
@@ -2165,6 +2262,12 @@ function LoginPage({ apiBase, onLogin }) {
       });
       const data = await res.json();
       if (!res.ok) {
+        if (data.locked && data.remainingSec) {
+          setLockedSecs(data.remainingSec);
+          setAttemptsLeft(0);
+        } else if (data.attemptsLeft !== undefined) {
+          setAttemptsLeft(data.attemptsLeft);
+        }
         setError(data.error || 'Login failed.');
         return;
       }
@@ -2204,6 +2307,9 @@ function LoginPage({ apiBase, onLogin }) {
 
   const roleLabels = { admin: 'System Administrator', chairman: 'SK Chairperson', officer: 'SK Officer', youth: 'Youth Member' };
 
+  const lockMins = Math.floor(lockedSecs / 60);
+  const lockSecsRem = lockedSecs % 60;
+
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-slate-950">
       {/* Animated background orbs */}
@@ -2218,9 +2324,18 @@ function LoginPage({ apiBase, onLogin }) {
 
       {/* Login card */}
       <div className="relative z-10 w-full max-w-md mx-4">
-        {/* Logo / branding */}
-        <div className="text-center mb-8 overflow-visible px-2">
-          <h1 className="text-3xl sm:text-5xl font-display font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 drop-shadow-[0_4px_20px_rgba(59,130,246,0.4)] select-none overflow-visible pb-2 pr-2">
+        {/* Logo / branding — uses inline-block + padding trick to prevent bg-clip-text clipping on desktop */}
+        <div className="text-center mb-8 px-4">
+          <h1
+            className="inline-block text-4xl sm:text-5xl font-display font-black tracking-widest select-none pb-3 px-2"
+            style={{
+              background: 'linear-gradient(to right, #60a5fa, #22d3ee, #60a5fa)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              filter: 'drop-shadow(0 4px 20px rgba(59,130,246,0.45))',
+            }}
+          >
             aSK//YOUTH.AI
           </h1>
           <p className="mt-2 text-xs font-mono tracking-[0.3em] text-slate-500 uppercase">
@@ -2228,6 +2343,7 @@ function LoginPage({ apiBase, onLogin }) {
           </p>
           <div className="mt-3 h-px w-24 mx-auto bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
         </div>
+
 
         {/* Glass card */}
         <form
@@ -2238,13 +2354,39 @@ function LoginPage({ apiBase, onLogin }) {
             <p className="text-sm font-mono text-slate-400 tracking-wider uppercase">System Access</p>
           </div>
 
+          {/* Lockout countdown banner */}
+          {lockedSecs > 0 && (
+            <div className="flex items-center gap-3 bg-red-950/80 border border-red-700/70 rounded-lg px-4 py-3 text-red-200 text-sm">
+              <svg className="w-5 h-5 shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+              <div>
+                <p className="font-bold font-mono text-red-300 text-xs uppercase tracking-wider">Account Temporarily Locked</p>
+                <p className="text-[11px] font-mono text-red-400 mt-0.5">
+                  Try again in{' '}
+                  <span className="font-bold tabular-nums text-red-200">
+                    {lockMins}:{String(lockSecsRem).padStart(2, '0')}
+                  </span>
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Error banner */}
-          {error && (
+          {error && lockedSecs <= 0 && (
             <div className="flex items-center gap-2 bg-red-950/60 border border-red-800/60 rounded-lg px-4 py-3 text-red-300 text-sm animate-[shake_0.3s_ease-in-out]">
               <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.27 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
               <span>{error}</span>
             </div>
           )}
+
+          {/* Attempts remaining warning */}
+          {attemptsLeft !== null && attemptsLeft > 0 && lockedSecs <= 0 && (
+            <div className="flex items-center gap-2 bg-amber-950/50 border border-amber-800/50 rounded-lg px-3 py-2 text-amber-300 text-xs font-mono">
+              <svg className="w-3.5 h-3.5 shrink-0 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.27 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+              <span>{attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} remaining before lockout.</span>
+            </div>
+          )}
+
+
 
           {/* Username */}
           <div>
@@ -2300,7 +2442,7 @@ function LoginPage({ apiBase, onLogin }) {
           {/* Sign in button */}
           <button
             type="submit"
-            disabled={loading || !username.trim() || !password.trim()}
+            disabled={loading || lockedSecs > 0 || !username.trim() || !password.trim()}
             className={`w-full py-3.5 rounded-lg font-display font-bold text-sm tracking-widest uppercase transition-all duration-300 flex items-center justify-center gap-2 ${
               loading || !username.trim() || !password.trim()
                 ? 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700/50'

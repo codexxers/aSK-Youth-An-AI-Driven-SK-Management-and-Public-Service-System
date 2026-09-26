@@ -1273,7 +1273,17 @@ app.get('/api/users', (req, res) => {
         writeLog(actor, role, 'view_user_list', 'users', 'Accessed user management roster', req.ip);
 
         const users = db.prepare('SELECT id, username, full_name, role, status, created_at FROM users ORDER BY created_at DESC').all();
-        res.json(users);
+
+        // Enrich each user with live lockout info from in-memory map
+        const now = Date.now();
+        const enriched = users.map(u => {
+            const entry = loginAttempts.get(u.username);
+            if (entry && entry.lockedUntil && now < entry.lockedUntil) {
+                return { ...u, locked: true, lockedRemainingSec: Math.ceil((entry.lockedUntil - now) / 1000) };
+            }
+            return { ...u, locked: false, lockedRemainingSec: 0 };
+        });
+        res.json(enriched);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -1367,6 +1377,8 @@ app.delete('/api/users/:id', (req, res) => {
         if (!targetUser) return res.status(404).json({ error: 'User not found' });
         // Safe delete/deactivation
         db.prepare("UPDATE users SET status = 'inactive' WHERE id = ?").run(id);
+        // Also clear any active lockout for this user
+        clearFailedAttempts(targetUser.username);
         writeLog(actor, actorRole, 'delete_user', targetUser.username, 'Deactivated user account', ip);
         res.json({ success: true });
         scheduleSnapshot();
@@ -1374,6 +1386,20 @@ app.delete('/api/users/:id', (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+// Admin: manually lift a login lockout for a specific username
+app.post('/api/admin/unlock-user', (req, res) => {
+    const { username } = req.body;
+    const actor = req.headers['x-actor'] || 'Admin';
+    const actorRole = req.headers['x-role'] || 'admin';
+    const ip = req.ip || req.socket.remoteAddress;
+    if (!username) return res.status(400).json({ error: 'username required' });
+    const hadLock = loginAttempts.has(username);
+    clearFailedAttempts(username);
+    writeLog(actor, actorRole, 'unlock_user', username, `Admin manually lifted login lockout (was locked: ${hadLock})`, ip);
+    res.json({ success: true, message: `Lockout cleared for ${username}` });
+});
+
 
 // --- Suggestions Module API Routes ---
 app.get('/api/suggestions', (req, res) => {

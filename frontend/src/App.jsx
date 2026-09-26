@@ -1492,6 +1492,21 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
       alert(err.message);
     }
   };
+
+
+  // Admin: lift login lockout for a user
+  const handleLiftLockout = async (username) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/unlock-user`, {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json', 'X-Actor': authUser?.full_name || 'Admin', 'X-Role': effectiveRole }),
+        body: JSON.stringify({ username })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to lift lockout');
+      fetchDashboardData();
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -1812,21 +1827,37 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                       </td>
                       <td className="p-3 text-slate-500">{usr.created_at?.slice(0,10)}</td>
                       {effectiveRole === 'admin' && (
-                        <td className="p-3 text-right space-x-2">
-                          <button
-                            onClick={() => { setEditUser(usr); setEditUserConfirmPw(''); setEditUserToken(''); }}
-                            className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] font-bold uppercase transition-colors"
-                          >
-                            Edit
-                          </button>
-                          {usr.username !== 'admin' && (
+                        <td className="p-3 text-right">
+                          <div className="flex items-center justify-end gap-2 flex-wrap">
+                            {/* Lockout badge + lift button — admin-only, only when locked */}
+                            {usr.locked && (
+                              <div className="flex items-center gap-1.5 bg-red-950/60 border border-red-800/40 rounded px-2 py-0.5">
+                                <span className="text-[9px] font-mono text-red-400 tabular-nums">
+                                  🔒 {Math.ceil(usr.lockedRemainingSec / 60)}m locked
+                                </span>
+                                <button
+                                  onClick={() => handleLiftLockout(usr.username)}
+                                  className="text-[9px] font-mono font-bold text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
+                                >
+                                  Lift
+                                </button>
+                              </div>
+                            )}
                             <button
-                              onClick={() => openDeleteFlow(usr)}
-                              className="px-2 py-1 bg-red-950/60 hover:bg-red-900 text-red-400 rounded text-[10px] font-bold uppercase transition-colors"
+                              onClick={() => { setEditUser(usr); setEditUserConfirmPw(''); setEditUserToken(''); }}
+                              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] font-bold uppercase transition-colors"
                             >
-                              Deactivate
+                              Edit
                             </button>
-                          )}
+                            {usr.username !== 'admin' && (
+                              <button
+                                onClick={() => openDeleteFlow(usr)}
+                                className="px-2 py-1 bg-red-950/60 hover:bg-red-900 text-red-400 rounded text-[10px] font-bold uppercase transition-colors"
+                              >
+                                Deactivate
+                              </button>
+                            )}
+                          </div>
                         </td>
                       )}
                     </tr>
@@ -2136,21 +2167,38 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => { setEditUser(null); setEditUserConfirmPw(''); setEditUserToken(''); }}
-                  className="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white rounded transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded transition-colors shadow-sm cursor-pointer"
-                >
-                  Apply Changes
-                </button>
+              {/* Modal footer: Deactivate on left, Cancel + Apply on right */}
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/50 mt-2">
+                {/* Deactivate — only show if not the protected 'admin' account */}
+                {editUser.username !== 'admin' ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditUser(null); setEditUserConfirmPw(''); setEditUserToken('');
+                      openDeleteFlow(editUser);
+                    }}
+                    className="px-3 py-1.5 bg-red-950/60 hover:bg-red-900/80 text-red-400 hover:text-red-300 text-[10px] font-bold font-mono uppercase rounded border border-red-900/40 transition-colors"
+                  >
+                    ⚠ Deactivate Account
+                  </button>
+                ) : <span />}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setEditUser(null); setEditUserConfirmPw(''); setEditUserToken(''); }}
+                    className="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white rounded transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded transition-colors shadow-sm cursor-pointer"
+                  >
+                    Apply Changes
+                  </button>
+                </div>
               </div>
+
             </form>
           </div>
         </div>
@@ -2356,8 +2404,8 @@ function LoginPage({ apiBase, onLogin }) {
 
           {/* Lockout countdown banner */}
           {lockedSecs > 0 && (
-            <div className="flex items-center gap-3 bg-red-950/80 border border-red-700/70 rounded-lg px-4 py-3 text-red-200 text-sm">
-              <svg className="w-5 h-5 shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+            <div className="flex items-start gap-3 bg-red-950/80 border border-red-700/70 rounded-lg px-4 py-3 text-red-200 text-sm">
+              <svg className="w-5 h-5 shrink-0 mt-0.5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
               <div>
                 <p className="font-bold font-mono text-red-300 text-xs uppercase tracking-wider">Account Temporarily Locked</p>
                 <p className="text-[11px] font-mono text-red-400 mt-0.5">
@@ -2366,6 +2414,7 @@ function LoginPage({ apiBase, onLogin }) {
                     {lockMins}:{String(lockSecsRem).padStart(2, '0')}
                   </span>
                 </p>
+                <p className="text-[10px] font-mono text-red-600 mt-1">You can contact the System Administrator to have your account unlocked immediately.</p>
               </div>
             </div>
           )}

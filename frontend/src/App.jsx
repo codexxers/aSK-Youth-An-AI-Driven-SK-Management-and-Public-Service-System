@@ -1467,7 +1467,22 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
     }
   };
 
-  // Handle Delete — 2-step confirmation
+  // DEACTIVATE — simple single confirm, used from the table button only
+  const handleDeactivateUser = async (usr) => {
+    if (!confirm(`Deactivate account "${usr.username}"? Their access will be revoked immediately.`)) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/users/${usr.id}`, {
+        method: 'DELETE',
+        headers: authHeaders({ 'X-Actor': authUser?.full_name || 'Admin', 'X-Role': effectiveRole })
+      });
+      if (!res.ok) throw new Error('Failed to deactivate account');
+      fetchDashboardData();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // DELETE — 2-step username confirmation, only reachable from inside Edit modal
   const openDeleteFlow = (user) => {
     setDeleteTarget(user);
     setDeleteStep(1);
@@ -1485,7 +1500,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
         method: 'DELETE',
         headers: authHeaders({ 'X-Actor': authUser?.full_name || 'Admin', 'X-Role': effectiveRole })
       });
-      if (!res.ok) throw new Error('Failed to deactivate account');
+      if (!res.ok) throw new Error('Failed to delete account');
       cancelDelete();
       fetchDashboardData();
     } catch (err) {
@@ -1851,7 +1866,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                             </button>
                             {usr.username !== 'admin' && (
                               <button
-                                onClick={() => openDeleteFlow(usr)}
+                                onClick={() => handleDeactivateUser(usr)}
                                 className="px-2 py-1 bg-red-950/60 hover:bg-red-900 text-red-400 rounded text-[10px] font-bold uppercase transition-colors"
                               >
                                 Deactivate
@@ -2167,9 +2182,9 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                 />
               </div>
 
-              {/* Modal footer: Deactivate on left, Cancel + Apply on right */}
+              {/* Modal footer: Delete on left, Cancel + Apply on right */}
               <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/50 mt-2">
-                {/* Deactivate — only show if not the protected 'admin' account */}
+                {/* Delete Account — 2-step, only from inside Edit modal, hidden for protected 'admin' */}
                 {editUser.username !== 'admin' ? (
                   <button
                     type="button"
@@ -2179,7 +2194,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     }}
                     className="px-3 py-1.5 bg-red-950/60 hover:bg-red-900/80 text-red-400 hover:text-red-300 text-[10px] font-bold font-mono uppercase rounded border border-red-900/40 transition-colors"
                   >
-                    ⚠ Deactivate Account
+                    🗑 Delete Account
                   </button>
                 ) : <span />}
                 <div className="flex gap-2">
@@ -2204,7 +2219,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
         </div>
       )}
 
-      {/* ── Two-step Account Deletion Modal ── */}
+      {/* ── Two-step Account Deletion Modal (reachable only from Edit modal) ── */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={cancelDelete} />
@@ -2212,15 +2227,15 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             {deleteStep === 1 ? (
               <>
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">⚠️</span>
+                  <span className="text-2xl">🗑️</span>
                   <h3 className="text-sm font-mono font-bold text-red-400 uppercase tracking-wider">Delete This Account?</h3>
                 </div>
                 <p className="text-slate-300 text-xs font-mono leading-relaxed">
-                  You are about to deactivate the account{' '}
+                  You are about to permanently delete the account{' '}
                   <span className="text-cyan-400 font-bold">{deleteTarget.username}</span>{' '}
-                  ({deleteTarget.full_name}). This will immediately revoke their system access.
+                  ({deleteTarget.full_name}). Their access will be revoked immediately.
                 </p>
-                <p className="text-slate-500 text-[10px]">This action can be reversed by setting the account status back to Active.</p>
+                <p className="text-slate-500 text-[10px]">This is a destructive action. Proceed to the next step to confirm.</p>
                 <div className="flex justify-end gap-2 pt-1">
                   <button onClick={cancelDelete} className="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white rounded text-xs font-mono transition-colors">Cancel</button>
                   <button onClick={() => setDeleteStep(2)} className="px-4 py-1.5 bg-red-700 hover:bg-red-600 text-white font-bold rounded text-xs font-mono transition-colors">Proceed</button>
@@ -2229,11 +2244,11 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             ) : (
               <>
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">🔒</span>
-                  <h3 className="text-sm font-mono font-bold text-red-400 uppercase tracking-wider">Confirm Deletion</h3>
+                  <span className="text-2xl">⚠️</span>
+                  <h3 className="text-sm font-mono font-bold text-red-400 uppercase tracking-wider">Confirm Deletion of Selected Account</h3>
                 </div>
                 <p className="text-slate-300 text-xs font-mono leading-relaxed">
-                  To confirm, type the username{' '}
+                  To finish, type the username{' '}
                   <span className="text-cyan-400 font-bold">{deleteTarget.username}</span>{' '}
                   in the field below.
                 </p>
@@ -2259,7 +2274,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     disabled={deleteConfirmInput !== deleteTarget.username}
                     className="px-4 py-1.5 bg-red-700 hover:bg-red-600 disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed text-white font-bold rounded text-xs font-mono transition-colors"
                   >
-                    Deactivate Account
+                    Delete Account
                   </button>
                 </div>
               </>
@@ -2267,6 +2282,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
           </div>
         </div>
       )}
+
     </div>
   );
 }

@@ -13,6 +13,7 @@ import dotenv from 'dotenv';
 import axios from 'axios';
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
 import bcrypt from 'bcryptjs';
+import { generateDocument as _generateDoc } from './docgen.js';
 import jwt from 'jsonwebtoken';
 import QRCode from 'qrcode';
 import os from 'os';
@@ -2781,11 +2782,11 @@ app.use((err, _req, res, _next) => {
 });
 
 // ---------------------------------------------------------------------------
-// Phase 2: Template-Based Document Generation (Feature 7) — proxy to Python
+// Phase 2: Template-Based Document Generation (Feature 7) — Native Node.js
 // ---------------------------------------------------------------------------
 app.post('/api/generate-document', async (req, res) => {
     const { template_id, data, format } = req.body;
-    const VALID_TEMPLATES = ['resolution', 'minutes', 'certificate'];
+    const VALID_TEMPLATES = ['resolution', 'minutes', 'certificate', 'project_brief'];
     const VALID_FORMATS   = ['docx', 'pdf'];
     if (!template_id || !VALID_TEMPLATES.includes(template_id)) {
         return res.status(400).json({ error: `template_id must be one of: ${VALID_TEMPLATES.join(', ')}` });
@@ -2794,21 +2795,17 @@ app.post('/api/generate-document', async (req, res) => {
         return res.status(400).json({ error: `format must be one of: ${VALID_FORMATS.join(', ')}` });
     }
     try {
-        const pyRes = await axios.post(`${PYTHON_SERVICE_URL}/generate-document`, req.body, {
-            responseType: 'stream',
-            timeout: 30000
-        });
-        res.setHeader('Content-Type', pyRes.headers['content-type']);
-        res.setHeader('Content-Disposition', pyRes.headers['content-disposition'] || 'attachment');
-        pyRes.data.pipe(res);
+        const buf = await _generateDoc(template_id, data || {});
+        const filename = `SK_${template_id}_${Date.now()}.docx`;
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(buf);
     } catch (err) {
-        console.error('[DocGen] Proxy error:', err.message);
-        if (!res.headersSent) {
-            const status = err.response?.status || 500;
-            res.status(status).json({ error: err.response?.data?.detail || err.message });
-        }
+        console.error('[DocGen] Error:', err.message);
+        if (!res.headersSent) res.status(500).json({ error: err.message });
     }
 });
+
 
 // ---------------------------------------------------------------------------
 // Phase 2: Events Analytics Dashboard (Feature 5) — proxy to Python

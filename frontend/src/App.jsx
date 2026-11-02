@@ -94,7 +94,7 @@ function ExportResponseButton({ messageContent, hasOfficialDocument, officialDoc
         <button
           ref={buttonRef}
           onClick={() => setShowPopup(!showPopup)}
-          className="p-1.5 rounded-md text-slate-500 hover:text-cyan-400 hover:bg-slate-800 transition-all"
+          className="p-1.5 rounded-lg text-slate-600 hover:text-black hover:bg-slate-200 border border-slate-300 transition-all cursor-pointer"
           aria-label="Export Response"
         >
           <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -111,23 +111,23 @@ function ExportResponseButton({ messageContent, hasOfficialDocument, officialDoc
       </div>
 
       {showPopup && (
-        <div ref={popupRef} className="absolute bottom-full left-0 mb-2 w-[200px] bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-3 z-50">
+        <div ref={popupRef} className="absolute bottom-full left-0 mb-2 w-[200px] bg-white border-2 border-slate-300 rounded-xl shadow-2xl p-3 z-50">
           <div className="flex items-center justify-between mb-2.5">
-            <span className="text-xs font-mono font-bold text-slate-300 tracking-wide">Export as...</span>
-            <button onClick={() => setShowPopup(false)} className="text-slate-500 hover:text-slate-300 transition-colors">
+            <span className="text-xs font-mono font-bold text-slate-900 tracking-wide">Export as...</span>
+            <button onClick={() => setShowPopup(false)} className="text-slate-400 hover:text-black transition-colors cursor-pointer">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
           <div className="flex flex-col gap-1.5">
             <button
               onClick={() => doExport('docx')}
-              className="flex items-center gap-2 px-3 py-2 text-xs font-mono font-bold tracking-wider rounded-lg bg-blue-900/40 border border-blue-500/40 text-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-500 transition-all"
+              className="flex items-center gap-2 px-3 py-2 text-xs font-mono font-bold tracking-wider rounded-lg bg-blue-50 border border-blue-300 text-blue-800 hover:bg-blue-600 hover:text-white transition-all cursor-pointer"
             >
               📄 Export to DOCX
             </button>
             <button
               onClick={() => doExport('pdf')}
-              className="flex items-center gap-2 px-3 py-2 text-xs font-mono font-bold tracking-wider rounded-lg bg-cyan-900/40 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-600 hover:text-white hover:border-cyan-500 transition-all"
+              className="flex items-center gap-2 px-3 py-2 text-xs font-mono font-bold tracking-wider rounded-lg bg-cyan-50 border border-cyan-300 text-cyan-900 hover:bg-cyan-600 hover:text-white transition-all cursor-pointer"
             >
               🖨️ Export to PDF
             </button>
@@ -3682,22 +3682,22 @@ function App() {
 
            {/* Inner Chat Pane */}
            <div className="flex-1 flex flex-col p-2 sm:p-8 overflow-hidden relative">
-              <div className="w-full max-w-5xl mx-auto h-full bg-slate-950 backdrop-blur-xl border border-slate-800 rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col pointer-events-auto">
+              <div className="w-full max-w-5xl mx-auto h-full bg-white border-2 border-slate-900 rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.12)] flex flex-col pointer-events-auto">
                 
-                <div className="h-10 bg-slate-900 border-b border-slate-800 flex items-center px-4 justify-between flex-shrink-0">
-                   <span className="font-mono text-xs text-slate-400 tracking-widest flex items-center gap-2">
-                     <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                <div className="h-11 bg-slate-50 border-b-2 border-slate-200 flex items-center px-4 justify-between flex-shrink-0">
+                   <span className="font-mono text-xs sm:text-sm text-black font-bold tracking-wider flex items-center gap-2">
+                     <svg className="w-4 h-4 text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
                      THREAD: {activeThread?.title || 'New Chat'}
                    </span>
-                   <span className="font-mono text-[10px] text-blue-500 font-bold hidden sm:block">LOCAL: SECURE</span>
+                   <span className="font-mono text-xs text-blue-600 font-bold hidden sm:block">LOCAL: SECURE</span>
                 </div>
                 
                 {/* Scrollable Messages Area */}
-                <div ref={scrollRef} className="flex-1 p-3 sm:p-8 overflow-y-auto overflow-x-hidden relative inner-shadow z-10 w-full bg-[radial-gradient(circle_at_center,rgba(30,41,59,0.5)_0%,transparent_100%)] scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                <div ref={scrollRef} className="flex-1 p-3 sm:p-8 overflow-y-auto overflow-x-hidden relative z-10 w-full bg-white scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
                    {showScrollBottom && (
                      <button 
                        onClick={scrollToBottom}
-                       className="fixed bottom-32 right-8 sm:right-12 z-50 p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-full shadow-2xl text-cyan-400 hover:text-white hover:bg-cyan-500/20 hover:scale-110 active:scale-95 transition-all animate-bounce flex items-center justify-center ring-1 ring-cyan-500/50"
+                       className="fixed bottom-32 right-8 sm:right-12 z-50 p-3 bg-white hover:bg-slate-50 border-2 border-slate-300 rounded-full shadow-2xl text-blue-600 hover:text-blue-700 hover:scale-110 active:scale-95 transition-all animate-bounce flex items-center justify-center cursor-pointer ring-1 ring-blue-500/20"
                        title="Scroll to Latest"
                      >
                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3753,10 +3753,10 @@ function App() {
                               </span>
                             )}
                             {(msg.role === 'user' || thoughtContent || finalContent.trim().length > 0 || msg.retrievedChunks?.length > 0) && (
-                            <div className={`max-w-[85%] sm:max-w-[75%] rounded-lg p-4 sm:p-5 relative group transition-colors flex flex-col ${
+                            <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-4 sm:p-6 relative group transition-colors flex flex-col ${
                                 msg.role === 'user' 
-                                ? 'bg-blue-900/40 border border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.2)] text-blue-50' 
-                                : 'bg-[#0b0f19] border border-cyan-900/50 shadow-[0_0_20px_rgba(0,255,255,0.05)] hover:border-cyan-500/50 text-cyan-50'
+                                ? 'bg-blue-50 border-2 border-blue-600 text-black shadow-sm' 
+                                : 'bg-white border-2 border-slate-300 text-black shadow-sm'
                             }`}>
                                 {/* File attachment cards — supports multi-file (new) and single-file legacy */}
                                 {msg.role === 'user' && (() => {
@@ -3774,7 +3774,7 @@ function App() {
                                         const isPdf = ext === 'PDF';
                                         const isCsv = ext === 'CSV';
                                         return (
-                                          <div key={fi} className="flex items-center gap-3 bg-blue-950/60 border border-blue-500/30 rounded-xl px-3 py-2.5 w-fit max-w-full">
+                                          <div key={fi} className="flex items-center gap-3 bg-white border-2 border-blue-200 rounded-xl px-3 py-2 w-fit max-w-full shadow-xs">
                                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                                               isPdf ? 'bg-red-500/20' : isDoc ? 'bg-blue-500/20' : isCsv ? 'bg-green-500/20' : 'bg-slate-500/20'
                                             }`}>
@@ -3787,7 +3787,7 @@ function App() {
                                               )}
                                             </div>
                                             <div className="overflow-hidden">
-                                              <p className="text-xs font-semibold text-blue-100 truncate max-w-[200px]">{(af.fileName || '').replace(/\.[^.]+$/, '')}</p>
+                                              <p className="text-xs font-bold text-slate-900 truncate max-w-[200px]">{(af.fileName || '').replace(/\.[^.]+$/, '')}</p>
                                               <p className="text-[10px] font-mono text-blue-400 uppercase tracking-wider">{ext}</p>
                                             </div>
                                           </div>
@@ -3800,15 +3800,15 @@ function App() {
                                 {/* AI "Show Thinking" Dropdown Component */}
                                 {thoughtContent && (
                                   <details className="mb-4 group/think cursor-pointer">
-                                    <summary className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-600 transition-colors list-none">
-                                      <svg className="w-3.5 h-3.5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                                      <span className="text-xs font-mono tracking-widest text-slate-400 group-hover/think:text-cyan-400 font-bold uppercase select-none">
+                                    <summary className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-colors list-none">
+                                      <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                      <span className="text-xs font-mono tracking-widest text-slate-700 group-hover/think:text-blue-700 font-bold uppercase select-none">
                                          Processing Intent
                                       </span>
                                       <svg className="w-4 h-4 text-slate-500 transform transition-transform group-open/think:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                     </summary>
-                                    <div className="mt-3 pl-4 border-l-2 border-slate-700 py-2">
-                                      <p className="font-mono text-xs text-slate-500 whitespace-pre-wrap leading-relaxed">
+                                    <div className="mt-3 pl-4 border-l-2 border-slate-300 py-2">
+                                      <p className="font-mono text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
                                          {thoughtContent}
                                       </p>
                                     </div>
@@ -3816,7 +3816,7 @@ function App() {
                                 )}
 
                                 {finalContent.trim().length > 0 && (
-                                <div className={`font-sans leading-relaxed prose-chat ${msg.role === 'assistant' ? 'text-cyan-100 font-normal text-sm sm:text-[15px]' : 'font-normal'}`}>
+                                <div className={`font-sans leading-relaxed prose-chat ${msg.role === 'assistant' ? 'text-black font-normal text-[21px] sm:text-[22px]' : 'text-black font-medium text-[20px] sm:text-[21px]'}`}>
                                    <ReactMarkdown
                                      components={{
                                        p: ({ children }) => {
@@ -3836,30 +3836,29 @@ function App() {
                             )}
                             {/* Official Document Export Panel — outside the bubble for clean visual separation */}
                             {msg.role === 'assistant' && docTitle && docContent && (
-                              <div className="w-full max-w-[85%] sm:max-w-[75%] rounded-xl border border-cyan-500/30 bg-slate-900/80 backdrop-blur-sm p-4 flex flex-col gap-3 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+                              <div className="w-full max-w-[85%] sm:max-w-[75%] rounded-xl border-2 border-blue-200 bg-blue-50/70 p-4 flex flex-col gap-3 shadow-sm">
                                 <div className="flex items-center gap-2.5">
                                   <span className="text-base leading-none select-none">📄</span>
-                                  <span className="text-xs font-mono text-slate-400 tracking-wide">
+                                  <span className="text-xs font-mono text-slate-700 tracking-wide">
                                     Official Document Drafted:{' '}
-                                    <span className="text-cyan-300 font-semibold">{docTitle}</span>
+                                    <span className="text-blue-900 font-bold">{docTitle}</span>
                                   </span>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                   <button
                                     onClick={() => handleExport(docContent, docTitle, 'docx')}
-                                    className="px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest rounded-lg bg-blue-900/40 border border-blue-500/50 text-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-500 transition-all"
+                                    className="px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest rounded-lg bg-blue-600 border border-blue-700 text-white hover:bg-blue-700 transition-all cursor-pointer shadow-xs"
                                   >
                                     ↓ Export as DOCX
                                   </button>
                                   <button
                                     onClick={() => handleExport(docContent, docTitle, 'pdf')}
-                                    className="px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest rounded-lg bg-cyan-900/40 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-600 hover:text-white hover:border-cyan-500 transition-all"
+                                    className="px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest rounded-lg bg-cyan-600 border border-cyan-700 text-white hover:bg-cyan-700 transition-all cursor-pointer shadow-xs"
                                   >
                                     ↓ Export as PDF
                                   </button>
                                 </div>
-                              </div>
-                            )}
+                              </div>                            )}
                             {/* Export Response Button — appears on every completed assistant message (Phase 5) */}
                             {msg.role === 'assistant' && finalContent.trim().length > 0 && (
                               <div className="flex justify-end max-w-[85%] sm:max-w-[75%]">
@@ -3899,19 +3898,19 @@ function App() {
                               const topPillColor = topScore >= 0.70 ? 'bg-green-900/60 text-green-400' : topScore >= 0.50 ? 'bg-yellow-900/60 text-yellow-400' : 'bg-slate-800 text-slate-400';
                               return (
                                 <details className="w-full max-w-[85%] sm:max-w-[75%] group/sources cursor-pointer">
-                                  <summary className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl ${headerBg} border border-slate-700 hover:border-cyan-600 transition-colors list-none select-none`}>
+                                  <summary className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-amber-50 border-2 border-amber-500/60 hover:bg-amber-100/80 transition-colors list-none select-none">
                                     <div className="flex items-center gap-2">
-                                      <svg className="w-3.5 h-3.5 text-white/80 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                      <span className="text-xs font-mono tracking-widest text-white font-bold uppercase">
+                                      <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                      <span className="text-xs font-mono tracking-widest text-amber-950 font-bold uppercase">
                                         SOURCES ({grouped.length})
                                       </span>
-                                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${topPillColor}`}>
+                                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-200/90 text-amber-900 border border-amber-300">
                                         {topPct}% match
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                      <span className="text-[10px] font-mono text-white/60 tracking-wide hidden sm:inline">{headerLabel}</span>
-                                      <svg className="w-4 h-4 text-white/60 transform transition-transform group-open/sources:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                      <span className="text-xs font-mono text-amber-900/80 tracking-wide font-medium hidden sm:inline">{headerLabel}</span>
+                                      <svg className="w-4 h-4 text-amber-900 transform transition-transform group-open/sources:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                     </div>
                                   </summary>
                                   <div className="mt-2 flex flex-col gap-2">
@@ -3920,19 +3919,19 @@ function App() {
                                       const pillColor = chunk.displayScore >= 0.70 ? 'bg-green-900/40 text-green-400' : chunk.displayScore >= 0.50 ? 'bg-yellow-900/40 text-yellow-400' : 'bg-slate-800 text-slate-400';
                                       const snippet = chunk.textSnippet || (chunk.text ? chunk.text.slice(0, 300) : '');
                                       return (
-                                        <div key={ci} className="rounded-lg border border-slate-700 bg-slate-900/60 overflow-hidden">
-                                          <div className="flex items-center justify-between px-3 py-2 border-b border-slate-700/60">
+                                        <div key={ci} className="rounded-xl border-2 border-slate-200 bg-slate-50 overflow-hidden shadow-xs">
+                                          <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 bg-white">
                                             <div className="flex items-center gap-2 overflow-hidden">
                                               <svg className="w-3 h-3 text-cyan-500 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5z"/></svg>
-                                              <span className="text-[11px] font-mono text-cyan-300 truncate max-w-[180px]">{chunk.source}</span>
+                                              <span className="text-xs font-mono font-bold text-slate-800 truncate max-w-[200px]">{chunk.source}</span>
                                             </div>
                                             <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${pillColor}`}>
                                               {pct}% match
                                             </span>
                                           </div>
                                           <details className="group/snippet">
-                                            <summary className="px-3 py-1.5 text-[10px] font-mono text-slate-500 hover:text-cyan-400 cursor-pointer select-none list-none transition-colors">▶ View Snippet</summary>
-                                            <pre className="px-3 pb-3 pt-1 text-[10px] font-mono text-slate-400 whitespace-pre-wrap leading-relaxed border-t border-slate-700/40">{snippet}{snippet.length >= 300 ? '...' : ''}</pre>
+                                            <summary className="px-3 py-1.5 text-xs font-mono text-slate-600 hover:text-blue-700 cursor-pointer select-none list-none transition-colors">▶ View Snippet</summary>
+                                            <pre className="px-3 pb-3 pt-1 text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed border-t border-slate-200 bg-slate-50">{snippet}{snippet.length >= 300 ? '...' : ''}</pre>
                                           </details>
                                         </div>
                                       );
@@ -3948,13 +3947,13 @@ function App() {
                       {/* Phase-aware loading indicators */}
                       {loading && streamPhase !== 'GENERATING' && (
                          <div className="flex w-full justify-start">
-                            <div className="max-w-[80%] bg-[#0b0f19] border border-cyan-900/50 shadow-[0_0_20px_rgba(0,255,255,0.05)] rounded-lg p-5 flex items-center gap-3">
+                            <div className="max-w-[80%] bg-white border-2 border-slate-300 shadow-sm rounded-xl p-4 flex items-center gap-3">
                                {/* Spinning ring for indexing/searching phases */}
-                               <svg className="w-4 h-4 text-cyan-500 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
+                               <svg className="w-5 h-5 text-blue-600 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                                </svg>
-                               <span className="text-xs font-mono text-cyan-600 tracking-widest uppercase animate-pulse">
+                               <span className="text-xs font-mono text-slate-800 font-bold tracking-widest uppercase animate-pulse">
                                  {streamPhase === 'INDEXING_DOCUMENTS'  && 'Indexing Documents...'}
                                  {streamPhase === 'RETRIEVING_CONTEXT'  && 'Searching Knowledge Base...'}
                                </span>
@@ -3965,12 +3964,12 @@ function App() {
                       {/* Live streaming bubble — renders tokens in real-time */}
                       {loading && streamPhase === 'GENERATING' && (
                          <div className="flex w-full justify-start">
-                            <div className="max-w-[85%] sm:max-w-[75%] bg-[#0b0f19] border border-cyan-900/50 shadow-[0_0_20px_rgba(0,255,255,0.05)] hover:border-cyan-500/50 text-cyan-50 rounded-lg p-4 sm:p-5 flex flex-col">
-                               <div className="font-sans leading-relaxed prose-chat text-cyan-100 font-normal text-sm sm:text-[15px]">
+                            <div className="max-w-[85%] sm:max-w-[75%] bg-white border-2 border-slate-300 text-black rounded-2xl p-4 sm:p-6 flex flex-col shadow-sm">
+                               <div className="font-sans leading-relaxed prose-chat text-black font-normal text-[21px] sm:text-[22px]">
                                  <ReactMarkdown>{streamingContent.replace(/<official_document[\s\S]*/i, '').trim()}</ReactMarkdown>
                                </div>
                                {/* Blinking cursor to indicate streaming is active */}
-                               <span className="mt-1 inline-block w-2 h-4 bg-cyan-400 animate-[pulse_0.8s_ease-in-out_infinite] align-middle" />
+                               <span className="mt-2 inline-block w-2.5 h-5 bg-blue-600 animate-[pulse_0.8s_ease-in-out_infinite] align-middle" />
                             </div>
                          </div>
                       )}
@@ -3979,10 +3978,10 @@ function App() {
 
                 {/* Input Area — also serves as the drag-and-drop zone */}
                 <div
-                  className={`p-3 sm:p-5 bg-slate-950 border-t flex-shrink-0 relative transition-all duration-200 ${
+                  className={`p-3 sm:p-5 bg-white border-t-2 flex-shrink-0 relative transition-all duration-200 ${
                     isDragging
-                      ? 'border-cyan-500 shadow-[inset_0_0_20px_rgba(6,182,212,0.15)]'
-                      : 'border-slate-800'
+                      ? 'border-blue-600 bg-blue-50/40'
+                      : 'border-slate-200'
                   }`}
                   onDragOver={handleDragOver}
                   onDragEnter={handleDragEnter}
@@ -3992,7 +3991,7 @@ function App() {
                   {/* Drag overlay label */}
                   {isDragging && (
                     <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-                      <div className="flex items-center gap-2 px-4 py-2 bg-cyan-950/80 border border-cyan-500 rounded-lg text-cyan-400 font-mono text-xs tracking-widest uppercase">
+                      <div className="flex items-center gap-2 px-4 py-2 bg-blue-600 border-2 border-blue-700 rounded-xl text-white font-bold shadow-lg font-mono text-xs tracking-widest uppercase">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                         Drop files to attach (max 8)
                       </div>
@@ -4004,13 +4003,13 @@ function App() {
                       {selectedFiles.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {selectedFiles.map((f, idx) => (
-                            <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-slate-800/80 border border-cyan-800/50 rounded-lg text-xs font-mono">
-                              <svg className="w-3.5 h-3.5 text-cyan-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                              <span className="text-cyan-400 max-w-[150px] truncate">{f.name}</span>
+                            <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-lg text-xs font-mono">
+                              <svg className="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                              <span className="text-slate-800 font-bold max-w-[150px] truncate">{f.name}</span>
                               <button
                                 type="button"
                                 onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
-                                className="text-slate-500 hover:text-red-400 transition-colors ml-1 shrink-0"
+                                className="text-slate-400 hover:text-red-600 transition-colors ml-1 shrink-0 cursor-pointer"
                                 title="Remove file"
                               >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -4048,7 +4047,7 @@ function App() {
                           onClick={() => fileInputRef.current?.click()}
                           disabled={loading || selectedFiles.length >= 8}
                           title={selectedFiles.length >= 8 ? "Max 8 files reached" : "Attach files (PDF, DOCX, TXT) — up to 8"}
-                          className="shrink-0 p-3 rounded-lg border border-slate-700 bg-slate-900/80 text-slate-400 hover:text-cyan-400 hover:border-cyan-600 transition-all disabled:opacity-40"
+                          className="shrink-0 p-3 rounded-xl border-2 border-slate-300 bg-slate-50 text-slate-700 hover:text-black hover:border-black transition-all disabled:opacity-40 cursor-pointer"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
                         </button>
@@ -4064,7 +4063,7 @@ function App() {
                           placeholder="Initiate prompt..."
                           rows={1}
                           style={{ maxHeight: '200px', overflowY: 'auto', resize: 'none' }}
-                          className="flex-1 w-full bg-slate-900/80 border border-slate-700 rounded-lg px-4 py-3 text-cyan-100 font-mono text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all placeholder-slate-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] disabled:opacity-50 leading-relaxed"
+                          className="flex-1 w-full bg-slate-50 border-2 border-slate-300 hover:border-slate-400 focus:border-black focus:bg-white focus:ring-1 focus:ring-black rounded-xl px-4 py-3 text-black font-mono text-base sm:text-lg transition-all placeholder-slate-400 disabled:opacity-50 leading-relaxed"
                           autoFocus
                         />
 
@@ -4072,10 +4071,10 @@ function App() {
                         <button
                           type="submit"
                           disabled={loading || !inputText.trim()}
-                          className={`shrink-0 px-5 py-3 font-display font-bold text-sm tracking-widest uppercase rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${
+                          className={`shrink-0 px-6 py-3 font-display font-bold text-sm tracking-widest uppercase rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
                               (loading || !inputText.trim())
-                              ? 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700/50'
-                              : 'bg-blue-600/20 text-blue-400 border border-blue-500/50 hover:bg-blue-600 hover:text-white hover:shadow-[0_0_20px_rgba(37,99,235,0.6)] cursor-pointer'
+                              ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                              : 'bg-black hover:bg-slate-800 text-white border border-black shadow-md hover:shadow-lg cursor-pointer active:scale-95'
                           }`}
                         >
                           SEND

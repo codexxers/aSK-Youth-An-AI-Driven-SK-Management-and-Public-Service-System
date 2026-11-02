@@ -2,5 +2,13 @@
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
   "installCommand": "echo 'skip root install'",
-  "framework": "vite"
+  "framework": "vite",
+  "env": {
+    "VITE_BACKEND_URL": "https://askyouth-backend.onrender.com"
+  },
+  "build": {
+    "env": {
+      "VITE_BACKEND_URL": "https://askyouth-backend.onrender.com"
+    }
+  }
 }

@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import Plot from 'react-plotly.js'
-import ChatbotInactivePage from './ChatbotInactivePage.jsx'
+
 import EventLogModal from './components/EventLogModal'
 import ScanAttendance from './pages/ScanAttendance'
 
 const DEFAULT_PROD_API = 'https://askyouth-backend.onrender.com';
 const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-const API_BASE = (import.meta.env.VITE_BACKEND_URL || (isLocal ? 'http://localhost:3001' : DEFAULT_PROD_API)).replace(/\/$/, '')
+const API_BASE = (import.meta.env.VITE_BACKEND_URL || (isLocal ? 'http://localhost:3001' : DEFAULT_PROD_API)).replace(/\/$/, '');
 
 const formatSGT = (dateString) => {
   if (!dateString) return '--:--';
@@ -31,28 +31,10 @@ const formatSGT = (dateString) => {
   return `${hh}:${mm} // ${mo}/${dd}/${yy}`;
 };
 
-async function fetchBackendHealth(base, timeoutMs = 25000) {
-  const url = `${base}/health`
-  const ctrl = new AbortController()
-  const tid = setTimeout(() => ctrl.abort(), timeoutMs)
-  try {
-    const res = await fetch(url, { method: 'GET', signal: ctrl.signal, cache: 'no-store' })
-    clearTimeout(tid)
-    if (!res.ok) {
-      const txt = await res.text().catch(() => '')
-      console.warn('[aSK health]', url, res.status, txt.slice(0, 200))
-      return false
-    }
-    return true
-  } catch (err) {
-    clearTimeout(tid)
-    console.warn('[aSK health]', url, err?.name || 'fetch failed', err?.message || '')
-    return false
-  }
-}
+
 
 // ---------------------------------------------------------------------------
-// ExportResponseButton â€” Phase 5 Feature 1
+// ExportResponseButton — Phase 5 Feature 1
 // Appears on every completed assistant message. Exports reply as DOCX or PDF
 // using the existing /api/export/document endpoint.
 // ---------------------------------------------------------------------------
@@ -65,7 +47,7 @@ function ExportResponseButton({ messageContent, hasOfficialDocument, officialDoc
     if (!showPopup) return;
     const handleClickOutside = (e) => {
       if (popupRef.current && !popupRef.current.contains(e.target) &&
-        buttonRef.current && !buttonRef.current.contains(e.target)) {
+          buttonRef.current && !buttonRef.current.contains(e.target)) {
         setShowPopup(false);
       }
     };
@@ -141,13 +123,13 @@ function ExportResponseButton({ messageContent, hasOfficialDocument, officialDoc
               onClick={() => doExport('docx')}
               className="flex items-center gap-2 px-3 py-2 text-xs font-mono font-bold tracking-wider rounded-lg bg-blue-900/40 border border-blue-500/40 text-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-500 transition-all"
             >
-              ðŸ“„ Export to DOCX
+              📄 Export to DOCX
             </button>
             <button
               onClick={() => doExport('pdf')}
               className="flex items-center gap-2 px-3 py-2 text-xs font-mono font-bold tracking-wider rounded-lg bg-cyan-900/40 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-600 hover:text-white hover:border-cyan-500 transition-all"
             >
-              ðŸ–¨ï¸ Export to PDF
+              🖨️ Export to PDF
             </button>
           </div>
         </div>
@@ -157,10 +139,10 @@ function ExportResponseButton({ messageContent, hasOfficialDocument, officialDoc
 }
 
 // ---------------------------------------------------------------------------
-// EventsAnalyticsModule â€” Phase C: Full CRUD + Analytics + Document Import
+// EventsAnalyticsModule — Phase C: Full CRUD + Analytics + Document Import
 // ---------------------------------------------------------------------------
-const EVENT_CATEGORIES = ['sports', 'seminar', 'scholarship', 'assembly', 'community', 'livelihood', 'general', 'cultural', 'health'];
-const EMPTY_EVENT_FORM = { title: '', description: '', category: 'general', date: '', time: '', location: '', organizer: '', status: 'upcoming', requirements: '', contact: '', attendees: 0, male_count: 0, female_count: 0, staff_count: '', budget_allotted: '' };
+const EVENT_CATEGORIES = ['sports','seminar','scholarship','assembly','community','livelihood','general','cultural','health','others'];
+const EMPTY_EVENT_FORM = { title:'', description:'', category:'general', category_other_label:'', date:'', time:'', location:'', organizer:'', status:'upcoming', requirements:'', contact:'', attendees:0, male_count:0, female_count:0, staff_count:'', budget_allotted:'' };
 
 function EventFormModal({ event, onClose, onSaved, authHeaders }) {
   const isEdit = !!event;
@@ -189,7 +171,7 @@ function EventFormModal({ event, onClose, onSaved, authHeaders }) {
         for (const [k, v] of Object.entries(ex)) { if (v !== null && v !== undefined && v !== '') u[k] = v; }
         return u;
       });
-      setImportBanner('Fields extracted â€” please review before saving.');
+      setImportBanner('Fields extracted — please review before saving.');
     } catch (e) { setError(e.message); }
     finally { setImporting(false); }
   };
@@ -197,7 +179,7 @@ function EventFormModal({ event, onClose, onSaved, authHeaders }) {
   const handleSave = async () => {
     setSaving(true); setError(null);
     try {
-      const body = { ...form, attendees: parseInt(form.attendees) || 0, male_count: parseInt(form.male_count) || 0, female_count: parseInt(form.female_count) || 0, staff_count: form.staff_count === '' ? null : parseInt(form.staff_count) || 0, budget_allotted: form.budget_allotted === '' ? null : parseFloat(form.budget_allotted) || 0 };
+      const body = { ...form, attendees: parseInt(form.attendees)||0, male_count: parseInt(form.male_count)||0, female_count: parseInt(form.female_count)||0, staff_count: form.staff_count === '' ? null : parseInt(form.staff_count)||0, budget_allotted: form.budget_allotted === '' ? null : parseFloat(form.budget_allotted)||0 };
       const url = isEdit ? `${API_BASE}/api/events/${event.id}` : `${API_BASE}/api/events`;
       const method = isEdit ? 'PATCH' : 'POST';
       const res = await fetch(url, { method, headers: authHeaders ? authHeaders({ 'Content-Type': 'application/json' }) : { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -218,14 +200,14 @@ function EventFormModal({ event, onClose, onSaved, authHeaders }) {
         {/* Document Import */}
         {!isEdit && (
           <div className="mb-5 border border-dashed border-slate-600 rounded-xl p-4 bg-slate-800/50">
-            <p className="text-xs text-slate-400 mb-2 font-medium">ðŸ“„ Import from Document (optional)</p>
+            <p className="text-xs text-slate-400 mb-2 font-medium">📄 Import from Document (optional)</p>
             <div className="flex gap-2 items-center">
               <input type="file" accept=".pdf,.docx,.jpg,.jpeg,.png,.tiff,.tif,.webp,.txt,.csv" onChange={e => setImportFile(e.target.files?.[0] || null)} className="text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-slate-700 file:text-slate-300 hover:file:bg-slate-600 flex-1" />
               <button onClick={handleImport} disabled={!importFile || importing} className="px-3 py-1.5 bg-cyan-700 hover:bg-cyan-600 disabled:opacity-40 text-white text-xs rounded-lg whitespace-nowrap">
-                {importing ? 'â³ Extracting...' : 'Extract'}
+                {importing ? '⏳ Extracting...' : 'Extract'}
               </button>
             </div>
-            {importBanner && <p className="text-xs text-yellow-400 mt-2">âš ï¸ {importBanner}</p>}
+            {importBanner && <p className="text-xs text-yellow-400 mt-2">⚠️ {importBanner}</p>}
           </div>
         )}
 
@@ -235,6 +217,9 @@ function EventFormModal({ event, onClose, onSaved, authHeaders }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           <div className="col-span-2"><label className={labelCls}>Title</label><input value={form.title} onChange={e => set('title', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Category</label><select value={form.category} onChange={e => set('category', e.target.value)} className={inputCls}>{EVENT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          {form.category === 'others' && (
+            <div className="col-span-1 sm:col-span-2"><label className={labelCls}>Specify Category</label><input value={form.category_other_label || ''} onChange={e => set('category_other_label', e.target.value)} placeholder="e.g. Blood Donation" className={inputCls} /></div>
+          )}
           <div><label className={labelCls}>Status</label><select value={form.status} onChange={e => set('status', e.target.value)} className={inputCls}><option value="upcoming">Upcoming</option><option value="completed">Completed</option></select></div>
           <div><label className={labelCls}>Date</label><input type="date" value={form.date} onChange={e => set('date', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Time</label><input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} /></div>
@@ -251,8 +236,8 @@ function EventFormModal({ event, onClose, onSaved, authHeaders }) {
           <div><label className={labelCls}>Attendees</label><input type="number" min="0" value={form.attendees} onChange={e => set('attendees', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Male</label><input type="number" min="0" value={form.male_count} onChange={e => set('male_count', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Female</label><input type="number" min="0" value={form.female_count} onChange={e => set('female_count', e.target.value)} className={inputCls} /></div>
-          <div><label className={labelCls}>Staff (optional)</label><input type="number" min="0" value={form.staff_count} onChange={e => set('staff_count', e.target.value)} placeholder="â€”" className={inputCls} /></div>
-          <div className="col-span-2"><label className={labelCls}>Budget Allotted (â‚±)</label><input type="number" min="0" step="0.01" value={form.budget_allotted} onChange={e => set('budget_allotted', e.target.value)} placeholder="0.00" className={inputCls} /></div>
+          <div><label className={labelCls}>Staff (optional)</label><input type="number" min="0" value={form.staff_count} onChange={e => set('staff_count', e.target.value)} placeholder="—" className={inputCls} /></div>
+          <div className="col-span-2"><label className={labelCls}>Budget Allotted (₱)</label><input type="number" min="0" step="0.01" value={form.budget_allotted} onChange={e => set('budget_allotted', e.target.value)} placeholder="0.00" className={inputCls} /></div>
         </div>
 
         <div className="flex justify-end gap-2 mt-3">
@@ -263,6 +248,532 @@ function EventFormModal({ event, onClose, onSaved, authHeaders }) {
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// NotificationBell — Polling notifications (Suggestion #4)
+// ---------------------------------------------------------------------------
+function NotificationBell({ authHeaders, setCurrentView }) {
+  const [data, setData] = useState({ count: 0, events: [] });
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchNotifs = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/notifications/upcoming`, { headers: authHeaders() });
+        if (res.ok) setData(await res.json());
+      } catch (e) {}
+    };
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 300000); // 5 mins
+    return () => clearInterval(interval);
+  }, [authHeaders]);
+
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen(!open)} className="relative p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100/80 backdrop-blur-md rounded-lg shadow-sm border border-slate-200/50 transition-all flex items-center justify-center">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+        {data.count > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden z-[101]">
+          <div className="bg-slate-50 px-4 py-2 border-b border-slate-200">
+            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Upcoming Events ({data.count})</h3>
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {data.events.length === 0 ? (
+              <p className="p-4 text-xs text-slate-500 text-center">No upcoming events in the next {data.windowDays || 3} days.</p>
+            ) : (
+              data.events.map(ev => (
+                <div key={ev.id} onClick={() => { setOpen(false); setCurrentView('events'); }} className="p-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors">
+                  <p className="text-sm font-bold text-slate-800 line-clamp-1">{ev.title}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{ev.date} {ev.time && `• ${ev.time}`}</p>
+                  <p className="text-[10px] text-slate-400 font-mono mt-1">{ev.location || 'Concepcion Dos'}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FaqModule — (Suggestion #1)
+// ---------------------------------------------------------------------------
+function FaqModule({ authHeaders, authUser }) {
+  const [faqs, setFaqs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [expanded, setExpanded] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFaq, setEditFaq] = useState(null);
+
+  const canEdit = ['admin', 'chairman'].includes(authUser?.role);
+
+  const fetchFaqs = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/faq`, { headers: authHeaders() });
+      if (res.ok) setFaqs(await res.json());
+    } catch (e) { } finally { setLoading(false); }
+  };
+  useEffect(() => { fetchFaqs(); }, []);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const url = editFaq.id ? `${API_BASE}/api/faq/${editFaq.id}` : `${API_BASE}/api/faq`;
+    const method = editFaq.id ? 'PATCH' : 'POST';
+    try {
+      const res = await fetch(url, { method, headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(editFaq) });
+      if (res.ok) { setIsEditing(false); setEditFaq(null); fetchFaqs(); }
+    } catch (e) { alert('Error saving FAQ'); }
+  };
+
+  const handleArchive = async (id) => {
+    if (!confirm('Archive this FAQ?')) return;
+    try {
+      await fetch(`${API_BASE}/api/faq/${id}`, { method: 'DELETE', headers: authHeaders() });
+      fetchFaqs();
+    } catch (e) {}
+  };
+
+  const filtered = faqs.filter(f => (f.question + ' ' + f.answer).toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-y-auto">
+      <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-4xl mx-auto w-full">
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-2 min-w-0">
+            <span className="text-2xl sm:text-3xl shrink-0">❓</span>
+            <span className="truncate">Frequently Asked Questions</span>
+          </h1>
+          {canEdit && (
+            <button
+              onClick={() => { setEditFaq({ question:'', answer:'', category:'general', display_order:0, status:'published', visibility:'public' }); setIsEditing(true); }}
+              className="shrink-0 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-all text-sm min-h-[40px]"
+            >
+              + New FAQ
+            </button>
+          )}
+        </div>
+
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search FAQs..." className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all mb-6 shadow-sm" />
+
+        {loading ? <div className="animate-pulse flex flex-col gap-4">{[1,2,3].map(i => <div key={i} className="h-16 bg-slate-200 rounded-xl w-full" />)}</div> : (
+          <div className="space-y-3">
+            {filtered.map(faq => (
+              <div key={faq.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <div onClick={() => setExpanded(expanded === faq.id ? null : faq.id)} className="px-4 sm:px-5 py-4 cursor-pointer flex justify-between items-center gap-2 group min-h-[56px]">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <span className="text-blue-500 font-bold opacity-50 group-hover:opacity-100 transition-opacity shrink-0">Q.</span>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-bold text-slate-800 text-sm sm:text-base">{faq.question}</h3>
+                      <div className="flex flex-wrap gap-1 mt-0.5">
+                        {faq.status !== 'published' && <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded-full uppercase font-bold">{faq.status}</span>}
+                        {faq.visibility === 'restricted' && <span className="px-2 py-0.5 bg-red-100 text-red-800 text-[10px] rounded-full uppercase font-bold">RESTRICTED</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <svg className={`w-5 h-5 text-slate-400 transition-transform shrink-0 ${expanded === faq.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                </div>
+                {expanded === faq.id && (
+                  <div className="px-5 pb-5 pt-2 border-t border-slate-50 bg-slate-50/50">
+                    <div className="flex gap-3">
+                      <span className="text-slate-400 font-bold opacity-50">A.</span>
+                      <p className="text-slate-600 text-sm leading-relaxed">{faq.answer}</p>
+                    </div>
+                    {canEdit && (
+                      <div className="mt-4 flex gap-2 justify-end">
+                        <button onClick={() => { setEditFaq(faq); setIsEditing(true); }} className="text-xs text-blue-600 font-bold hover:underline">Edit</button>
+                        <button onClick={() => handleArchive(faq.id)} className="text-xs text-red-500 font-bold hover:underline">Archive</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+            {filtered.length === 0 && <p className="text-center text-slate-500 py-8">No FAQs found.</p>}
+          </div>
+        )}
+      </div>
+
+      {isEditing && editFaq && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <form onSubmit={handleSave} className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-bold text-slate-800 mb-4">{editFaq.id ? 'Edit FAQ' : 'Add FAQ'}</h3>
+            <div className="space-y-3">
+              <div><label className="text-xs font-bold text-slate-500">Question</label><input required value={editFaq.question} onChange={e => setEditFaq(p => ({...p, question: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
+              <div><label className="text-xs font-bold text-slate-500">Answer</label><textarea required rows={4} value={editFaq.answer} onChange={e => setEditFaq(p => ({...p, answer: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div><label className="text-xs font-bold text-slate-500">Category</label><input value={editFaq.category} onChange={e => setEditFaq(p => ({...p, category: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
+                <div><label className="text-xs font-bold text-slate-500">Order</label><input type="number" value={editFaq.display_order} onChange={e => setEditFaq(p => ({...p, display_order: parseInt(e.target.value)||0}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
+                <div><label className="text-xs font-bold text-slate-500">Status</label><select value={editFaq.status} onChange={e => setEditFaq(p => ({...p, status: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none"><option>published</option><option>draft</option><option>archived</option></select></div>
+                <div><label className="text-xs font-bold text-slate-500">Visibility</label><select value={editFaq.visibility} onChange={e => setEditFaq(p => ({...p, visibility: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none"><option>public</option><option>restricted</option></select></div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-lg">Cancel</button>
+              <button type="submit" className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg">Save</button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SystemHealthTab — Admin Dashboard (Suggestion #3)
+// ---------------------------------------------------------------------------
+function SystemHealthTab({ authHeaders }) {
+
+  const [health, setHealth] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Restore Backup state
+  const [backups, setBackups] = useState(null);
+  const [backupsLoading, setBackupsLoading] = useState(false);
+  const [backupsError, setBackupsError] = useState(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [selectedBackup, setSelectedBackup] = useState(null); // snapshot object from picker
+  const [restoreStep, setRestoreStep] = useState(0); // 0=hidden, 1=confirm, 2=restoring
+  const [backupNowLoading, setBackupNowLoading] = useState(false);
+
+  // AI Log Viewer state
+  const [aiLogs, setAiLogs] = useState(null);      // null = never loaded
+  const [aiLogsLoading, setAiLogsLoading] = useState(false);
+  const [aiLogsError, setAiLogsError] = useState(null);
+  const [aiLogFilter, setAiLogFilter] = useState(''); // source filter
+
+  const fetchHealth = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/system-health`, { headers: authHeaders() });
+      if (res.ok) setHealth(await res.json());
+    } catch (e) {} finally { setLoading(false); }
+  };
+  useEffect(() => { fetchHealth(); const int = setInterval(fetchHealth, 45000); return () => clearInterval(int); }, []);
+
+  const handleAction = async (endpoint, payload = {}) => {
+    if (!confirm('Proceed with this administrative action?')) return;
+    try {
+      const res = await fetch(`${API_BASE}${endpoint}`, { method: 'POST', headers: authHeaders({'Content-Type':'application/json'}), body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (res.ok) alert('Success: ' + JSON.stringify(data));
+      else alert('Failed: ' + data.error);
+    } catch(e) { alert('Request failed.'); }
+  };
+
+  const handleBackupNow = async () => {
+    if (!confirm('Push a snapshot of the current database to Supabase Storage now?')) return;
+    setBackupNowLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/backup-db`, { method: 'POST', headers: authHeaders({'Content-Type':'application/json'}), body: JSON.stringify({}) });
+      const data = await res.json();
+      if (res.ok) alert(`✅ Backup pushed!\nFile: ${data.filename}\nSize: ${Math.round(data.bytes/1024)} KB`);
+      else alert('Backup failed: ' + data.error);
+    } catch(e) { alert('Request failed.'); }
+    finally { setBackupNowLoading(false); }
+  };
+
+  const handleOpenPicker = async () => {
+    setShowPicker(true);
+    setBackupsLoading(true);
+    setBackupsError(null);
+    setSelectedBackup(null);
+    setRestoreStep(0);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/backups`, { headers: authHeaders() });
+      const data = await res.json();
+      if (res.ok) setBackups(data.snapshots || []);
+      else setBackupsError(data.error || 'Failed to load backups.');
+    } catch(e) { setBackupsError('Network error loading backups.'); }
+    finally { setBackupsLoading(false); }
+  };
+
+  const handleSelectSnapshot = (snap) => {
+    setSelectedBackup(snap);
+    setRestoreStep(1);
+  };
+
+  const handleConfirmRestore = async () => {
+    setRestoreStep(2);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/restore-backup`, {
+        method: 'POST',
+        headers: authHeaders({'Content-Type':'application/json'}),
+        body: JSON.stringify({ snapshotFilename: selectedBackup.filename })
+      });
+      // 202 Accepted is success — service will restart
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setRestoreStep(1);
+        alert('Restore failed: ' + (data.error || res.statusText));
+      }
+      // On success stay in step 2 (restoring overlay) — user waits ~60s then refreshes
+    } catch(e) {
+      setRestoreStep(1);
+      alert('Network error — restore may not have started. Check Render logs.');
+    }
+  };
+
+  const fmt = (bytes) => bytes != null ? `${Math.round(bytes / 1024)} KB` : '?';
+
+  const fetchAiLogs = async () => {
+    setAiLogsLoading(true);
+    setAiLogsError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/ai-logs`, { headers: authHeaders() });
+      const data = await res.json();
+      if (res.ok) setAiLogs(data.entries || []);
+      else setAiLogsError(data.error || 'Failed to load logs.');
+    } catch (e) { setAiLogsError('Network error.'); }
+    finally { setAiLogsLoading(false); }
+  };
+
+  if (loading) return <div className="p-6 text-slate-400">Loading system metrics...</div>;
+  if (!health) return <div className="p-6 text-red-400">Failed to load system health.</div>;
+
+  return (
+    <div className="p-4 sm:p-6 space-y-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <p className="text-xs font-bold text-slate-500 uppercase">Memory Usage</p>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className={`text-2xl font-black ${health.ramUsagePct > 85 ? 'text-red-500' : 'text-cyan-400'}`}>{health.ramUsagePct}%</span>
+            <span className="text-xs text-slate-400">{health.freeMemGB}GB free</span>
+          </div>
+        </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <p className="text-xs font-bold text-slate-500 uppercase">Python Engine</p>
+          <div className="mt-2 flex items-center gap-2">
+            <span className={`w-3 h-3 rounded-full ${health.pythonToolsOnline ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="text-lg font-bold text-white">{health.pythonToolsOnline ? 'Online' : 'Offline'}</span>
+          </div>
+        </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <p className="text-xs font-bold text-slate-500 uppercase">Vector DB (HNSW)</p>
+          <div className="mt-2">
+            <span className="text-lg font-bold text-cyan-400">{health.hnswChunkCount}</span> <span className="text-xs text-slate-400">chunks</span>
+            <p className="text-[10px] text-slate-500 mt-1">{health.hnswIndexSizeMB || '<1'} MB</p>
+          </div>
+        </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+          <p className="text-xs font-bold text-slate-500 uppercase">SQLite DB</p>
+          <div className="mt-2">
+            <span className="text-lg font-bold text-cyan-400">{health.dbSizeMB || '<1'} MB</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Maintenance Actions */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <h3 className="text-sm font-bold text-white mb-4">Maintenance Actions</h3>
+        <div className="flex flex-wrap gap-3">
+          <button
+            id="btn-backup-now"
+            onClick={handleBackupNow}
+            disabled={backupNowLoading}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+          >
+            {backupNowLoading ? 'Backing up…' : 'Backup Now'}
+          </button>
+          {/* <button
+            id="btn-purge-logs"
+            onClick={() => handleAction('/api/admin/purge-logs', { days: 30 })}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold rounded-lg transition-colors"
+          >
+            Purge Logs (&gt;30 days)
+          </button> */}
+          <button
+            id="btn-restore-backup"
+            onClick={handleOpenPicker}
+            className="px-4 py-2 bg-amber-900/40 hover:bg-amber-900/60 border border-amber-700 text-amber-300 text-xs font-bold rounded-lg transition-colors"
+          >
+            🗃 Restore Backup
+          </button>
+          {health.orphanedEventLogs > 0 && (
+            <div className="px-4 py-2 bg-amber-900/30 border border-amber-800 text-amber-400 text-xs font-bold rounded-lg flex items-center gap-2">
+              ⚠️ {health.orphanedEventLogs} orphaned logs detected
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Backup Picker Panel ── */}
+      {showPicker && restoreStep === 0 && (
+        <div className="bg-slate-900 border border-amber-800/50 rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-amber-300">🗃 Available Snapshots</h3>
+            <button onClick={() => setShowPicker(false)} className="text-slate-500 hover:text-slate-300 text-xs font-bold">✕ Close</button>
+          </div>
+          {backupsLoading && <p className="text-slate-400 text-sm">Loading snapshots…</p>}
+          {backupsError && <p className="text-red-400 text-sm">{backupsError}</p>}
+          {!backupsLoading && !backupsError && backups && (
+            backups.length === 0
+              ? <p className="text-slate-500 text-sm">No snapshots found in bucket.</p>
+              : (
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {backups.map((snap) => (
+                    <button
+                      key={snap.filename}
+                      onClick={() => handleSelectSnapshot(snap)}
+                      className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
+                        snap.isSafety
+                          ? 'bg-blue-950/40 border-blue-800/60 hover:bg-blue-900/40'
+                          : 'bg-slate-800 border-slate-700 hover:bg-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-white truncate">{snap.filename}</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            {snap.timestamp ? new Date(snap.timestamp).toLocaleString() : 'Unknown time'}
+                            {' · '}
+                            {fmt(snap.size)}
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0 flex flex-col items-end gap-1">
+                          <span className="text-[11px] font-bold text-slate-300">{snap.relativeTime}</span>
+                          {snap.isSafety && (
+                            <span className="text-[10px] bg-blue-800/60 text-blue-300 px-1.5 py-0.5 rounded font-bold">Safety</span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )
+          )}
+        </div>
+      )}
+
+      {/* ── Confirm Step (Step 1) ── */}
+      {restoreStep === 1 && selectedBackup && (
+        <div className="bg-slate-900 border border-red-800/60 rounded-xl p-5 space-y-4">
+          <h3 className="text-sm font-bold text-red-400">⚠ Confirm Restore</h3>
+          <div className="bg-slate-800 rounded-lg p-4 space-y-1">
+            <p className="text-xs font-bold text-slate-300">Restoring to:</p>
+            <p className="text-sm font-mono text-amber-300 break-all">{selectedBackup.filename}</p>
+            <p className="text-xs text-slate-400">
+              {selectedBackup.timestamp ? new Date(selectedBackup.timestamp).toLocaleString() : 'Unknown time'}
+              {' · '}{fmt(selectedBackup.size)} · {selectedBackup.relativeTime}
+            </p>
+          </div>
+          <div className="text-xs text-slate-400 space-y-1.5">
+            <p>⚠ <strong className="text-red-400">Everything written after this snapshot will be permanently discarded</strong> — events, users, changes, all of it.</p>
+            <p>✅ A safety snapshot of the <strong className="text-white">current live state</strong> will be taken automatically before restoring, so you can undo this if needed.</p>
+            <p>⏳ The system will <strong className="text-white">restart and be unavailable for ~30–60 seconds</strong>.</p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setRestoreStep(0); setSelectedBackup(null); }}
+              className="px-4 py-2 text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              id="btn-confirm-restore"
+              onClick={handleConfirmRestore}
+              className="px-4 py-2 text-xs font-bold text-white bg-red-700 hover:bg-red-600 border border-red-600 rounded-lg transition-colors"
+            >
+              Yes, Restore This Backup
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Restoring Overlay (Step 2) ── */}
+      {restoreStep === 2 && (
+        <div className="bg-slate-900 border border-amber-700/60 rounded-xl p-6 text-center space-y-3">
+          <div className="text-3xl animate-pulse">⏳</div>
+          <h3 className="text-sm font-bold text-amber-300">Restoring backup…</h3>
+          <p className="text-xs text-slate-400">Safety snapshot taken. The service is restarting.</p>
+          <p className="text-xs text-slate-500">This page will be <strong className="text-slate-300">unavailable for ~30–60 seconds</strong>. Please wait before refreshing.</p>
+          {selectedBackup && (
+            <p className="text-[11px] font-mono text-slate-500 mt-2 break-all">Restoring to: {selectedBackup.filename}</p>
+          )}
+        </div>
+      )}
+
+      {/* ── AI / Server Log Viewer ── */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <span className="text-cyan-400">📡</span> AI / Server Log Viewer
+            <span className="text-[10px] font-mono text-slate-500 font-normal ml-1">last 250 entries · in-memory only</span>
+          </h3>
+          <div className="flex items-center gap-2">
+            <select
+              value={aiLogFilter}
+              onChange={e => setAiLogFilter(e.target.value)}
+              className="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-[10px] font-mono text-slate-300 focus:outline-none focus:border-cyan-500"
+            >
+              <option value="">All sources</option>
+              {['SSE','Cache','RAG','Snapshot','VectorStore','Python AI'].map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            <button
+              onClick={fetchAiLogs}
+              disabled={aiLogsLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-bold font-mono rounded-lg transition-colors disabled:opacity-50"
+            >
+              <svg className={`w-3 h-3 ${aiLogsLoading ? 'animate-spin text-cyan-400' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              {aiLogsLoading ? 'Loading…' : 'Refresh'}
+            </button>
+          </div>
+        </div>
+
+        {aiLogsError && (
+          <div className="bg-red-950/40 border border-red-800 text-red-300 p-3 rounded-lg text-[11px] font-mono">
+            ⚠ {aiLogsError}
+          </div>
+        )}
+
+        {aiLogs === null && !aiLogsLoading && !aiLogsError && (
+          <p className="text-slate-500 text-xs font-mono text-center py-4">Click Refresh to load the live server log buffer.</p>
+        )}
+
+        {aiLogs !== null && (() => {
+          const filtered = aiLogFilter ? aiLogs.filter(e => e.source === aiLogFilter) : aiLogs;
+          return filtered.length === 0 ? (
+            <p className="text-slate-500 text-center py-6 text-xs font-mono">No entries{aiLogFilter ? ` for source "${aiLogFilter}"` : ''} in buffer.</p>
+          ) : (
+            <div className="max-h-80 overflow-y-auto rounded-lg border border-slate-800 font-mono text-[10px]">
+              <table className="w-full border-collapse">
+                <thead className="sticky top-0 bg-slate-950 z-10">
+                  <tr className="text-slate-500 text-[9px] uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left w-24">Time</th>
+                    <th className="px-3 py-2 text-left w-14">Level</th>
+                    <th className="px-3 py-2 text-left w-20">Source</th>
+                    <th className="px-3 py-2 text-left">Message</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((entry, i) => (
+                    <tr key={i} className={`border-t border-slate-800/60 ${i % 2 === 0 ? 'bg-slate-900/30' : 'bg-slate-950/30'}`}>
+                      <td className="px-3 py-1.5 text-slate-500 whitespace-nowrap">{new Date(entry.ts).toLocaleTimeString()}</td>
+                      <td className="px-3 py-1.5">
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                          entry.level === 'warn'  ? 'bg-amber-900/50 text-amber-300' :
+                          entry.level === 'error' ? 'bg-red-900/50 text-red-300' :
+                                                    'bg-slate-800 text-slate-400'
+                        }`}>{entry.level}</span>
+                      </td>
+                      <td className="px-3 py-1.5 text-cyan-400 font-bold whitespace-nowrap">{entry.source}</td>
+                      <td className="px-3 py-1.5 text-slate-300 break-all">{entry.message}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
+      </div>
+    </div>
+  );
+}
+
 
 function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar, setCurrentView }) {
   const [mainTab, setMainTab] = useState('dashboard'); // 'dashboard' | 'events'
@@ -327,7 +838,7 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
       const res = await fetch(url, { headers: authHeaders ? authHeaders() : {} });
       const data = await res.json();
       setEvents(data);
-    } catch { } finally { setEventsLoading(false); }
+    } catch {} finally { setEventsLoading(false); }
   };
 
   useEffect(() => { fetchChart(chartType, showGender, showStaff); }, [chartType, showGender, showStaff]);
@@ -344,12 +855,12 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
       if (res.ok) {
         fetchEvents();
       }
-    } catch (e) { }
+    } catch (e) {}
   };
 
   const handleDelete = async (id) => {
     try { await fetch(`${API_BASE}/api/events/${id}`, { method: 'DELETE', headers: authHeaders ? authHeaders() : {} }); }
-    catch { } finally { setDeleteId(null); fetchEvents(); fetchChart(chartType, showGender, showStaff); }
+    catch {} finally { setDeleteId(null); fetchEvents(); fetchChart(chartType, showGender, showStaff); }
   };
 
   const chartTabs = [
@@ -361,17 +872,17 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
 
   const filteredEvents = events.filter(ev => !searchQ || ev.title.toLowerCase().includes(searchQ.toLowerCase()) || ev.category.toLowerCase().includes(searchQ.toLowerCase()));
 
-  const fmtBudget = (v) => (v != null && v !== '') ? `â‚±${Number(v).toLocaleString()}` : '';
+  const fmtBudget = (v) => (v != null && v !== '') ? `₱${Number(v).toLocaleString()}` : '';
 
   return (
     <div className="flex flex-col h-full bg-slate-950 text-white overflow-auto relative">
       {/* Header */}
-      <div className="h-16 shrink-0 border-b border-slate-800 bg-slate-900/95 backdrop-blur-xl flex items-center px-4 sm:px-6 justify-between gap-4 sticky top-0 z-30">
-        <span className="text-lg font-bold tracking-wide truncate">ðŸ“… Events & Attendance</span>
-        <div className="flex flex-wrap gap-2 mb-2 sm:mb-0">
-          {['dashboard', 'events'].map(t => (
+      <div className="shrink-0 border-b border-slate-800 bg-slate-900/95 backdrop-blur-xl flex flex-wrap items-center px-4 sm:px-6 py-3 gap-x-4 gap-y-2 min-h-[4rem] sticky top-0 z-30">
+        <span className="text-base sm:text-lg font-bold tracking-wide truncate flex-1 min-w-0">📅 Events &amp; Attendance</span>
+        <div className="flex flex-wrap gap-2">
+          {['dashboard','events'].map(t => (
             <button key={t} onClick={() => setMainTab(t)} className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-lg text-[11px] sm:text-sm font-bold uppercase tracking-wider transition-all ${mainTab === t ? 'bg-cyan-600 text-white shadow-[0_0_15px_rgba(6,182,212,0.4)]' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>
-              {t === 'dashboard' ? 'ðŸ“Š Dashboard' : 'ðŸ“‹ Events'}
+              {t === 'dashboard' ? '📊 Dashboard' : '📋 Events'}
             </button>
           ))}
         </div>
@@ -387,22 +898,22 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                 <h2 className="text-3xl font-black text-white">Dashboard</h2>
                 <p className="text-slate-400 mt-1">Live attendance overview</p>
               </div>
-
+              
               {activeEvent ? (
                 <>
                   <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col justify-center items-center sm:items-start text-center sm:text-left">
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Total Attendees</p>
                     <p className="text-6xl sm:text-7xl font-black text-cyan-400">{activeEvent.attendees || 0}</p>
                   </div>
-
+                  
                   <div className="bg-slate-900 border border-slate-700 rounded-xl p-6">
                     <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-2 mb-4">
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Active events â€” attendance scanning</p>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Active events — attendance scanning</p>
                       <span className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-slate-800 px-2 py-1 rounded">{activeEvent.title}</span>
                     </div>
                     <button onClick={() => setQrEvent(activeEvent)} className="w-full flex items-center justify-between bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-xl font-bold transition-all shadow-lg hover:shadow-green-900/50">
                       <span className="text-lg truncate mr-4">{activeEvent.title}</span>
-                      <span className="shrink-0">Show QR Code â†’</span>
+                      <span className="shrink-0">Show QR Code →</span>
                     </button>
                   </div>
                 </>
@@ -461,18 +972,21 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                       {ev.time && <div className="text-xs text-slate-500 font-normal">{ev.time}</div>}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      {ev.date ? new Date(ev.date + 'T00:00:00+08:00').toLocaleDateString('en-US', { timeZone: 'Asia/Singapore', month: 'short', day: 'numeric', year: 'numeric' }) : 'â€”'}
+                      {ev.date ? new Date(ev.date + 'T00:00:00+08:00').toLocaleDateString('en-US', { timeZone: 'Asia/Singapore', month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                     </td>
-                    <td className="px-4 py-3">{ev.location || 'â€”'}</td>
+                    <td className="px-4 py-3">{ev.location || '—'}</td>
                     <td className="px-4 py-3">
-                      <span className="text-xs bg-cyan-900/50 text-cyan-300 px-2 py-0.5 rounded-full">{ev.category}</span>
+                      <span className="text-xs bg-cyan-900/50 text-cyan-300 px-2 py-0.5 rounded-full">
+                        {ev.category === 'others' && ev.category_other_label ? `Others: ${ev.category_other_label}` : ev.category}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${ev.status === 'completed' ? 'bg-slate-700 text-slate-300' :
-                          ev.status === 'active' ? 'bg-green-600 text-white' :
-                            'bg-amber-600 text-white'
-                        }`}>
-                        {ev.status === 'completed' ? 'Archived' : ev.status === 'active' ? 'Active' : 'Not Started'}
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        ev.status === 'completed' ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-800/50' : 
+                        ev.status === 'active' ? 'bg-green-600 text-white' : 
+                        'bg-amber-600 text-white'
+                      }`}>
+                        {ev.status === 'completed' ? 'Completed' : ev.status === 'active' ? 'Active' : 'Not Started'}
                       </span>
                     </td>
                     <td className="px-4 py-3 font-mono">{ev.attendees || 0}</td>
@@ -531,11 +1045,11 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 max-w-sm flex flex-col items-center" onClick={e => e.stopPropagation()}>
             <h3 className="text-xl font-bold text-white mb-2 text-center">{qrEvent.title}</h3>
             <p className="text-sm text-slate-400 mb-6 text-center">Youth can scan this QR code to mark their attendance.</p>
-
+            
             <div className="bg-white p-4 rounded-xl mb-6 shadow-[0_0_30px_rgba(6,182,212,0.3)]">
               <img src={`${API_BASE}/api/events/${qrEvent.id}/qr?h=${qrRefreshHash}`} alt="Event QR Code" className="w-48 h-48" />
             </div>
-
+            
             {authUser?.role === 'admin' && (
               <button onClick={() => handleRefreshQR(qrEvent.id)} className="w-full mb-3 px-4 py-3 bg-amber-700 text-white font-bold rounded-xl hover:bg-amber-600 transition-colors">
                 Refresh QR (Admin Only)
@@ -551,15 +1065,15 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
 
       {/* Event Logs Modal */}
       {logEvent && (
-        <EventLogModal
-          open={!!logEvent}
-          onClose={() => setLogEvent(null)}
-          event={logEvent}
-          token={authHeaders().Authorization?.split(' ')[1]}
+        <EventLogModal 
+          open={!!logEvent} 
+          onClose={() => setLogEvent(null)} 
+          event={logEvent} 
+          token={authHeaders().Authorization?.split(' ')[1]} 
           authUser={authUser}
           onToggleStatus={(ev) => {
             handleToggleStatus(ev);
-            setLogEvent({ ...ev, status: ev.status === 'upcoming' ? 'active' : 'completed' });
+            setLogEvent({...ev, status: ev.status === 'upcoming' ? 'active' : 'completed'});
           }}
           onShowQR={setQrEvent}
           qrRefreshHash={qrRefreshHash}
@@ -571,7 +1085,7 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
 }
 
 // ---------------------------------------------------------------------------
-// ReportsModule â€” Phase 2 Feature 7
+// ReportsModule — Phase 2 Feature 7
 // Template-based SK document generation (Resolution, Minutes, Certificate).
 // Calls Python AI Layer via Node.js proxy to generate DOCX or PDF files.
 // ---------------------------------------------------------------------------
@@ -591,9 +1105,9 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
       { key: 'year', label: 'Year', placeholder: '2025' },
       { key: 'title', label: 'Resolution Title', placeholder: 'Title of the resolution' },
       { key: 'whereas_1', label: 'WHEREAS (1)', placeholder: 'First whereas clause', multiline: true },
-      { key: 'whereas_2', label: 'WHEREAS (2) â€” optional', placeholder: 'Second whereas clause', multiline: true },
+      { key: 'whereas_2', label: 'WHEREAS (2) — optional', placeholder: 'Second whereas clause', multiline: true },
       { key: 'resolved_1', label: 'RESOLVED', placeholder: 'Main resolved clause', multiline: true },
-      { key: 'resolved_2', label: 'RESOLVED FURTHER â€” optional', placeholder: 'Additional resolved clause', multiline: true },
+      { key: 'resolved_2', label: 'RESOLVED FURTHER — optional', placeholder: 'Additional resolved clause', multiline: true },
       { key: 'date', label: 'Day', placeholder: 'e.g. 15th' },
       { key: 'month', label: 'Month', placeholder: 'e.g. July' },
       { key: 'chairperson', label: 'SK Chairperson Name', placeholder: 'Full name' },
@@ -615,12 +1129,24 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
     certificate: [
       { key: 'recipient_name', label: 'Recipient Name', placeholder: 'Full name of awardee' },
       { key: 'purpose', label: 'Purpose / Recognition', placeholder: 'e.g. outstanding contribution to...', multiline: true },
-      { key: 'details', label: 'Additional Details â€” optional', placeholder: 'Extra details...', multiline: true },
+      { key: 'details', label: 'Additional Details — optional', placeholder: 'Extra details...', multiline: true },
       { key: 'date', label: 'Day', placeholder: 'e.g. 15th' },
       { key: 'month', label: 'Month', placeholder: 'e.g. July' },
       { key: 'year', label: 'Year', placeholder: '2025' },
       { key: 'chairperson', label: 'SK Chairperson Name', placeholder: 'Full name' },
       { key: 'barangay_captain', label: 'Barangay Captain Name', placeholder: 'Full name' },
+    ],
+    project_brief: [
+      { key: 'project_name',     label: 'Name of Project / Activity', placeholder: 'e.g. Gabi ng Kabataan 2025' },
+      { key: 'location',         label: 'Location', placeholder: 'e.g. Barangay Concepcion Dos Multi-Purpose Hall' },
+      { key: 'target_date',      label: 'Target Date of Implementation', placeholder: 'e.g. December 15, 2025' },
+      { key: 'background',       label: 'Background / Rationale', placeholder: 'Why is this project needed?', multiline: true },
+      { key: 'objective',        label: 'Objective', placeholder: 'What does this project aim to achieve?', multiline: true },
+      { key: 'physical_output',  label: 'Target Physical Output', placeholder: 'e.g. 200 youth attended, 50 kits distributed', multiline: true },
+      { key: 'beneficiaries',    label: 'Target Beneficiaries', placeholder: 'e.g. Youth aged 15–30 of Barangay Concepcion Dos' },
+      { key: 'budget',           label: 'Budget (Php)', placeholder: 'e.g. 50,000' },
+      { key: 'prepared_by_name', label: 'Prepared By — Name', placeholder: 'Full name' },
+      { key: 'prepared_by_title',label: 'Prepared By — Title/Position', placeholder: 'e.g. SK Chairperson' },
     ],
   };
 
@@ -669,28 +1195,32 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
   };
 
   const templates = [
-    { id: 'resolution', label: 'SK Resolution', emoji: 'ðŸ“œ' },
-    { id: 'minutes', label: 'Meeting Minutes', emoji: 'ðŸ“' },
-    { id: 'certificate', label: 'Certificate of Recognition', emoji: 'ðŸ†' },
+    { id: 'resolution',    label: 'SK Resolution',               emoji: '📜' },
+    { id: 'minutes',       label: 'Meeting Minutes',             emoji: '📝' },
+    { id: 'certificate',   label: 'Certificate of Recognition',  emoji: '🏆' },
+    { id: 'project_brief', label: 'Project Brief',               emoji: '📊' },
   ];
 
   return (
     <div className="flex flex-col h-full bg-slate-950 text-white overflow-auto relative">
       {/* Header */}
-      <span className="ml-10 text-lg font-bold tracking-wide truncate">ðŸ—‚ï¸ Official Reports â€” Document Generator</span>
+      <div className="shrink-0 border-b border-slate-800 bg-slate-900/95 backdrop-blur-xl flex items-center px-4 sm:px-6 py-3 min-h-[4rem] sticky top-0 z-30">
+        <span className="ml-10 text-base sm:text-lg font-bold tracking-wide truncate">🗂️ Official Reports — Document Generator</span>
+      </div>
 
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 p-4 sm:p-6 overflow-auto">
         <div className="max-w-2xl mx-auto space-y-6">
           {/* Template selector */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {templates.map(t => (
               <button
                 key={t.id}
                 onClick={() => setTemplateId(t.id)}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border text-sm font-medium transition-all ${templateId === t.id
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border text-sm font-medium transition-all ${
+                  templateId === t.id
                     ? 'bg-cyan-950 border-cyan-600 text-cyan-300 shadow-lg'
                     : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800 hover:border-slate-600'
-                  }`}
+                }`}
               >
                 <span className="text-2xl">{t.emoji}</span>
                 <span className="text-center leading-tight">{t.label}</span>
@@ -758,13 +1288,18 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
 }
 
 // ---------------------------------------------------------------------------
-// AdminDashboardModule â€” Phase 6-E: Authenticated Analytics, Logs, Users
+// AdminDashboardModule — Phase 6-E: Authenticated Analytics, Logs, Users
 // ---------------------------------------------------------------------------
 function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) {
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'users' | 'logs'
   const effectiveRole = authUser?.role || 'admin';
-  const [stats, setStats] = useState({ total_events: 0, total_attendees: 0, total_budget: 0, pending_suggestions: 0, active_users: 0 });
+  const [stats, setStats] = useState({ totalEvents: 0, totalAttendees: 0, totalBudget: 0, pendingSuggestions: 0, activeUsers: 0 });
   const [participationData, setParticipationData] = useState([]);
+  
+  // Leaderboard states
+  const [leaderboardSortBy, setLeaderboardSortBy] = useState('attendees'); // 'date' | 'attendees' | 'budget'
+  const [leaderboardSortAsc, setLeaderboardSortAsc] = useState(false); // false = desc
+  const [leaderboardLimit, setLeaderboardLimit] = useState(10); // 'All' handled conditionally
   const [budgetData, setBudgetData] = useState([]);
   const [users, setUsers] = useState([]);
   const [logs, setLogs] = useState([]);
@@ -782,58 +1317,86 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   const [editUser, setEditUser] = useState(null);
   const [editUserConfirmPw, setEditUserConfirmPw] = useState('');
   const [editUserToken, setEditUserToken] = useState('');
+  // Two-step deletion state
+  const [deleteTarget, setDeleteTarget] = useState(null);  // { id, username } | null
+  const [deleteStep, setDeleteStep] = useState(1);         // 1 = first confirm, 2 = type username
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
   // Derived: is there already a chairman?
   const hasChairman = users.some(u => u.role === 'chairman' && u.status === 'active');
 
   const fetchDashboardData = async () => {
     setLoading(true);
     setError(null);
+    const headers = authHeaders({ 'X-Actor': authUser?.full_name || 'Admin', 'X-Role': effectiveRole });
+
+    // 1. Fetch Stats — dedicated helper with explicit JWT
+    const fetchAdminStats = async () => {
+      try {
+        const token = localStorage.getItem('askyouth_token') || sessionStorage.getItem('askyouth_token');
+        const res = await fetch(`${API_BASE}/api/admin/stats`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'X-Actor': authUser?.full_name || 'Admin',
+            'X-Role': effectiveRole,
+          }
+        });
+        if (res.ok) {
+          const d = await res.json();
+          setStats({
+            totalEvents:        d.totalEvents        || 0,
+            totalAttendees:     d.totalAttendees     || 0,
+            totalBudget:        d.totalBudget        || 0,
+            pendingSuggestions: d.pendingSuggestions || 0,
+            activeUsers:        d.activeUsers        || 0,
+          });
+        } else {
+          console.error('[Admin Stats] HTTP', res.status, await res.text());
+        }
+      } catch (err) {
+        console.error('[Admin Stats] Fetch error:', err);
+      }
+    };
+    await fetchAdminStats();
+
+    // 2. Fetch participation
     try {
-      const headers = authHeaders({ 'X-Actor': authUser?.full_name || 'Admin', 'X-Role': effectiveRole });
-
-      // Fetch stats from Node (for suggestions/users) and Python (for event totals)
-      const [resStats, resPy] = await Promise.all([
-        fetch(`${API_BASE}/api/admin/stats`, { headers }),
-        fetch(`${API_BASE}/api/analytics/events?type=event`, { headers: authHeaders() })
-      ]);
-
-      const statsData = resStats.ok ? await resStats.json() : {};
-      const pyData = resPy.ok ? await resPy.json() : {};
-
-      setStats({
-        ...statsData,
-        total_events: pyData?.stats?.total || statsData.total_events || 0,
-        total_attendees: pyData?.stats?.total_attendees || statsData.total_attendees || 0,
-        total_budget: pyData?.stats?.total_budget || statsData.total_budget || 0,
-        pending_suggestions: statsData.pending_suggestions ?? 0,
-      });
-
-      // Fetch participation
       const resPart = await fetch(`${API_BASE}/api/admin/participation`, { headers });
       if (resPart.ok) setParticipationData(await resPart.json());
+    } catch (err) {
+      console.error('Participation fetch error:', err);
+    }
 
-      // Fetch budget
+    // 3. Fetch budget
+    try {
       const resBudg = await fetch(`${API_BASE}/api/admin/budget`, { headers });
       if (resBudg.ok) setBudgetData(await resBudg.json());
+    } catch (err) {
+      console.error('Budget fetch error:', err);
+    }
 
-      // Fetch users
+    // 4. Fetch users
+    try {
       const resUsers = await fetch(`${API_BASE}/api/users`, { headers });
       if (resUsers.ok) setUsers(await resUsers.json());
+    } catch (err) {
+      console.error('Users fetch error:', err);
+    }
 
-      // Fetch logs if admin
-      if (effectiveRole === 'admin') {
+    // 5. Fetch logs if admin
+    if (effectiveRole === 'admin') {
+      try {
         const resLogs = await fetch(`${API_BASE}/api/admin/logs?page=${logsPage}&limit=20&actor=${encodeURIComponent(logActorFilter)}&action=${encodeURIComponent(logActionFilter)}`, { headers });
         if (resLogs.ok) {
           const dataLogs = await resLogs.json();
           setLogs(dataLogs.logs || []);
           setLogsTotalPages(dataLogs.totalPages || 1);
         }
+      } catch (err) {
+        console.error('Logs fetch error:', err);
       }
-    } catch (err) {
-      setError(err.message === 'Failed to fetch' ? 'Gateway Connection Error: Verify backend & AI layers are active.' : err.message);
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -843,9 +1406,9 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   // Handle Add User
   const handleCreateUser = async (e) => {
     e.preventDefault();
-    // Admin role creation requires token
-    if (newUser.role === 'admin' && !newUserToken.trim()) {
-      alert('A privileged authorization token is required to create an Admin account.');
+    // Account creation requires token (as another safeguard for administrating accounts)
+    if (!newUserToken.trim()) {
+      alert('A privileged authorization token is required to create an account.');
       return;
     }
     try {
@@ -870,14 +1433,15 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   const handleUpdateUser = async (e) => {
     e.preventDefault();
     if (!editUser) return;
-    // If changing password, require confirm match and token
+    // Token is ALWAYS required for any account modification
+    if (!editUserToken.trim()) {
+      alert('An authorization token is required to modify any account.');
+      return;
+    }
+    // If changing password, also validate match
     if (editUser.password) {
       if (editUser.password !== editUserConfirmPw) {
         alert('Passwords do not match. Please confirm the new password.');
-        return;
-      }
-      if (!editUserToken.trim()) {
-        alert('An authorization token is required to change a password.');
         return;
       }
     }
@@ -889,12 +1453,13 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
           full_name: editUser.full_name,
           role: editUser.role,
           status: editUser.status,
-          ...(editUser.password ? { password: editUser.password, admin_token: editUserToken } : {})
+          admin_token: editUserToken,
+          ...(editUser.password ? { password: editUser.password } : {})
         })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update user');
-      alert('User updated successfully!');
+      alert('Account updated successfully.');
       setEditUser(null);
       setEditUserConfirmPw('');
       setEditUserToken('');
@@ -904,15 +1469,58 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
     }
   };
 
-  // Handle Delete/Deactivate User
-  const handleDeleteUser = async (id) => {
-    if (!confirm('Are you sure you want to deactivate this user?')) return;
+  // DEACTIVATE — simple single confirm, used from the table button only
+  const handleDeactivateUser = async (usr) => {
+    if (!confirm(`Deactivate account "${usr.username}"? Their access will be revoked immediately.`)) return;
     try {
-      const res = await fetch(`${API_BASE}/api/users/${id}`, {
+      const res = await fetch(`${API_BASE}/api/users/${usr.id}`, {
         method: 'DELETE',
         headers: authHeaders({ 'X-Actor': authUser?.full_name || 'Admin', 'X-Role': effectiveRole })
       });
-      if (!res.ok) throw new Error('Failed to deactivate user');
+      if (!res.ok) throw new Error('Failed to deactivate account');
+      fetchDashboardData();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // DELETE — 2-step username confirmation, only reachable from inside Edit modal
+  const openDeleteFlow = (user) => {
+    setDeleteTarget(user);
+    setDeleteStep(1);
+    setDeleteConfirmInput('');
+  };
+  const cancelDelete = () => {
+    setDeleteTarget(null);
+    setDeleteStep(1);
+    setDeleteConfirmInput('');
+  };
+  const handleDeleteUser = async () => {
+    if (!deleteTarget) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/users/${deleteTarget.id}`, {
+        method: 'DELETE',
+        headers: authHeaders({ 'X-Actor': authUser?.full_name || 'Admin', 'X-Role': effectiveRole })
+      });
+      if (!res.ok) throw new Error('Failed to delete account');
+      cancelDelete();
+      fetchDashboardData();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+
+  // Admin: lift login lockout for a user
+  const handleLiftLockout = async (username) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/unlock-user`, {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json', 'X-Actor': authUser?.full_name || 'Admin', 'X-Role': effectiveRole }),
+        body: JSON.stringify({ username })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to lift lockout');
       fetchDashboardData();
     } catch (err) {
       alert(err.message);
@@ -930,11 +1538,39 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `system_logs_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `system_logs_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
     link.remove();
   };
+
+  // Leaderboard sorting and limiting
+  let sortedParticipationData = [...participationData];
+  sortedParticipationData.sort((a, b) => {
+    let valA = 0;
+    let valB = 0;
+    
+    if (leaderboardSortBy === 'date') {
+      valA = new Date(a.date || 0).getTime() || 0;
+      valB = new Date(b.date || 0).getTime() || 0;
+    } else if (leaderboardSortBy === 'budget') {
+      valA = Number(a.budget_allotted) || 0;
+      valB = Number(b.budget_allotted) || 0;
+    } else if (leaderboardSortBy === 'attendees') {
+      valA = Number(a.attendees) || 0;
+      valB = Number(b.attendees) || 0;
+    } else {
+      valA = a[leaderboardSortBy] || 0;
+      valB = b[leaderboardSortBy] || 0;
+    }
+
+    if (valA < valB) return leaderboardSortAsc ? -1 : 1;
+    if (valA > valB) return leaderboardSortAsc ? 1 : -1;
+    return 0;
+  });
+  if (leaderboardLimit !== 'All') {
+    sortedParticipationData = sortedParticipationData.slice(0, parseInt(leaderboardLimit));
+  }
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-950 text-white overflow-y-auto relative">
@@ -945,8 +1581,8 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
       <div className="shrink-0 border-b border-slate-800 bg-slate-900/95 backdrop-blur-xl px-3 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sticky top-0 z-30">
         <div className="flex items-center gap-3 ml-10">
           <div className="min-w-0">
-            <h1 className="text-base sm:text-xl font-bold text-white tracking-wide truncate" style={{ fontFamily: "Syne, sans-serif" }}>
-              <span className="text-cyan-500">ðŸ›¡ï¸</span> ADMIN GATEWAY
+            <h1 className="text-base sm:text-xl font-display font-bold text-white tracking-wide truncate">
+              <span className="text-cyan-500">🛡️</span> ADMIN GATEWAY
             </h1>
           </div>
         </div>
@@ -962,40 +1598,46 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
         </div>
       </div>
 
-      {/* Tabs navigation */}
-      <div className="px-3 sm:px-6 pt-2 sm:pt-4 flex gap-1 sm:gap-2 border-b border-slate-800/60 overflow-x-auto scrollbar-none">
-        {[
-          { id: 'overview', label: 'Analytics', icon: 'ðŸ“Š' },
-          { id: 'users', label: 'Users', icon: 'ðŸ‘¥' },
-          ...(effectiveRole === 'admin' ? [{ id: 'logs', label: 'Audit', icon: 'ðŸ“œ' }] : [])
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-3 sm:px-4 py-2 border-b-2 font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === tab.id
-                ? 'border-cyan-500 text-cyan-400 bg-slate-900/40 rounded-t-lg'
-                : 'border-transparent text-slate-500 hover:text-slate-300'
+      {/* Tabs navigation — horizontally scrollable on mobile; fade-right indicates overflow */}
+      <div className="relative shrink-0">
+        <div className="px-3 sm:px-6 pt-2 sm:pt-4 flex flex-nowrap gap-1 sm:gap-2 border-b border-slate-800/60 overflow-x-auto scrollbar-none">
+          {[
+            { id: 'overview', label: 'Analytics', icon: '📊' },
+            { id: 'users', label: 'Users', icon: '👥' },
+            ...(effectiveRole === 'admin' ? [{ id: 'logs', label: 'Audit', icon: '📜' }] : []),
+            ...(['admin'].includes(effectiveRole) ? [{ id: 'health', label: 'System Health', icon: '🩺' }] : [])
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`shrink-0 flex items-center gap-2 px-3 sm:px-4 py-2 border-b-2 font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'border-cyan-500 text-cyan-400 bg-slate-900/40 rounded-t-lg'
+                  : 'border-transparent text-slate-500 hover:text-slate-300'
               }`}
+            >
+              <span>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+          <button
+            onClick={fetchDashboardData}
+            disabled={loading}
+            className="ml-auto my-auto p-1.5 text-slate-500 hover:text-cyan-400 transition-colors rounded-lg hover:bg-slate-900 shrink-0"
+            title="Refresh Data"
           >
-            <span>{tab.icon}</span>
-            {tab.label}
+            <svg className={`w-4 h-4 ${loading ? 'animate-spin text-cyan-500' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           </button>
-        ))}
-        <button
-          onClick={fetchDashboardData}
-          disabled={loading}
-          className="ml-auto my-auto p-1.5 text-slate-500 hover:text-cyan-400 transition-colors rounded-lg hover:bg-slate-900 shrink-0"
-          title="Refresh Data"
-        >
-          <svg className={`w-4 h-4 ${loading ? 'animate-spin text-cyan-500' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-        </button>
+        </div>
+        {/* Right-edge scroll fade — signals that more tabs exist off screen on mobile */}
+        <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-slate-900 to-transparent sm:hidden" aria-hidden />
       </div>
 
       {/* Tab content wrappers */}
       <div className="flex-1 p-3 sm:p-6 max-w-7xl w-full mx-auto space-y-4 sm:space-y-6">
         {error && (
           <div className="bg-red-950/40 border border-red-800 text-red-300 p-3 rounded-lg text-xs font-mono">
-            âš ï¸ Gateway Error: {error}
+            ⚠️ Gateway Error: {error}
           </div>
         )}
 
@@ -1005,10 +1647,10 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             {/* Stats Row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'TOTAL SK EVENTS', val: stats.total_events, color: 'border-blue-500/30 text-blue-400', icon: 'ðŸ“…' },
-                { label: 'ACTIVE ATTENDEES', val: stats.total_attendees?.toLocaleString(), color: 'border-cyan-500/30 text-cyan-400', icon: 'ðŸ™‹â€â™‚ï¸' },
-                { label: 'BUDGET UTILIZED', val: `â‚±${stats.total_budget?.toLocaleString()}`, color: 'border-emerald-500/30 text-emerald-400', icon: 'ðŸ’°' },
-                { label: 'PENDING SUGGESTIONS', val: stats.pending_suggestions, color: 'border-amber-500/30 text-amber-400', icon: 'ðŸ“¬' },
+                { label: 'TOTAL SK EVENTS',    val: stats.totalEvents,                                       color: 'border-blue-500/30 text-blue-400',       icon: '📅' },
+                { label: 'ACTIVE ATTENDEES',    val: (stats.totalAttendees ?? 0).toLocaleString(),            color: 'border-cyan-500/30 text-cyan-400',        icon: '🙋‍♂️' },
+                { label: 'BUDGET UTILIZED',     val: `₱${(stats.totalBudget ?? 0).toLocaleString()}`,         color: 'border-emerald-500/30 text-emerald-400',  icon: '💰' },
+                { label: 'PENDING SUGGESTIONS', val: stats.pendingSuggestions,                                color: 'border-amber-500/30 text-amber-400',      icon: '📬' },
               ].map((st, i) => (
                 <div key={i} className={`bg-slate-900/40 border ${st.color} rounded-xl p-4 relative group hover:bg-slate-900/80 transition-all overflow-hidden`}>
                   <div className="flex justify-between items-start">
@@ -1016,7 +1658,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     <span className="text-sm opacity-60 select-none">{st.icon}</span>
                   </div>
                   <div className="mt-2 text-2xl sm:text-3xl font-display font-black tracking-tight text-white group-hover:scale-105 origin-left transition-transform">
-                    {st.val ?? 'â€”'}
+                    {st.val ?? '—'}
                   </div>
                   <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-current to-transparent opacity-20 group-hover:opacity-100 transition-opacity" />
                 </div>
@@ -1027,16 +1669,49 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Participation Bar Chart */}
               <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex flex-col h-[360px]">
-                <h3 className="text-xs font-mono text-slate-400 uppercase tracking-wider mb-2 font-bold flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-cyan-500" /> Event Attendance Leaderboard
-                </h3>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
+                  <h3 className="text-xs font-mono text-slate-400 uppercase tracking-wider font-bold flex items-center gap-2 m-0">
+                    <span className="w-2 h-2 rounded-full bg-cyan-500" /> Event Statistics
+                  </h3>
+                  <div className="flex items-center gap-2 text-[10px] font-mono shrink-0">
+                    <span className="text-slate-500">Sort:</span>
+                    <select
+                      value={leaderboardSortBy}
+                      onChange={e => setLeaderboardSortBy(e.target.value)}
+                      className="bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-slate-300 focus:outline-none focus:border-cyan-500"
+                    >
+                      <option value="date">Date</option>
+                      <option value="attendees">Attendees</option>
+                      <option value="budget">Budget</option>
+                    </select>
+                    <button
+                      onClick={() => setLeaderboardSortAsc(!leaderboardSortAsc)}
+                      className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-cyan-400 transition-colors"
+                      title={leaderboardSortAsc ? "Ascending" : "Descending"}
+                    >
+                      {leaderboardSortAsc ? '▲' : '▼'}
+                    </button>
+                    <span className="text-slate-500 ml-2 border-l border-slate-800 pl-2">Show:</span>
+                    <select
+                      value={leaderboardLimit}
+                      onChange={e => setLeaderboardLimit(e.target.value)}
+                      className="bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-slate-300 focus:outline-none focus:border-cyan-500"
+                    >
+                      <option value="5">Top 5</option>
+                      <option value="10">Top 10</option>
+                      <option value="All">All</option>
+                    </select>
+                  </div>
+                </div>
                 <div className="flex-1 w-full relative">
-                  {participationData.length > 0 ? (
+                  {sortedParticipationData.length > 0 ? (
                     <Plot
                       data={[{
                         type: 'bar',
-                        x: participationData.map(d => d.title.substring(0, 15) + (d.title.length > 15 ? 'â€¦' : '')),
-                        y: participationData.map(d => d.attendees),
+                        x: sortedParticipationData.map(d => d.title.substring(0,15) + (d.title.length > 15 ? '…' : '')),
+                        y: sortedParticipationData.map(d => leaderboardSortBy === 'budget' ? (Number(d.budget_allotted) || 0) : (Number(d.attendees) || 0)),
+                        text: sortedParticipationData.map(d => `<b>${d.title}</b><br>Date: ${d.date ? new Date(d.date).toLocaleDateString() : 'N/A'}<br>Attendees: ${d.attendees || 0}<br>Budget: ₱${(Number(d.budget_allotted) || 0).toLocaleString()}`),
+                        hoverinfo: 'text',
                         marker: { color: '#06b6d4', opacity: 0.85, line: { color: '#0891b2', width: 1 } }
                       }]}
                       layout={{
@@ -1103,7 +1778,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     <span className="text-[10px] text-cyan-500/80 shrink-0 tracking-wide">{formatSGT(lg.created_at)}</span>
                     <span className="px-1.5 py-0.5 bg-slate-800 text-cyan-400 rounded text-[10px] font-bold uppercase">{lg.role}</span>
                     <span className="text-slate-300 truncate max-w-[150px] font-semibold">{lg.actor}</span>
-                    <span className="text-slate-400 shrink-0">â†’</span>
+                    <span className="text-slate-400 shrink-0">→</span>
                     <span className="text-cyan-300 font-bold">{lg.action}</span>
                     {lg.target && <span className="text-slate-500 truncate max-w-[180px]">({lg.target})</span>}
                     <span className="ml-auto text-slate-600 truncate text-[11px] max-w-[250px] hidden sm:inline">{lg.details}</span>
@@ -1152,11 +1827,12 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                       <td className="p-3 font-bold text-cyan-400">{usr.username}</td>
                       <td className="p-3 text-white">{usr.full_name}</td>
                       <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${usr.role === 'admin' ? 'bg-red-950 text-red-400 border border-red-800' :
-                            usr.role === 'chairman' ? 'bg-blue-950 text-blue-400 border border-blue-800' :
-                              usr.role === 'officer' ? 'bg-cyan-950 text-cyan-400 border border-cyan-800' :
-                                'bg-slate-900 text-slate-400'
-                          }`}>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${
+                          usr.role === 'admin' ? 'bg-red-950 text-red-400 border border-red-800' :
+                          usr.role === 'chairman' ? 'bg-blue-950 text-blue-400 border border-blue-800' :
+                          usr.role === 'officer' ? 'bg-cyan-950 text-cyan-400 border border-cyan-800' :
+                          'bg-slate-900 text-slate-400'
+                        }`}>
                           {usr.role}
                         </span>
                       </td>
@@ -1166,23 +1842,39 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                           {usr.status.toUpperCase()}
                         </span>
                       </td>
-                      <td className="p-3 text-slate-500">{usr.created_at?.slice(0, 10)}</td>
+                      <td className="p-3 text-slate-500">{usr.created_at?.slice(0,10)}</td>
                       {effectiveRole === 'admin' && (
-                        <td className="p-3 text-right space-x-2">
-                          <button
-                            onClick={() => { setEditUser(usr); setEditUserConfirmPw(''); setEditUserToken(''); }}
-                            className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] font-bold uppercase transition-colors"
-                          >
-                            Edit
-                          </button>
-                          {usr.username !== 'admin' && (
+                        <td className="p-3 text-right">
+                          <div className="flex items-center justify-end gap-2 flex-wrap">
+                            {/* Lockout badge + lift button — admin-only, only when locked */}
+                            {usr.locked && (
+                              <div className="flex items-center gap-1.5 bg-red-950/60 border border-red-800/40 rounded px-2 py-0.5">
+                                <span className="text-[9px] font-mono text-red-400 tabular-nums">
+                                  🔒 {Math.ceil(usr.lockedRemainingSec / 60)}m locked
+                                </span>
+                                <button
+                                  onClick={() => handleLiftLockout(usr.username)}
+                                  className="text-[9px] font-mono font-bold text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
+                                >
+                                  Lift
+                                </button>
+                              </div>
+                            )}
                             <button
-                              onClick={() => handleDeleteUser(usr.id)}
-                              className="px-2 py-1 bg-red-950/60 hover:bg-red-900 text-red-400 rounded text-[10px] font-bold uppercase transition-colors"
+                              onClick={() => { setEditUser(usr); setEditUserConfirmPw(''); setEditUserToken(''); }}
+                              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] font-bold uppercase transition-colors"
                             >
-                              Deactivate
+                              Edit
                             </button>
-                          )}
+                            {usr.username !== 'admin' && (
+                              <button
+                                onClick={() => handleDeactivateUser(usr)}
+                                className="px-2 py-1 bg-red-950/60 hover:bg-red-900 text-red-400 rounded text-[10px] font-bold uppercase transition-colors"
+                              >
+                                Deactivate
+                              </button>
+                            )}
+                          </div>
                         </td>
                       )}
                     </tr>
@@ -1206,14 +1898,14 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
               <div className="flex items-center gap-2 flex-wrap">
                 <input
                   type="text"
-                  placeholder="Filter Actorâ€¦"
+                  placeholder="Filter Actor…"
                   value={logActorFilter}
                   onChange={e => { setLogActorFilter(e.target.value); setLogsPage(1); }}
                   className="bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500 placeholder-slate-600"
                 />
                 <input
                   type="text"
-                  placeholder="Filter Actionâ€¦"
+                  placeholder="Filter Action…"
                   value={logActionFilter}
                   onChange={e => { setLogActionFilter(e.target.value); setLogsPage(1); }}
                   className="bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500 placeholder-slate-600"
@@ -1232,7 +1924,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                 onClick={handleExportLogs}
                 className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-mono font-bold uppercase transition-colors flex items-center gap-1.5 ml-auto cursor-pointer"
               >
-                <span>ðŸ“¥</span> Export Logs (CSV)
+                <span>📥</span> Export Logs (CSV)
               </button>
             </div>
 
@@ -1259,8 +1951,8 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                         <span className="px-1.5 py-0.5 bg-slate-800 text-cyan-400 rounded text-[10px] font-bold uppercase">{lg.role}</span>
                       </td>
                       <td className="p-3 font-bold text-cyan-400">{lg.action}</td>
-                      <td className="p-3 text-slate-400 max-w-[150px] truncate">{lg.target || 'â€”'}</td>
-                      <td className="p-3 text-slate-300 whitespace-normal min-w-[200px]">{lg.details || 'â€”'}</td>
+                      <td className="p-3 text-slate-400 max-w-[150px] truncate">{lg.target || '—'}</td>
+                      <td className="p-3 text-slate-300 whitespace-normal min-w-[200px]">{lg.details || '—'}</td>
                       <td className="p-3 text-slate-600 font-mono text-[11px]">{lg.ip_address || 'local'}</td>
                     </tr>
                   ))}
@@ -1283,19 +1975,24 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     disabled={logsPage === 1}
                     className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 rounded border border-slate-800 text-slate-300 cursor-pointer"
                   >
-                    â—€ Prev
+                    ◀ Prev
                   </button>
                   <button
                     onClick={() => setLogsPage(p => Math.min(logsTotalPages, p + 1))}
                     disabled={logsPage === logsTotalPages}
                     className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 rounded border border-slate-800 text-slate-300 cursor-pointer"
                   >
-                    Next â–¶
+                    Next ▶
                   </button>
                 </div>
               </div>
             )}
           </div>
+        )}
+
+        {/* --- SYSTEM HEALTH TAB (Admin Only) --- */}
+        {activeTab === 'health' && ['admin'].includes(effectiveRole) && (
+          <SystemHealthTab authHeaders={authHeaders} />
         )}
       </div>
 
@@ -1305,7 +2002,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowAddUser(false)} />
           <div className="relative bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md shadow-2xl space-y-4 z-10">
             <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <span className="text-cyan-500">âš¡</span> Authorize New Account
+              <span className="text-cyan-500">⚡</span> Authorize New Account
             </h3>
             <form onSubmit={handleCreateUser} className="space-y-3 font-mono text-xs">
               <div>
@@ -1344,7 +2041,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   <option value="officer">Officer</option>
                 </select>
                 {newUser.role === 'chairman' && hasChairman && (
-                  <p className="mt-1 text-amber-500 text-[10px]">âš  A Chairman already exists. Only one Chairman is allowed.</p>
+                  <p className="mt-1 text-amber-500 text-[10px]">⚠ A Chairman already exists. Only one Chairman is allowed.</p>
                 )}
               </div>
               <div>
@@ -1354,24 +2051,22 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   required
                   value={newUser.password}
                   onChange={e => setNewUser({ ...newUser, password: e.target.value })}
-                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                  placeholder="••••••••"
                   className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
                 />
               </div>
-              {/* Admin token â€” only shown when Admin tier selected */}
-              {newUser.role === 'admin' && (
-                <div className="border border-red-800/50 bg-red-950/20 rounded-lg p-3 space-y-2">
-                  <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest">ðŸ” Admin Authorization Required</p>
-                  <p className="text-slate-500 text-[10px]">Creating an Admin account requires a privileged authorization token.</p>
-                  <input
+              {/* Token — now required for all account creations */}
+              <div className="border border-red-800/50 bg-red-950/20 rounded-lg p-3 space-y-2">
+                <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest">🔐 Authorization Required</p>
+                <p className="text-slate-500 text-[10px]">Creating an account requires a privileged authorization token.</p>
+                <input
                     type="password"
                     value={newUserToken}
                     onChange={e => setNewUserToken(e.target.value)}
-                    placeholder="Enter admin authorization tokenâ€¦"
+                    placeholder="Enter admin authorization token…"
                     className="w-full bg-slate-950 border border-red-800/50 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500 text-xs"
                   />
                 </div>
-              )}
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -1398,7 +2093,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => { setEditUser(null); setEditUserConfirmPw(''); setEditUserToken(''); }} />
           <div className="relative bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md shadow-2xl space-y-4 z-10 max-h-[90vh] overflow-y-auto">
             <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <span className="text-cyan-500">ðŸ”§</span> Modify Account: {editUser.username}
+              <span className="text-cyan-500">🔧</span> Modify Account: {editUser.username}
             </h3>
             <form onSubmit={handleUpdateUser} className="space-y-3 font-mono text-xs">
               <div>
@@ -1450,67 +2145,154 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     type="password"
                     value={editUser.password || ''}
                     onChange={e => setEditUser({ ...editUser, password: e.target.value })}
-                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                    placeholder="••••••••"
                     className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
                   />
                 </div>
                 {editUser.password && (
-                  <>
-                    <div>
-                      <label className="text-slate-400 block mb-1">Confirm New Password</label>
-                      <input
-                        type="password"
-                        value={editUserConfirmPw}
-                        onChange={e => setEditUserConfirmPw(e.target.value)}
-                        placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
-                        className={`w-full bg-slate-950 border rounded px-3 py-2 text-white focus:outline-none ${editUserConfirmPw && editUser.password !== editUserConfirmPw
-                            ? 'border-red-600 focus:border-red-500'
-                            : 'border-slate-700 focus:border-cyan-500'
-                          }`}
-                      />
-                      {editUserConfirmPw && editUser.password !== editUserConfirmPw && (
-                        <p className="mt-1 text-red-500 text-[10px]">Passwords do not match</p>
-                      )}
-                    </div>
-                    <div className="border border-amber-800/50 bg-amber-950/20 rounded p-2 space-y-1">
-                      <p className="text-amber-400 text-[10px] font-bold uppercase tracking-widest">ðŸ” Authorization Token Required</p>
-                      <input
-                        type="password"
-                        value={editUserToken}
-                        onChange={e => setEditUserToken(e.target.value)}
-                        placeholder="Enter admin authorization tokenâ€¦"
-                        className="w-full bg-slate-950 border border-amber-800/50 rounded px-3 py-2 text-white focus:outline-none focus:border-amber-500"
-                      />
-                    </div>
-                  </>
+                  <div>
+                    <label className="text-slate-400 block mb-1">Confirm New Password</label>
+                    <input
+                      type="password"
+                      value={editUserConfirmPw}
+                      onChange={e => setEditUserConfirmPw(e.target.value)}
+                      placeholder="••••••••"
+                      className={`w-full bg-slate-950 border rounded px-3 py-2 text-white focus:outline-none ${
+                        editUserConfirmPw && editUser.password !== editUserConfirmPw
+                          ? 'border-red-600 focus:border-red-500'
+                          : 'border-slate-700 focus:border-cyan-500'
+                      }`}
+                    />
+                    {editUserConfirmPw && editUser.password !== editUserConfirmPw && (
+                      <p className="mt-1 text-red-500 text-[10px]">Passwords do not match</p>
+                    )}
+                  </div>
                 )}
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => { setEditUser(null); setEditUserConfirmPw(''); setEditUserToken(''); }}
-                  className="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white rounded transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded transition-colors shadow-sm cursor-pointer"
-                >
-                  Apply Changes
-                </button>
+              {/* Authorization token — ALWAYS required for any modification */}
+              <div className="border border-amber-800/50 bg-amber-950/20 rounded-lg p-3 space-y-1">
+                <p className="text-amber-400 text-[10px] font-bold uppercase tracking-widest">🔐 Authorization Token Required</p>
+                <p className="text-amber-700/80 text-[9px]">Required for all account modifications, including role changes and status updates.</p>
+                <input
+                  type="password"
+                  required
+                  value={editUserToken}
+                  onChange={e => setEditUserToken(e.target.value)}
+                  placeholder="Enter admin authorization token…"
+                  className="w-full bg-slate-950 border border-amber-800/50 rounded px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                />
               </div>
+
+              {/* Modal footer: Delete on left, Cancel + Apply on right */}
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/50 mt-2">
+                {/* Delete Account — 2-step, only from inside Edit modal, hidden for protected 'admin' */}
+                {editUser.username !== 'admin' ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditUser(null); setEditUserConfirmPw(''); setEditUserToken('');
+                      openDeleteFlow(editUser);
+                    }}
+                    className="px-3 py-1.5 bg-red-950/60 hover:bg-red-900/80 text-red-400 hover:text-red-300 text-[10px] font-bold font-mono uppercase rounded border border-red-900/40 transition-colors"
+                  >
+                    🗑 Delete Account
+                  </button>
+                ) : <span />}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setEditUser(null); setEditUserConfirmPw(''); setEditUserToken(''); }}
+                    className="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white rounded transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded transition-colors shadow-sm cursor-pointer"
+                  >
+                    Apply Changes
+                  </button>
+                </div>
+              </div>
+
             </form>
           </div>
         </div>
       )}
+
+      {/* ── Two-step Account Deletion Modal (reachable only from Edit modal) ── */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={cancelDelete} />
+          <div className="relative bg-slate-900 border border-red-900/60 rounded-xl p-6 w-full max-w-sm shadow-2xl space-y-4 z-10">
+            {deleteStep === 1 ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🗑️</span>
+                  <h3 className="text-sm font-mono font-bold text-red-400 uppercase tracking-wider">Delete This Account?</h3>
+                </div>
+                <p className="text-slate-300 text-xs font-mono leading-relaxed">
+                  You are about to permanently delete the account{' '}
+                  <span className="text-cyan-400 font-bold">{deleteTarget.username}</span>{' '}
+                  ({deleteTarget.full_name}). Their access will be revoked immediately.
+                </p>
+                <p className="text-slate-500 text-[10px]">This is a destructive action. Proceed to the next step to confirm.</p>
+                <div className="flex justify-end gap-2 pt-1">
+                  <button onClick={cancelDelete} className="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white rounded text-xs font-mono transition-colors">Cancel</button>
+                  <button onClick={() => setDeleteStep(2)} className="px-4 py-1.5 bg-red-700 hover:bg-red-600 text-white font-bold rounded text-xs font-mono transition-colors">Proceed</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">⚠️</span>
+                  <h3 className="text-sm font-mono font-bold text-red-400 uppercase tracking-wider">Confirm Deletion of Selected Account</h3>
+                </div>
+                <p className="text-slate-300 text-xs font-mono leading-relaxed">
+                  To finish, type the username{' '}
+                  <span className="text-cyan-400 font-bold">{deleteTarget.username}</span>{' '}
+                  in the field below.
+                </p>
+                <input
+                  type="text"
+                  value={deleteConfirmInput}
+                  onChange={e => setDeleteConfirmInput(e.target.value)}
+                  placeholder={`Type "${deleteTarget.username}" to confirm`}
+                  autoFocus
+                  className={`w-full bg-slate-950 border rounded px-3 py-2 text-white text-xs font-mono focus:outline-none ${
+                    deleteConfirmInput && deleteConfirmInput !== deleteTarget.username
+                      ? 'border-red-600 focus:border-red-500'
+                      : 'border-slate-700 focus:border-cyan-500'
+                  }`}
+                />
+                {deleteConfirmInput && deleteConfirmInput !== deleteTarget.username && (
+                  <p className="text-red-500 text-[10px] font-mono">Username does not match.</p>
+                )}
+                <div className="flex justify-end gap-2 pt-1">
+                  <button onClick={cancelDelete} className="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white rounded text-xs font-mono transition-colors">Cancel</button>
+                  <button
+                    onClick={handleDeleteUser}
+                    disabled={deleteConfirmInput !== deleteTarget.username}
+                    className="px-4 py-1.5 bg-red-700 hover:bg-red-600 disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed text-white font-bold rounded text-xs font-mono transition-colors"
+                  >
+                    Delete Account
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
 
+
+
 // ---------------------------------------------------------------------------
-// Phase 6-A: LoginPage â€” Glassmorphic dark SK-themed login screen
+// Phase 6-A: LoginPage — Glassmorphic dark SK-themed login screen
 // No credentials stored in this component. All auth handled by backend.
 // ---------------------------------------------------------------------------
 function LoginPage({ apiBase, onLogin }) {
@@ -1519,9 +2301,19 @@ function LoginPage({ apiBase, onLogin }) {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [attemptsLeft, setAttemptsLeft] = useState(null);    // null = not yet tried
+  const [lockedSecs, setLockedSecs] = useState(0);           // 0 = not locked
+
+  // Countdown ticker for lockout display
+  useEffect(() => {
+    if (lockedSecs <= 0) return;
+    const t = setTimeout(() => setLockedSecs(s => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [lockedSecs]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (lockedSecs > 0) return; // prevent submit while locked
     if (!username.trim() || !password.trim()) {
       setError('Please enter both username and password.');
       return;
@@ -1536,10 +2328,16 @@ function LoginPage({ apiBase, onLogin }) {
       });
       const data = await res.json();
       if (!res.ok) {
+        if (data.locked && data.remainingSec) {
+          setLockedSecs(data.remainingSec);
+          setAttemptsLeft(0);
+        } else if (data.attemptsLeft !== undefined) {
+          setAttemptsLeft(data.attemptsLeft);
+        }
         setError(data.error || 'Login failed.');
         return;
       }
-      // Store JWT in sessionStorage â€” never localStorage for auth tokens
+      // Store JWT in sessionStorage — never localStorage for auth tokens
       sessionStorage.setItem('askyouth_token', data.token);
       sessionStorage.setItem('askyouth_user', JSON.stringify(data.user));
       onLogin(data.user, data.token);
@@ -1575,9 +2373,12 @@ function LoginPage({ apiBase, onLogin }) {
 
   const roleLabels = { admin: 'System Administrator', chairman: 'SK Chairperson', officer: 'SK Officer', youth: 'Youth Member' };
 
+  const lockMins = Math.floor(lockedSecs / 60);
+  const lockSecsRem = lockedSecs % 60;
+
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden" style={{ background: 'linear-gradient(135deg, #e8f4fd 0%, #f0f9ff 35%, #e0f2fe 60%, #f0fdf4 100%)' }}>
-      {/* Animated background orbs â€” light theme */}
+      {/* Animated background ambient lighting */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
         <div className="absolute top-[-20%] left-[-15%] w-[600px] h-[600px] bg-blue-400/20 rounded-full blur-[140px] animate-pulse" style={{ animationDuration: '6s' }} />
         <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-cyan-400/20 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '8s', animationDelay: '2s' }} />
@@ -1587,92 +2388,106 @@ function LoginPage({ apiBase, onLogin }) {
       {/* Subtle noise overlay */}
       <div className="absolute inset-0 bg-noise opacity-30 pointer-events-none" />
 
-      {/* Login card */}
+      {/* Login card container */}
       <div className="relative z-10 w-full max-w-md mx-4">
-        {/* Logo / branding â€” outside card, light theme */}
-        <div className="text-center mb-8 overflow-visible px-2">
+        {/* Logo / branding */}
+        <div className="text-center mb-6 px-2">
           <div className="flex items-center justify-center gap-3 mb-2">
             <img src="/ASKYOUTH.LOGO.png" alt="aSKYOUTH Logo" className="w-12 h-12 object-contain drop-shadow-md" />
-            <h1 className="text-3xl sm:text-5xl font-display font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-700 drop-shadow-[0_4px_20px_rgba(59,130,246,0.3)] select-none overflow-visible pb-1">
+            <h1
+              className="text-3xl sm:text-5xl font-display font-black tracking-widest select-none pb-1"
+              style={{
+                background: 'linear-gradient(to right, #2563eb, #06b6d4, #1d4ed8)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                filter: 'drop-shadow(0 4px 15px rgba(37,99,235,0.3))',
+              }}
+            >
               aSK//YOUTH.AI
             </h1>
           </div>
-          <p className="mt-2 text-sm font-bold tracking-[0.15em] text-slate-900 uppercase">
-            Sangguniang Kabataan â€¢ Barangay Concepcion Dos
+          <p className="mt-2 text-xs sm:text-sm font-bold tracking-[0.15em] text-slate-900 uppercase">
+            Sangguniang Kabataan • Barangay Concepcion Dos
           </p>
           <div className="mt-3 h-px w-24 mx-auto bg-gradient-to-r from-transparent via-blue-500/60 to-transparent" />
         </div>
 
-        {/* Glass card â€” DARK theme card on light background */}
+        {/* Glass card — Dark theme container on light background with full visible white texts */}
         <form
           onSubmit={handleSubmit}
-          className="rounded-2xl p-8 space-y-5"
+          className="rounded-2xl p-7 sm:p-8 space-y-5"
           style={{
-            background: 'rgba(10, 15, 28, 0.88)',
+            background: 'rgba(10, 15, 28, 0.90)',
             backdropFilter: 'blur(24px)',
             WebkitBackdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            boxShadow: '0 25px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(6,182,212,0.08), inset 0 1px 0 rgba(255,255,255,0.05)'
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.35), 0 0 0 1px rgba(6,182,212,0.1), inset 0 1px 0 rgba(255,255,255,0.08)'
           }}
         >
-          <div className="text-center mb-2">
-            <p className="text-sm font-display font-bold text-white/90 tracking-[0.25em] uppercase">System Access</p>
+          <div className="text-center mb-1">
+            <p className="text-xs sm:text-sm font-display font-bold text-white tracking-[0.25em] uppercase">System Access</p>
           </div>
 
           {/* Error banner */}
           {error && (
-            <div className="flex items-center gap-2 bg-red-950/60 border border-red-700/60 rounded-lg px-4 py-3 text-red-300 text-sm">
-              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.27 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+            <div className="p-3 bg-red-950/80 border border-red-500/50 rounded-xl text-red-200 text-xs flex items-center gap-2">
+              <svg className="w-4 h-4 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               <span>{error}</span>
             </div>
           )}
 
-          {/* Username */}
+          {/* Account lockout alert */}
+          {lockedSecs > 0 && (
+            <div className="p-3 bg-amber-950/80 border border-amber-500/50 rounded-xl text-amber-200 text-xs flex items-center gap-2">
+              <svg className="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+              <span>Too many attempts. Locked for {lockMins > 0 ? `${lockMins}m ` : ''}{lockSecsRem}s.</span>
+            </div>
+          )}
+
+          {/* Username field */}
           <div>
-            <label className="block text-xs font-display font-bold text-white/70 tracking-[0.2em] uppercase mb-2">Username</label>
+            <label className="block text-[11px] font-display font-bold text-white tracking-widest uppercase mb-1.5">
+              Username
+            </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-              </span>
+              </div>
               <input
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 disabled={loading}
                 autoComplete="username"
-                className="w-full rounded-lg pl-10 pr-4 py-3 text-sm font-display font-medium text-white focus:outline-none transition-all placeholder-slate-500 disabled:opacity-50"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff' }}
-                onFocus={e => { e.target.style.borderColor = 'rgba(6,182,212,0.7)'; e.target.style.boxShadow = '0 0 0 2px rgba(6,182,212,0.15)'; }}
-                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; e.target.style.boxShadow = 'none'; }}
+                className="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl pl-10 pr-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all placeholder-slate-400 disabled:opacity-50"
                 placeholder="Enter username"
-                autoFocus
               />
             </div>
           </div>
 
-          {/* Password */}
+          {/* Password field */}
           <div>
-            <label className="block text-xs font-display font-bold text-white/70 tracking-[0.2em] uppercase mb-2">Password</label>
+            <label className="block text-[11px] font-display font-bold text-white tracking-widest uppercase mb-1.5">
+              Password
+            </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-              </span>
+              </div>
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 disabled={loading}
                 autoComplete="current-password"
-                className="w-full rounded-lg pl-10 pr-10 py-3 text-sm font-display font-medium text-white focus:outline-none transition-all placeholder-slate-500 disabled:opacity-50"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff' }}
-                onFocus={e => { e.target.style.borderColor = 'rgba(6,182,212,0.7)'; e.target.style.boxShadow = '0 0 0 2px rgba(6,182,212,0.15)'; }}
-                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; e.target.style.boxShadow = 'none'; }}
+                className="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl pl-10 pr-10 py-3 text-sm text-white font-mono focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all placeholder-slate-400 disabled:opacity-50"
                 placeholder="Enter password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer"
                 tabIndex={-1}
               >
                 {showPassword ? (
@@ -1687,16 +2502,12 @@ function LoginPage({ apiBase, onLogin }) {
           {/* Sign in button */}
           <button
             type="submit"
-            disabled={loading || !username.trim() || !password.trim()}
-            className={`w-full py-3.5 rounded-lg font-display font-bold text-sm tracking-[0.2em] uppercase transition-all duration-300 flex items-center justify-center gap-2 ${loading || !username.trim() || !password.trim()
-                ? 'cursor-not-allowed opacity-50'
-                : 'cursor-pointer active:scale-[0.98]'
-              }`}
-            style={
+            disabled={loading || lockedSecs > 0 || !username.trim() || !password.trim()}
+            className={`w-full py-3.5 rounded-xl font-display font-bold text-sm tracking-widest uppercase transition-all duration-300 flex items-center justify-center gap-2 ${
               loading || !username.trim() || !password.trim()
-                ? { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)' }
-                : { background: 'linear-gradient(135deg, #2563eb, #0891b2)', border: '1px solid rgba(6,182,212,0.4)', color: '#fff', boxShadow: '0 4px 20px rgba(37,99,235,0.5)' }
-            }
+                ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/50'
+                : 'bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 text-white shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:shadow-[0_4px_30px_rgba(37,99,235,0.6)] hover:from-blue-500 hover:to-cyan-500 cursor-pointer active:scale-[0.98]'
+            }`}
           >
             {loading ? (
               <>
@@ -1711,29 +2522,26 @@ function LoginPage({ apiBase, onLogin }) {
             )}
           </button>
 
-          {/* Guest Youth Login divider */}
-          <div className="relative flex items-center justify-center pt-2">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10"></div></div>
-            <div className="relative px-3 text-[10px] font-display font-bold text-white/30 uppercase tracking-widest" style={{ background: 'rgba(10,15,28,0.88)' }}>or</div>
+          {/* Divider */}
+          <div className="relative flex items-center justify-center pt-1">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-700/60"></div></div>
+            <div className="relative bg-[#0a0f1c] px-3 text-[10px] font-display font-bold text-white/40 uppercase tracking-widest">or</div>
           </div>
 
+          {/* Continue as Youth */}
           <button
             type="button"
             onClick={handleYouthLogin}
             disabled={loading}
-            className="w-full py-3.5 rounded-lg font-display font-bold text-sm tracking-[0.2em] uppercase transition-all duration-300 flex items-center justify-center gap-2 text-white/80 hover:text-white disabled:opacity-50"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+            className="w-full py-3.5 rounded-xl font-display font-bold text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 flex items-center justify-center gap-2 bg-slate-900/90 text-white hover:bg-slate-800 border border-slate-700 hover:border-cyan-500/50 shadow-sm cursor-pointer active:scale-[0.98]"
           >
             Continue as Youth
           </button>
-
         </form>
 
         {/* Footer */}
-        <p className="text-center mt-6 text-[10px] font-display font-medium text-slate-500 tracking-wider">
-          Encrypted connection â€¢ aSK//YOUTH.AI v6.0
+        <p className="text-center mt-6 text-[10px] font-display font-bold text-slate-700 tracking-wider uppercase">
+          Encrypted connection • aSK//YOUTH.AI v6.0
         </p>
       </div>
     </div>
@@ -1741,7 +2549,7 @@ function LoginPage({ apiBase, onLogin }) {
 }
 
 // ---------------------------------------------------------------------------
-// SuggestionsModule â€” Phase Feedback & Suggestions
+// SuggestionsModule — Phase Feedback & Suggestions
 // ---------------------------------------------------------------------------
 function SuggestionsModule({ authHeaders, authUser, onNavigate }) {
   const [suggestions, setSuggestions] = useState([]);
@@ -1821,7 +2629,7 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate }) {
   return (
     <div className="flex flex-col h-full bg-slate-950 text-white overflow-auto relative">
       <div className="h-16 shrink-0 border-b border-slate-800 bg-slate-900/95 backdrop-blur-xl flex items-center px-4 sm:px-6 justify-between sticky top-0 z-30">
-        <span className="text-lg font-bold tracking-wide">ðŸ’¡ Suggestions & Feedback</span>
+        <span className="text-lg font-bold tracking-wide">💡 Suggestions & Feedback</span>
       </div>
 
       <div className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-6">
@@ -1832,7 +2640,7 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate }) {
             <form onSubmit={handleSubmit} className="space-y-3">
               <select
                 value={form.category}
-                onChange={e => setForm({ ...form, category: e.target.value })}
+                onChange={e => setForm({...form, category: e.target.value})}
                 className="w-full sm:w-auto bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
               >
                 <option value="general">General</option>
@@ -1842,7 +2650,7 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate }) {
               </select>
               <textarea
                 value={form.content}
-                onChange={e => setForm({ ...form, content: e.target.value })}
+                onChange={e => setForm({...form, content: e.target.value})}
                 rows={3}
                 placeholder="What's on your mind? (Any suggestions for SK?)"
                 className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 resize-none"
@@ -1857,7 +2665,7 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate }) {
           </div>
         )}
 
-        {/* Status Filter Buttons â€” admin/chairman/officer only */}
+        {/* Status Filter Buttons — admin/chairman/officer only */}
         {isAdmin && (
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mr-1">Filter:</span>
@@ -1865,8 +2673,9 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate }) {
               <button
                 key={String(btn.value)}
                 onClick={() => setStatusFilter(btn.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${statusFilter === btn.value ? btn.active : btn.color
-                  }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                  statusFilter === btn.value ? btn.active : btn.color
+                }`}
               >
                 {btn.label}
                 {btn.value !== null && (
@@ -1902,15 +2711,16 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate }) {
                       <span className="text-[10px] uppercase tracking-widest font-bold bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full mr-2">{s.category}</span>
                       <span className="text-xs text-slate-500">{new Date(s.created_at.replace(' ', 'T') + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Singapore' })}</span>
                     </div>
-                    <span className={`text-[10px] uppercase font-bold tracking-widest px-2 py-1 rounded-full ${s.status === 'pending' ? 'bg-amber-900/50 text-amber-400 border border-amber-800/50' :
-                        s.status === 'reviewed' ? 'bg-blue-900/50 text-blue-400 border border-blue-800/50' :
-                          'bg-emerald-900/50 text-emerald-400 border border-emerald-800/50'
-                      }`}>
+                    <span className={`text-[10px] uppercase font-bold tracking-widest px-2 py-1 rounded-full ${
+                      s.status === 'pending' ? 'bg-amber-900/50 text-amber-400 border border-amber-800/50' :
+                      s.status === 'reviewed' ? 'bg-blue-900/50 text-blue-400 border border-blue-800/50' :
+                      'bg-emerald-900/50 text-emerald-400 border border-emerald-800/50'
+                    }`}>
                       {s.status}
                     </span>
                   </div>
                   <p className="text-slate-200 text-sm mb-3 leading-relaxed">{s.content}</p>
-                  <p className="text-xs text-slate-500 mb-3">â€” {s.submitter_name} ({s.submitter_role})</p>
+                  <p className="text-xs text-slate-500 mb-3">— {s.submitter_name} ({s.submitter_role})</p>
 
                   {s.admin_response && (
                     <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 mt-3">
@@ -1953,18 +2763,41 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate }) {
   );
 }
 
+const getDynamicGreeting = (user) => {
+  const hour = new Date().getHours();
+  const timeOfDay = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
+  const role = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Guest';
+  let firstName = '';
+  try {
+    const rawName = user?.full_name || user?.identity || user?.name || user?.alias || user?.username || '';
+    if (!rawName || rawName === 'Youth Member' || rawName === 'guest') {
+      const stored = sessionStorage.getItem('askyouth_user') || localStorage.getItem('askyouth_user');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const storedName = parsed?.full_name || parsed?.identity || parsed?.name || '';
+        firstName = storedName.trim().split(' ')[0] || '';
+      }
+    } else {
+      firstName = rawName.trim().split(' ')[0] || '';
+    }
+  } catch(e) {}
+  const greetingName = firstName ? `${role} ${firstName}` : role;
+  return `aSK//YOUTH.AI Initialized. Good ${timeOfDay}, ${greetingName}. How may I assist you today?`;
+};
+
 function App() {
-  // â”€â”€â”€ Phase 6-A: Auth state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Phase 6-A: Auth state ─────────────────────────────────────────
   const [authUser, setAuthUser] = useState(null);       // { id, username, role, full_name }
   const [authToken, setAuthToken] = useState(null);
   const [authChecking, setAuthChecking] = useState(true);
 
-  // â”€â”€â”€ Thread & Chat State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const [threads, setThreads] = useState([{
-    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2),
-    title: 'New Chat',
-    pinned: false,
-    messages: [{ role: "assistant", content: "aSK//YOUTH.AI Initialized. How can I assist you?" }]
+  // ─── Thread & Chat State ──────────────────────────────────────────
+  const [lastModelUsed, setLastModelUsed] = useState(null);
+  const [threads, setThreads] = useState([{ 
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2), 
+      title: 'New Chat',
+      pinned: false,
+      messages: [{ role: "assistant", content: getDynamicGreeting(authUser) }] 
   }]);
   const [activeThreadId, setActiveThreadId] = useState(null);
 
@@ -1973,24 +2806,13 @@ function App() {
 
 
   // Load user-specific threads when authUser changes
-  const WELCOME_MSG = { role: "assistant", content: "aSK//YOUTH.AI Initialized. How can I assist you?" };
-
-  // Helper: collapse duplicate empty New Chat threads â†’ keep only the most recent one
-  const dedupeEmptyThreads = (arr) => {
-    const empties = arr.filter(t => t.title === 'New Chat' && t.messages.length <= 1);
-    if (empties.length <= 1) return arr;
-    // Keep the first (most-recent) empty, drop the rest
-    const keepId = empties[0].id;
-    return arr.filter(t => !(t.title === 'New Chat' && t.messages.length <= 1 && t.id !== keepId));
-  };
-
   useEffect(() => {
     if (!authUser) {
-      setThreads([{
-        id: crypto.randomUUID(),
+      setThreads([{ 
+        id: crypto.randomUUID(), 
         title: 'New Chat',
         pinned: false,
-        messages: [WELCOME_MSG]
+        messages: [{ role: "assistant", content: getDynamicGreeting(authUser) }] 
       }]);
       setActiveThreadId(null);
       return;
@@ -2001,30 +2823,27 @@ function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && parsed.length > 0) {
-          // Deduplicate empty threads on load â€” clears accumulated stale "New Chat" dupes
-          const cleaned = dedupeEmptyThreads(parsed);
-          setThreads(cleaned);
-          setActiveThreadId(cleaned[0].id);
+          setThreads(parsed);
+          setActiveThreadId(parsed[0].id);
           return;
         }
       }
-    } catch (e) { console.error(e); }
-
-    const initial = [{
-      id: getUUID(),
+    } catch(e) { console.error(e); }
+    
+    const initial = [{ 
+      id: getUUID(), 
       title: 'New Chat',
       pinned: false,
-      messages: [WELCOME_MSG]
+      messages: [{ role: "assistant", content: getDynamicGreeting(authUser) }] 
     }];
     setThreads(initial);
     setActiveThreadId(initial[0].id);
   }, [authUser]);
 
-  // Save user-specific threads â€” deduplicate empty threads before persisting
+  // Save user-specific threads
   useEffect(() => {
     if (authUser && threads.length > 0) {
-      const toSave = dedupeEmptyThreads(threads);
-      localStorage.setItem(`askyouth_threads_${authUser.username}`, JSON.stringify(toSave));
+      localStorage.setItem(`askyouth_threads_${authUser.username}`, JSON.stringify(threads));
     }
   }, [threads, authUser]);
 
@@ -2043,10 +2862,6 @@ function App() {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [backendStatus, setBackendStatus] = useState('checking') // 'checking' | 'warming' | 'up' | 'down'
-  const [healthRetryBusy, setHealthRetryBusy] = useState(false)
-  const [warmupSeconds, setWarmupSeconds] = useState(0)
-  const [bypassHealthCheck, setBypassHealthCheck] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false);
 
   // Monitor scroll for "Scroll to Bottom" button
@@ -2065,76 +2880,10 @@ function App() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   };
 
-  // Live health check with Render cold-start handling
+  // Reset generating state on thread switch
   useEffect(() => {
-    let cancelled = false
-    let timer = null
-    let pollInterval = null
-    const startTime = Date.now()
-
-    timer = setInterval(() => {
-      if (!cancelled) {
-        setWarmupSeconds(Math.floor((Date.now() - startTime) / 1000))
-      }
-    }, 1000)
-
-    const runCheck = async () => {
-      const ok = await fetchBackendHealth(API_BASE, 12000)
-      if (cancelled) return
-
-      if (ok) {
-        setBackendStatus('up')
-        clearInterval(timer)
-        pollInterval = setInterval(async () => {
-          if (!cancelled) {
-            const stillOk = await fetchBackendHealth(API_BASE, 10000)
-            if (!stillOk && !cancelled) setBackendStatus('warming')
-          }
-        }, 30000)
-      } else {
-        setBackendStatus('warming')
-        const pollWarmup = async () => {
-          if (cancelled) return
-          const elapsed = (Date.now() - startTime) / 1000
-          if (elapsed > 75) {
-            setBackendStatus('down')
-            clearInterval(timer)
-            return
-          }
-          const pingOk = await fetchBackendHealth(API_BASE, 6000)
-          if (cancelled) return
-          if (pingOk) {
-            setBackendStatus('up')
-            clearInterval(timer)
-          } else {
-            setTimeout(pollWarmup, 3000)
-          }
-        }
-        setTimeout(pollWarmup, 3000)
-      }
-    }
-
-    runCheck()
-
-    return () => {
-      cancelled = true
-      clearInterval(timer)
-      clearInterval(pollInterval)
-    }
-  }, [])
-
-  const handleHealthRetry = async () => {
-    setHealthRetryBusy(true)
-    setBackendStatus('warming')
-    try {
-      const ok = await fetchBackendHealth(API_BASE, 15000)
-      setBackendStatus(ok ? 'up' : 'down')
-    } catch {
-      setBackendStatus('down')
-    } finally {
-      setHealthRetryBusy(false)
-    }
-  }
+    setLoading(false);
+  }, [activeThreadId]);
 
   // Mobile-aware initialization: close sidebar by default on smaller screens
   useEffect(() => {
@@ -2145,11 +2894,11 @@ function App() {
 
   // Define mobile navigation items based on role
   const mobileNavItems = [
-    { id: 'chat', label: 'Chat', icon: 'ðŸ’¬' },
-    { id: 'suggestions', label: 'Ideas', icon: 'ðŸ“¬' },
+    { id: 'chat', label: 'Chat', icon: '💬' },
+    { id: 'suggestions', label: 'Ideas', icon: '📬' },
     ...(authUser?.role === 'admin' || authUser?.role === 'chairman' ? [
-      { id: 'events', label: 'Events', icon: 'ðŸ“…' },
-      { id: 'admin', label: 'Admin', icon: 'ðŸ›¡ï¸' }
+      { id: 'events', label: 'Events', icon: '📅' },
+      { id: 'admin', label: 'Admin', icon: '🛡️' }
     ] : [])
   ];
 
@@ -2157,7 +2906,7 @@ function App() {
   useEffect(() => {
     const checkSession = async () => {
       let savedToken = sessionStorage.getItem('askyouth_token');
-
+      
       const urlParams = new URLSearchParams(window.location.search);
       const scanEventId = urlParams.get('scan');
 
@@ -2174,7 +2923,7 @@ function App() {
             sessionStorage.setItem('askyouth_token', savedToken);
             sessionStorage.setItem('askyouth_user', JSON.stringify(loginData.user));
           }
-        } catch (e) { }
+        } catch (e) {}
       }
 
       if (!savedToken) { setAuthChecking(false); return; }
@@ -2217,7 +2966,7 @@ function App() {
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
       }
-    } catch { /* swallow â€” clear session regardless */ }
+    } catch { /* swallow — clear session regardless */ }
     sessionStorage.removeItem('askyouth_token');
     sessionStorage.removeItem('askyouth_user');
     setAuthUser(null);
@@ -2233,12 +2982,13 @@ function App() {
   const getVisibleModules = () => {
     const role = authUser?.role || 'youth';
     const modules = [
-      { id: 'chat', label: 'AI Assistant', emoji: 'ðŸ’¬', roles: ['admin', 'chairman', 'officer', 'youth'] },
-      { id: 'scan', label: 'Scan Attendance', emoji: 'ðŸ“·', roles: ['youth'] },
-      { id: 'suggestions', label: 'Suggestions', emoji: 'ðŸ’¡', roles: ['admin', 'chairman', 'officer', 'youth'] },
-      { id: 'events', label: 'Event Management', emoji: 'ðŸ“…', roles: ['admin', 'chairman', 'officer'] },
-      { id: 'reports', label: 'Official Reports', emoji: 'ðŸ—‚ï¸', roles: ['admin', 'chairman', 'officer'] },
-      { id: 'admin', label: 'Admin Dashboard', emoji: 'ðŸ›¡ï¸', roles: ['admin', 'chairman'] },
+      { id: 'chat', label: 'AI Assistant', emoji: '💬', roles: ['admin','chairman','officer','youth'] },
+      { id: 'scan', label: 'Scan Attendance', emoji: '📷', roles: ['youth'] },
+      { id: 'suggestions', label: 'Suggestions', emoji: '💡', roles: ['admin','chairman','officer','youth'] },
+      { id: 'events', label: 'Event Management', emoji: '📅', roles: ['admin','chairman','officer'] },
+      { id: 'reports', label: 'Official Reports', emoji: '🗂️', roles: ['admin','chairman','officer'] },
+      { id: 'faq', label: 'FAQ', emoji: '❓', roles: ['admin','chairman','officer','youth'] },
+      { id: 'admin', label: 'Admin Dashboard', emoji: '🛡️', roles: ['admin','chairman'] },
     ];
     return modules.filter(m => m.roles.includes(role));
   };
@@ -2288,6 +3038,7 @@ function App() {
   const [streamingContent, setStreamingContent] = useState('');
   const streamingTextRef = useRef('');
   const pendingChunksRef = useRef([]);
+  const abortControllerRef = useRef(null);
 
   const handleTextareaChange = (e) => {
     setInputText(e.target.value);
@@ -2318,7 +3069,7 @@ function App() {
     setSelectedFiles(prev => {
       const combined = [...prev, ...dropped];
       const unique = combined.filter((f, i, arr) => arr.findIndex(x => x.name === f.name) === i);
-      return unique.slice(0, 5);
+      return unique.slice(0, 8);
     });
   };
 
@@ -2337,7 +3088,7 @@ function App() {
     setSelectedFiles(prev => {
       const combined = [...prev, ...pastedFiles];
       const unique = combined.filter((f, i, arr) => arr.findIndex(x => x.name === f.name) === i);
-      return unique.slice(0, 5);
+      return unique.slice(0, 8);
     });
   };
 
@@ -2356,28 +3107,20 @@ function App() {
   }, [activeThread?.messages, loading]);
 
   const createNewChat = () => {
-    // Use functional updater to read LATEST threads state (avoids stale closure bug)
-    setThreads(prev => {
-      const existingEmpty = prev.find(t => t.title === 'New Chat' && t.messages.length <= 1);
-      if (existingEmpty) {
-        // Just navigate to it â€” no state change needed
-        setActiveThreadId(existingEmpty.id);
-        setCurrentView('chat');
-        if (window.innerWidth < 768) setSidebarOpen(false);
-        return prev; // Return unchanged state
-      }
-      // No empty thread â†’ create exactly one new one
-      const newThread = {
-        id: getUUID(),
-        title: 'New Chat',
-        pinned: false,
-        messages: [{ role: "assistant", content: "aSK//YOUTH.AI Initialized. How can I assist you?" }]
-      };
-      setActiveThreadId(newThread.id);
+    if (activeThread?.title === 'New Chat' && activeThread?.messages?.length <= 1) {
       setCurrentView('chat');
-      if (window.innerWidth < 768) setSidebarOpen(false);
-      return [newThread, ...prev];
-    });
+      return;
+    }
+    const newThread = {
+      id: getUUID(),
+      title: 'New Chat',
+      pinned: false,
+      messages: [{ role: "assistant", content: getDynamicGreeting(authUser) }]
+    };
+    setThreads([newThread, ...threads]);
+    setActiveThreadId(newThread.id);
+    setCurrentView('chat');
+    if(window.innerWidth < 768) setSidebarOpen(false);
   };
 
   const handlePin = (id) => {
@@ -2418,13 +3161,49 @@ function App() {
         id: crypto.randomUUID(),
         title: 'New Chat',
         pinned: false,
-        messages: [{ role: "assistant", content: "aSK//YOUTH.AI Initialized. How can I assist you?" }]
+        messages: [{ role: "assistant", content: getDynamicGreeting(authUser) }]
       };
       setThreads([fallback]);
       setActiveThreadId(fallback.id);
     } else {
       setThreads(nextThreads);
       if (activeThreadId === id) setActiveThreadId(nextThreads[0].id);
+    }
+  };
+
+  const handleExport = async (docContent, docTitle, format) => {
+    try {
+      if (docContent.trim().startsWith('{')) {
+        const parsed = JSON.parse(docContent);
+        if (parsed.download_url) {
+          const a = document.createElement('a');
+          a.href = parsed.download_url;
+          a.target = '_blank';
+          a.download = parsed.filename || `${docTitle.replace(/[^a-z0-9]/gi, '_')}.${format}`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          return;
+        }
+      }
+      
+      const res = await fetch(`${API_BASE}/api/export/document`, {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ title: docTitle, content: docContent, format })
+      });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${docTitle.replace(/[^a-z0-9]/gi, '_')}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
     }
   };
 
@@ -2456,7 +3235,28 @@ function App() {
     setStreamingContent('');
     pendingChunksRef.current = [];
 
+    // Fix 3: Cancel any prior connection state before sending a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
     try {
+      // Fix 1B: Retry once on network-level errors (TypeError: Load failed / Failed to fetch)
+      // before surfacing the failure to the user. Applies to both file and JSON paths.
+      const fetchWithRetry = async (url, opts, retries = 1, delayMs = 2000) => {
+        try { return await fetch(url, opts); }
+        catch (err) {
+          if (retries > 0 && err instanceof TypeError) {
+            console.warn('[Chat] Network error, retrying in', delayMs, 'ms…', err.message);
+            await new Promise(r => setTimeout(r, delayMs));
+            return fetchWithRetry(url, opts, retries - 1, delayMs);
+          }
+          throw err;
+        }
+      };
+
       let response;
       const clientDateString = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Asia/Singapore',
@@ -2470,24 +3270,34 @@ function App() {
         formData.append('conversationId', activeThreadId);
         formData.append('clientDateString', clientDateString);
         selectedFiles.forEach(f => formData.append('files', f));
-        response = await fetch(`${API_BASE}/api/chat/stream`, { method: 'POST', headers: authHeaders(), body: formData });
+        response = await fetchWithRetry(`${API_BASE}/api/chat/stream`, { method: 'POST', headers: authHeaders(), body: formData, signal });
       } else {
-        response = await fetch(`${API_BASE}/api/chat/stream`, {
+        response = await fetchWithRetry(`${API_BASE}/api/chat/stream`, {
           method: 'POST',
           headers: authHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify({ messages: newHistory, conversationId: activeThreadId, clientDateString })
+          body: JSON.stringify({ messages: newHistory, conversationId: activeThreadId, clientDateString }),
+          signal
         });
       }
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      if (!response.ok) {
+        let errorDetail = response.statusText || '';
+        try {
+          const errBody = await response.json();
+          errorDetail = errBody.error || errBody.message || JSON.stringify(errBody);
+        } catch (_) {
+          try { errorDetail = await response.text() || errorDetail; } catch (_) {}
+        }
+        throw new Error(`HTTP ${response.status}: ${errorDetail}`);
+      }
 
-      const reader = response.body.getReader();
+      const reader  = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
       let finalDocuments = null;
-      let finalReply = '';
-      let finalChunks = [];
-      let sseError = null;
+      let finalReply     = '';
+      let finalChunks    = [];
+      let sseError        = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -2509,9 +3319,10 @@ function App() {
               streamingTextRef.current += event.token;
               setStreamingContent(streamingTextRef.current);
             } else if (event.type === 'done') {
-              finalReply = event.ai_data?.ai_message || streamingTextRef.current;
+              finalReply     = event.ai_data?.ai_message || streamingTextRef.current;
               finalDocuments = event.documents || null;
-              finalChunks = event.retrievedChunks?.length > 0 ? event.retrievedChunks : finalChunks;
+              finalChunks    = event.retrievedChunks?.length > 0 ? event.retrievedChunks : finalChunks;
+              if (event.modelUsed) setLastModelUsed({ model: event.modelUsed, tier: event.tier || 'gemini' });
             } else if (event.type === 'error') {
               sseError = event.message || 'Unknown server error.';
             }
@@ -2527,13 +3338,14 @@ function App() {
           try {
             const event = JSON.parse(line.trim().slice(6));
             if (event.type === 'done') {
-              finalReply = event.ai_data?.ai_message || streamingTextRef.current;
+              finalReply     = event.ai_data?.ai_message || streamingTextRef.current;
               finalDocuments = event.documents || null;
-              finalChunks = event.retrievedChunks?.length > 0 ? event.retrievedChunks : finalChunks;
+              finalChunks    = event.retrievedChunks?.length > 0 ? event.retrievedChunks : finalChunks;
+              if (event.modelUsed) setLastModelUsed({ model: event.modelUsed, tier: event.tier || 'gemini' });
             } else if (event.type === 'error') {
               sseError = event.message || 'Unknown server error.';
             }
-          } catch (_) { }
+          } catch (_) {}
         }
       }
 
@@ -2547,14 +3359,14 @@ function App() {
         if (t.id !== activeThreadId) return t;
         const updatedMsgs = finalDocuments
           ? t.messages.map((m, i) => {
-            if (i === newHistory.length - 1 && m.role === 'user') {
-              const patchedFiles = (m.attachedFiles || []).map((af, idx) => ({
-                ...af, extractedText: finalDocuments[idx]?.extractedText || null
-              }));
-              return { ...m, attachedFiles: patchedFiles };
-            }
-            return m;
-          })
+              if (i === newHistory.length - 1 && m.role === 'user') {
+                const patchedFiles = (m.attachedFiles || []).map((af, idx) => ({
+                  ...af, extractedText: finalDocuments[idx]?.extractedText || null
+                }));
+                return { ...m, attachedFiles: patchedFiles };
+              }
+              return m;
+            })
           : t.messages;
         return {
           ...t,
@@ -2583,29 +3395,7 @@ function App() {
     streamingTextRef.current = '';
   }
 
-  if (!bypassHealthCheck && (backendStatus === 'checking' || backendStatus === 'warming' || backendStatus === 'down')) {
-    if (backendStatus === 'checking') {
-      return (
-        <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-slate-300">
-          <div className="absolute inset-0 bg-noise-dark opacity-30 pointer-events-none" aria-hidden />
-          <div className="relative z-10 flex flex-col items-center gap-4">
-            <div className="h-10 w-10 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" />
-            <p className="font-mono text-xs tracking-widest uppercase text-cyan-400/80">Connecting to aSKYOUTH Cloud…</p>
-          </div>
-        </div>
-      )
-    }
-    return (
-      <ChatbotInactivePage
-        status={backendStatus}
-        onRetry={handleHealthRetry}
-        isRetrying={healthRetryBusy}
-        apiBase={API_BASE}
-        elapsedSeconds={warmupSeconds}
-        onBypass={() => setBypassHealthCheck(true)}
-      />
-    )
-  }
+
 
   if (authChecking) {
     return (
@@ -2613,7 +3403,7 @@ function App() {
         <div className="absolute inset-0 bg-noise-dark opacity-30 pointer-events-none" aria-hidden />
         <div className="relative z-10 flex flex-col items-center gap-4">
           <div className="h-10 w-10 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" />
-          <p className="font-mono text-xs tracking-widest uppercase text-cyan-400/80">Verifying sessionâ€¦</p>
+          <p className="font-mono text-xs tracking-widest uppercase text-cyan-400/80">Verifying session…</p>
         </div>
       </div>
     )
@@ -2626,7 +3416,7 @@ function App() {
   return (
     <div className="relative h-screen w-screen bg-white font-sans text-slate-900 overflow-hidden flex">
       <div className="absolute inset-0 bg-noise-dark z-0"></div>
-
+      
       {/* Light Theme Radial Glows */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-400/20 blur-[120px] rounded-full z-0 pointer-events-none"></div>
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-cyan-400/20 blur-[120px] rounded-full z-0 pointer-events-none"></div>
@@ -2635,545 +3425,565 @@ function App() {
       <div className="relative w-full h-full z-10 flex flex-col md:flex-row">
         {/* Mobile Sidebar Backdrop */}
         {sidebarOpen && (
-          <div
+          <div 
             className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[55] md:hidden transition-opacity duration-300"
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
         {/* --- LEFT SIDEBAR (Gemini-Style Chats Menu) --- */}
-        <div className={`transition-all duration-300 h-full flex-shrink-0 border-slate-300 bg-slate-50/50 backdrop-blur-3xl shadow-[5px_0_30px_rgba(0,0,0,0.05)] flex flex-col z-[60] fixed inset-y-0 left-0 md:relative ${sidebarOpen
-            ? 'w-[280px] md:w-[320px] translate-x-0 border-r opacity-100'
+        <div className={`transition-all duration-300 h-full flex-shrink-0 border-slate-300 bg-slate-50/50 backdrop-blur-3xl shadow-[5px_0_30px_rgba(0,0,0,0.05)] flex flex-col z-[60] fixed inset-y-0 left-0 md:relative ${
+          sidebarOpen 
+            ? 'w-[280px] md:w-[320px] translate-x-0 border-r opacity-100' 
             : 'w-[280px] md:w-0 -translate-x-full md:translate-x-0 border-r-0 opacity-0 overflow-hidden pointer-events-none'
-          }`}>
-          <div className="p-4 flex items-center gap-3 border-b border-slate-200 shrink-0">
-             <img src="/ASKYOUTH.LOGO.png" alt="aSKYOUTH" className="w-7 h-7 object-contain shrink-0" />
-             <span className="font-display font-black text-sm text-slate-800 tracking-wide">aSKYOUTH</span>
-          </div>
+        }`}>
+           <div className="p-4 flex items-center justify-between border-b border-slate-200 shrink-0">
+             <div className="flex items-center gap-2.5">
+               <img src="/ASKYOUTH.LOGO.png" alt="aSKYOUTH" className="w-7 h-7 object-contain shrink-0" />
+               <span className="font-display font-black text-sm tracking-widest text-slate-800">aSKYOUTH</span>
+             </div>
+             <button
+               onClick={() => setSidebarOpen(false)}
+               className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-200/50 rounded-lg transition-colors cursor-pointer"
+               title="Collapse Sidebar"
+             >
+               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+             </button>
+           </div>
+           
+           <div className="p-3 border-b border-slate-200/80 shrink-0">
+             <button
+               onClick={createNewChat}
+               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-display font-bold tracking-widest uppercase rounded-xl shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-cyan-500/30 transition-all cursor-pointer active:scale-[0.98]"
+             >
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"></path></svg>
+               New Chat
+             </button>
+           </div>
+           
+           <div className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+             {/* Invisible backdrop to close open menu on outside click */}
+             {openMenuId && (
+               <div className="fixed inset-0 z-30" onClick={() => setOpenMenuId(null)} />
+             )}
+             <h3 className="text-[10px] font-display font-black tracking-widest text-slate-400 uppercase mb-3 px-2">Recent Threads</h3>
+             {sortedThreads.map(t => (
+                 <div
+                   key={t.id}
+                   onClick={() => { setActiveThreadId(t.id); setCurrentView('chat'); if(window.innerWidth < 768) setSidebarOpen(false); }}
+                   className={`group relative flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
+                     activeThreadId === t.id
+                     ? 'bg-blue-100/50 border border-blue-200 text-blue-900 shadow-sm'
+                     : 'hover:bg-slate-200/50 border border-transparent text-slate-600 hover:text-slate-900'
+                   }`}
+                 >
+                   {/* Icon + title / rename input */}
+                   <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
+                     {t.pinned ? (
+                       <svg className="w-3.5 h-3.5 shrink-0 text-blue-500 rotate-45" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>
+                     ) : (
+                       <svg className={`w-4 h-4 shrink-0 ${activeThreadId === t.id ? 'text-blue-500' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                     )}
+                     {renamingId === t.id ? (
+                       <input
+                         autoFocus
+                         value={renameValue}
+                         onChange={e => setRenameValue(e.target.value)}
+                         onKeyDown={e => handleRenameKeyDown(e, t.id)}
+                         onBlur={() => handleRenameSubmit(t.id)}
+                         onClick={e => e.stopPropagation()}
+                         className="flex-1 min-w-0 text-sm font-medium bg-white border border-blue-400 rounded px-2 py-0.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                       />
+                     ) : (
+                       <span className="text-sm font-medium truncate">{t.title}</span>
+                     )}
+                   </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
-            {/* Invisible backdrop to close open menu on outside click */}
-            {openMenuId && (
-              <div className="fixed inset-0 z-30" onClick={() => setOpenMenuId(null)} />
-            )}
-            <h3 className="text-[10px] font-black tracking-widest text-slate-400 uppercase mb-4 px-2" style={{ fontFamily: "Syne, sans-serif" }}>Recent Threads</h3>
-            {sortedThreads.map(t => (
-              <div
-                key={t.id}
-                onClick={() => { setActiveThreadId(t.id); setCurrentView('chat'); if (window.innerWidth < 768) setSidebarOpen(false); }}
-                className={`group relative flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${activeThreadId === t.id
-                    ? 'bg-blue-100/50 border border-blue-200 text-blue-900 shadow-sm'
-                    : 'hover:bg-slate-200/50 border border-transparent text-slate-600 hover:text-slate-900'
-                  }`}
-              >
-                {/* Icon + title / rename input */}
-                <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
-                  {t.pinned ? (
-                    <svg className="w-3.5 h-3.5 shrink-0 text-blue-500 rotate-45" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" /></svg>
-                  ) : (
-                    <svg className={`w-4 h-4 shrink-0 ${activeThreadId === t.id ? 'text-blue-500' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                  )}
-                  {renamingId === t.id ? (
-                    <input
-                      autoFocus
-                      value={renameValue}
-                      onChange={e => setRenameValue(e.target.value)}
-                      onKeyDown={e => handleRenameKeyDown(e, t.id)}
-                      onBlur={() => handleRenameSubmit(t.id)}
-                      onClick={e => e.stopPropagation()}
-                      className="flex-1 min-w-0 text-sm font-medium bg-white border border-blue-400 rounded px-2 py-0.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                  ) : (
-                    <span className="text-sm font-medium truncate">{t.title}</span>
-                  )}
-                </div>
+                   {/* Three-dot menu */}
+                   <div className="relative shrink-0 ml-1" onClick={e => e.stopPropagation()}>
+                     <button
+                       onClick={() => setOpenMenuId(openMenuId === t.id ? null : t.id)}
+                       className={`p-1.5 rounded-md transition-colors ${
+                         openMenuId === t.id
+                           ? 'opacity-100 bg-slate-200 text-slate-700'
+                           : 'opacity-0 group-hover:opacity-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
+                       }`}
+                       title="Options"
+                     >
+                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                         <circle cx="12" cy="5" r="1.5"/>
+                         <circle cx="12" cy="12" r="1.5"/>
+                         <circle cx="12" cy="19" r="1.5"/>
+                       </svg>
+                     </button>
 
-                {/* Three-dot menu */}
-                <div className="relative shrink-0 ml-1" onClick={e => e.stopPropagation()}>
-                  <button
-                    onClick={() => setOpenMenuId(openMenuId === t.id ? null : t.id)}
-                    className={`p-1.5 rounded-md transition-colors ${openMenuId === t.id
-                        ? 'opacity-100 bg-slate-200 text-slate-700'
-                        : 'opacity-0 group-hover:opacity-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
-                      }`}
-                    title="Options"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <circle cx="12" cy="5" r="1.5" />
-                      <circle cx="12" cy="12" r="1.5" />
-                      <circle cx="12" cy="19" r="1.5" />
-                    </svg>
-                  </button>
+                     {/* Dropdown */}
+                     {openMenuId === t.id && (
+                       <div className="absolute right-0 top-full mt-1 z-[100] w-44 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+                         <button
+                           onClick={() => handlePin(t.id)}
+                           className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                         >
+                           <svg className="w-3.5 h-3.5 rotate-45 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>
+                           {t.pinned ? 'Unpin' : 'Pin'}
+                         </button>
+                         <button
+                           onClick={() => handleRenameStart(t.id, t.title)}
+                           className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                         >
+                           <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                           Rename
+                         </button>
+                         <div className="border-t border-slate-100" />
+                         <button
+                           onClick={() => confirmDelete(t.id)}
+                           className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                         >
+                           <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                           Delete
+                         </button>
+                       </div>
+                     )}
+                   </div>
+                 </div>
+             ))}
+           </div>
 
-                  {/* Dropdown */}
-                  {openMenuId === t.id && (
-                    <div className="absolute right-0 top-full mt-1 z-[100] w-44 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
-                      <button
-                        onClick={() => handlePin(t.id)}
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                      >
-                        <svg className="w-3.5 h-3.5 rotate-45 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" /></svg>
-                        {t.pinned ? 'Unpin' : 'Pin'}
-                      </button>
-                      <button
-                        onClick={() => handleRenameStart(t.id, t.title)}
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                      >
-                        <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                        Rename
-                      </button>
-                      <div className="border-t border-slate-100" />
-                      <button
-                        onClick={() => confirmDelete(t.id)}
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
-                      >
-                        <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+           {/* --- Bottom Navigation Bar (role-filtered) --- */}
+           <nav className="shrink-0 border-t border-slate-200 bg-slate-100/80 backdrop-blur p-3 flex flex-col gap-1">
+             <p className="text-[10px] font-display font-black tracking-widest text-slate-400 uppercase px-2 mb-1">Modules</p>
+             {getVisibleModules().map(({ id, label, emoji }) => (
+               <button
+                 key={id}
+                 onClick={() => setCurrentView(id)}
+                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                   currentView === id
+                     ? 'bg-blue-100 border border-blue-200 text-blue-800 shadow-sm'
+                     : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 border border-transparent'
+                 }`}
+               >
+                 <span className="text-base leading-none select-none">{emoji}</span>
+                 <span className="truncate font-display font-bold text-xs tracking-wider">{label}</span>
+                 {currentView === id && (
+                   <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                 )}
+               </button>
+             ))}
 
-          {/* --- Bottom Navigation Bar (role-filtered) --- */}
-          <nav className="shrink-0 border-t border-slate-200 bg-slate-100/80 backdrop-blur p-3 flex flex-col gap-1">
-            <p className="text-[9px] font-black tracking-widest text-slate-400 uppercase px-2 mb-1" style={{ fontFamily: "Syne, sans-serif" }}>Modules</p>
-            {getVisibleModules().map(({ id, label, emoji }) => (
-              <button
-                key={id}
-                onClick={() => setCurrentView(id)}
-                style={{ fontFamily: "Syne, sans-serif" }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${currentView === id
-                    ? 'bg-blue-100 border border-blue-200 text-blue-800 shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 border border-transparent'
-                  }`}
-              >
-                <span className="text-base leading-none select-none">{emoji}</span>
-                <span className="truncate">{label}</span>
-                {currentView === id && (
-                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
-                )}
-              </button>
-            ))}
-
-            {/* User info + Logout */}
-            <div className="mt-3 pt-3 border-t border-slate-200">
-              <div className="flex items-center gap-2 px-2 py-1.5 mb-2">
-                <div className={`w-2 h-2 rounded-full shrink-0 ${ROLE_COLORS[authUser?.role] || 'bg-slate-400'}`} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-slate-900 truncate" style={{ fontFamily: "Syne, sans-serif" }}>{authUser?.full_name}</p>
-                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest" style={{ fontFamily: "Syne, sans-serif" }}>System Administrator | {ROLE_LABELS[authUser?.role] || authUser?.role}</p>
-                </div>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 hover:text-red-700 transition-all border border-transparent hover:border-red-200"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                Sign Out
-              </button>
-            </div>
-          </nav>
+             {/* User info + Logout */}
+             <div className="mt-3 pt-3 border-t border-slate-200">
+               <div className="flex items-center gap-2 px-2 py-1.5 mb-2">
+                 <div className={`w-2 h-2 rounded-full shrink-0 ${ROLE_COLORS[authUser?.role] || 'bg-slate-400'}`} />
+                 <div className="flex-1 min-w-0">
+                   <p className="text-xs font-display font-bold text-slate-900 truncate">{authUser?.full_name}</p>
+                   <p className="text-[10px] text-blue-600 font-display font-bold tracking-wider">{ROLE_LABELS[authUser?.role] || authUser?.role}</p>
+                 </div>
+               </div>
+               <button
+                 onClick={handleLogout}
+                 className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 hover:text-red-700 transition-all border border-transparent hover:border-red-200"
+               >
+                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                 Sign Out
+               </button>
+             </div>
+           </nav>
         </div>
 
         {/* --- MAIN CONTENT AREA (Right Side) --- */}
         <div className="flex-1 flex flex-col h-full bg-transparent overflow-hidden relative transition-all duration-300">
-          {/* GLOBAL MENU TOGGLE + BELL â€” Fixed top-left controls */}
-          <div className="fixed top-3 left-3 z-[100] flex flex-col gap-1.5">
-            {/* Row 1: Burger + Bell */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="text-slate-500 hover:text-blue-600 transition-all p-2 hover:bg-slate-100/80 backdrop-blur-md rounded-lg shadow-sm border border-slate-200/50 flex items-center justify-center group"
-                title={sidebarOpen ? "Collapse Menu" : "Expand Menu"}
-              >
-                <svg className="w-5 h-5 transform group-active:scale-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                </svg>
-              </button>
-              <button
-                className="text-slate-500 hover:text-blue-600 transition-all p-2 hover:bg-slate-100/80 backdrop-blur-md rounded-lg shadow-sm border border-slate-200/50 flex items-center justify-center group"
-                title="Notifications"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                </svg>
-              </button>
-            </div>
-            {/* Row 2: New Chat button below icons */}
+          {/* Menu Toggle button — only visible when sidebar is collapsed */}
+          {!sidebarOpen && (
             <button
-              onClick={createNewChat}
-              className="w-full text-slate-700 hover:text-blue-700 transition-all px-3 py-1.5 hover:bg-blue-50 backdrop-blur-md rounded-lg shadow-sm border border-slate-200/50 flex items-center justify-center gap-1.5 group text-xs font-display font-bold tracking-wider uppercase"
-              title="New Chat"
+              onClick={() => setSidebarOpen(true)}
+              className="fixed top-3 left-3 z-[65] text-slate-600 hover:text-blue-600 transition-all p-2 bg-white/90 hover:bg-white backdrop-blur-md rounded-xl shadow-md border border-slate-200/80 flex items-center justify-center cursor-pointer active:scale-95"
+              title="Expand Sidebar"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-              New Chat
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
             </button>
-          </div>
-          {currentView === 'events' && <EventsAnalyticsModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} setCurrentView={setCurrentView} />}
-          {currentView === 'reports' && <ReportsModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />}
-          {currentView === 'admin' && <AdminDashboardModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />}
-          {currentView === 'scan' && <ScanAttendance authUser={authUser} />}
-          {currentView === 'suggestions' && <SuggestionsModule authHeaders={authHeaders} authUser={authUser} onNavigate={setCurrentView} />}
-          {currentView === 'chat' && (<>
+          )}
 
-            {/* Top Info Header */}
-            <div className="h-16 shrink-0 border-b border-slate-200/80 bg-white/60 backdrop-blur-md flex items-center justify-between px-4 sm:px-8">
-              <div className="flex items-center gap-3 ml-36">
-                <img src="/ASKYOUTH.LOGO.png" alt="Logo" className="w-8 h-8 object-contain" />
-                <button
+        {currentView === 'events' && <EventsAnalyticsModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} setCurrentView={setCurrentView} />}
+        {currentView === 'faq' && <FaqModule authHeaders={authHeaders} authUser={authUser} />}
+        {currentView === 'reports' && <ReportsModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />}
+        {currentView === 'admin' && <AdminDashboardModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />}
+        {currentView === 'scan' && <ScanAttendance authUser={authUser} />}
+        {currentView === 'suggestions' && <SuggestionsModule authHeaders={authHeaders} authUser={authUser} onNavigate={setCurrentView} />}
+        {currentView === 'chat' && (<>
+           
+           {/* Top Info Header */}
+           <div className="h-16 shrink-0 border-b border-slate-200/80 bg-white/70 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 gap-3">
+             <div className="flex items-center gap-3 min-w-0">
+               {!sidebarOpen && (
+                 <button
+                   onClick={() => setSidebarOpen(true)}
+                   className="text-slate-500 hover:text-blue-600 transition-all p-1.5 hover:bg-slate-100 rounded-lg border border-slate-200/60 flex items-center justify-center cursor-pointer md:hidden"
+                   title="Open Menu"
+                 >
+                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                   </svg>
+                 </button>
+               )}
+               <img src="/ASKYOUTH.LOGO.png" alt="Logo" className="w-8 h-8 object-contain shrink-0 drop-shadow-sm hidden sm:block" />
+               <button
                   onClick={() => window.location.reload()}
-                  className="select-none text-lg sm:text-2xl font-display font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-cyan-600 drop-shadow-[0_2px_10px_rgba(0,100,255,0.2)] hover:from-cyan-500 hover:to-blue-500 transition-all duration-200 cursor-pointer"
+                  className="select-none text-base sm:text-2xl font-display font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-cyan-600 to-blue-800 drop-shadow-[0_2px_10px_rgba(0,100,255,0.15)] hover:from-cyan-500 hover:to-blue-500 transition-all duration-200 cursor-pointer whitespace-nowrap"
                 >
                   aSK//YOUTH.AI
-                </button>
-              </div>
-
-              {/* Status Badge */}
-              <div className="flex flex-col items-end">
-                <div className="flex items-center gap-3">
-                  <span className={`text-xs font-mono font-bold tracking-wider ${loading ? 'text-cyan-500' : 'text-blue-700'}`}>
-                    {loading
-                      ? streamPhase === 'INDEXING_DOCUMENTS' ? 'INDEXING...'
-                        : streamPhase === 'RETRIEVING_CONTEXT' ? 'SEARCHING...'
-                          : 'GENERATING...'
-                      : 'SYSTEM ONLINE'
-                    }</span>
-                  <span className="relative flex h-3 w-3">
-                    {loading ? (
-                      <>
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)]"></span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.6)]"></span>
-                      </>
-                    )}
+               </button>
+             </div>
+             
+             {/* Right side: Notification Bell + Status Badge */}
+             <div className="flex items-center gap-3 shrink-0">
+               <NotificationBell authHeaders={authHeaders} setCurrentView={setCurrentView} />
+               <div className="flex flex-col items-end shrink-0 max-w-[50%] sm:max-w-none">
+                 <div className="flex items-center gap-2 sm:gap-3">
+                   <span className={`text-xs font-mono font-bold tracking-wider ${loading ? 'text-cyan-500' : 'text-blue-700'} hidden xs:block sm:block`}>
+                      {loading
+                        ? streamPhase === 'INDEXING_DOCUMENTS'  ? 'INDEXING...'
+                        : streamPhase === 'RETRIEVING_CONTEXT'  ? 'SEARCHING...'
+                        : 'GENERATING...'
+                        : 'ONLINE'
+                      }</span>
+                   <span className="relative flex h-3 w-3 shrink-0">
+                      {loading ? (
+                          <>
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)]"></span>
+                          </>
+                      ) : (
+                          <>
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.6)]"></span>
+                          </>
+                      )}
+                   </span>
+                 </div>
+                 {/* Clock beside Llama model label */}
+                 <div className="flex items-center gap-2 mt-1 hidden sm:flex">
+                   <span className="font-mono text-[10px] font-normal tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-cyan-600 select-none tabular-nums">
+                     {formatClock(now)}
+                   </span>
+                   <span className={`text-[10px] font-mono uppercase tracking-widest ${
+                    !lastModelUsed                      ? 'text-slate-500' :
+                    lastModelUsed.tier === 'gemini'     ? 'text-cyan-500'   :
+                    lastModelUsed.tier === 'groq'       ? 'text-amber-400'  :
+                    'text-red-400'
+                  }`}>
+                    {lastModelUsed ? lastModelUsed.model.toUpperCase() + ' ACTIVE' : 'AI ENGINE STANDBY'}
                   </span>
+                 </div>
+               </div>
+             </div>
+           </div>
+
+           {/* Inner Chat Pane */}
+           <div className="flex-1 flex flex-col p-2 sm:p-8 overflow-hidden relative">
+              <div className="w-full max-w-5xl mx-auto h-full bg-slate-950 backdrop-blur-xl border border-slate-800 rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col pointer-events-auto">
+                
+                <div className="h-10 bg-slate-900 border-b border-slate-800 flex items-center px-4 justify-between flex-shrink-0">
+                   <span className="font-mono text-xs text-slate-400 tracking-widest flex items-center gap-2">
+                     <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                     THREAD: {activeThread?.title || 'New Chat'}
+                   </span>
+                   <span className="font-mono text-[10px] text-blue-500 font-bold hidden sm:block">LOCAL: SECURE</span>
                 </div>
-                {/* Clock beside Llama model label */}
-                <div className="flex items-center gap-2 mt-1 hidden sm:flex">
-                  <span className="font-mono text-[10px] font-normal tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-cyan-600 select-none tabular-nums">
-                    {formatClock(now)}
-                  </span>
-                  <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Qwen2.5-7B Model Active</span>
-                </div>
-              </div>
-            </div>
+                
+                {/* Scrollable Messages Area */}
+                <div ref={scrollRef} className="flex-1 p-3 sm:p-8 overflow-y-auto overflow-x-hidden relative inner-shadow z-10 w-full bg-[radial-gradient(circle_at_center,rgba(30,41,59,0.5)_0%,transparent_100%)] scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                   {showScrollBottom && (
+                     <button 
+                       onClick={scrollToBottom}
+                       className="fixed bottom-32 right-8 sm:right-12 z-50 p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-full shadow-2xl text-cyan-400 hover:text-white hover:bg-cyan-500/20 hover:scale-110 active:scale-95 transition-all animate-bounce flex items-center justify-center ring-1 ring-cyan-500/50"
+                       title="Scroll to Latest"
+                     >
+                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 14l-7 7-7-7m14-8l-7 7-7-7" />
+                       </svg>
+                     </button>
+                   )}
+                   <div className="max-w-4xl mx-auto flex flex-col gap-6">
+                      {messages.map((msg, index) => {
+                         let thoughtContent = null;
+                         let finalContent = msg.content;
+                         let docTitle = null;
+                         let docContent = null;
+                         
+                         if (msg.role === 'assistant') {
+                           // Extract the reasoning inside <think> tags using RegExp
+                           const thinkMatch = msg.content.match(/<think>([\s\S]*?)<\/think>/);
+                           if (thinkMatch) {
+                               thoughtContent = thinkMatch[1].trim();
+                               // Remove the entire <think> block from the visible response
+                               finalContent = msg.content.replace(/<think>[\s\S]*?<\/think>/, '').trim();
+                           }
+                           // ---------------------------------------------------------------------------
+                           // Official document extraction — run on the FULL raw content (msg.content)
+                           // before think-stripping so tag position never matters.
+                           // Fault-tolerant regex handles:
+                           //   [/]?                      — stray leading slash on opening tag
+                           //   ["']                      — single or double quotes on title
+                           //   [^>]*                     — extra attributes
+                           //   </official_document>      — correct closing tag
+                           //   [END OFFICIAL_DOCUMENT]   — hallucinated closing tag
+                           //   $                         — missing closing tag entirely (match to EOS)
+                           // ---------------------------------------------------------------------------
+                           const OFFICIAL_DOC_RE = /<[/]?official_document\s+title=["'](.*?)["'][^>]*>([\s\S]*?)(?:<\/official_document>|\[END OFFICIAL_DOCUMENT\]|$)/i;
+                           const docMatch = OFFICIAL_DOC_RE.exec(msg.content);
+                           if (docMatch) {
+                             docTitle   = docMatch[1].trim();
+                             docContent = docMatch[2].trim();
+                             // Strip all occurrences from finalContent using the same fault-tolerant pattern
+                             finalContent = finalContent.replace(
+                               /<[/]?official_document\s+title=["'].*?["'][^>]*>[\s\S]*?(?:<\/official_document>|\[END OFFICIAL_DOCUMENT\]|$)/gi,
+                               ''
+                             ).trim();
+                           }
+                         }
 
-            {/* Inner Chat Pane */}
-            <div className="flex-1 flex flex-col p-2 sm:p-6 overflow-hidden relative">
-              <div className="w-full max-w-5xl mx-auto h-full backdrop-blur-xl rounded-xl overflow-hidden flex flex-col pointer-events-auto" style={{ background: 'rgba(10,15,28,0.85)', border: '1px solid rgba(0,0,0,0.7)', boxShadow: '0 20px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
-
-                <div className="h-10 flex items-center px-4 justify-between flex-shrink-0" style={{ background: 'rgba(5,10,20,0.9)', borderBottom: '1px solid rgba(0,0,0,0.6)' }}>
-                  <span className="font-mono text-xs text-slate-400 tracking-widest flex items-center gap-2">
-                    <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-                    THREAD: {activeThread?.title || 'New Chat'}
-                  </span>
-                  <span className="font-mono text-[10px] text-blue-400 font-bold hidden sm:block">LOCAL: SECURE</span>
-                </div>
-
-                {/* Scrollable Messages Area â€” LIGHT gradient */}
-                <div ref={scrollRef} className="flex-1 p-3 sm:p-8 overflow-y-auto overflow-x-hidden relative z-10 w-full scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent" style={{ background: 'linear-gradient(160deg, #f8faff 0%, #eef4ff 30%, #f0fdfa 60%, #f5f9ff 100%)' }}>
-                  {showScrollBottom && (
-                    <button
-                      onClick={scrollToBottom}
-                      className="fixed bottom-32 right-8 sm:right-12 z-50 p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-full shadow-2xl text-cyan-400 hover:text-white hover:bg-cyan-500/20 hover:scale-110 active:scale-95 transition-all animate-bounce flex items-center justify-center ring-1 ring-cyan-500/50"
-                      title="Scroll to Latest"
-                    >
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 14l-7 7-7-7m14-8l-7 7-7-7" />
-                      </svg>
-                    </button>
-                  )}
-                  <div className="max-w-4xl mx-auto flex flex-col gap-6">
-                    {messages.map((msg, index) => {
-                      let thoughtContent = null;
-                      let finalContent = msg.content;
-                      let docTitle = null;
-                      let docContent = null;
-
-                      if (msg.role === 'assistant') {
-                        // Extract the reasoning inside <think> tags using RegExp
-                        const thinkMatch = msg.content.match(/<think>([\s\S]*?)<\/think>/);
-                        if (thinkMatch) {
-                          thoughtContent = thinkMatch[1].trim();
-                          // Remove the entire <think> block from the visible response
-                          finalContent = msg.content.replace(/<think>[\s\S]*?<\/think>/, '').trim();
-                        }
-                        // ---------------------------------------------------------------------------
-                        // Official document extraction â€” run on the FULL raw content (msg.content)
-                        // before think-stripping so tag position never matters.
-                        // Fault-tolerant regex handles:
-                        //   [/]?                      â€” stray leading slash on opening tag
-                        //   ["']                      â€” single or double quotes on title
-                        //   [^>]*                     â€” extra attributes
-                        //   </official_document>      â€” correct closing tag
-                        //   [END OFFICIAL_DOCUMENT]   â€” hallucinated closing tag
-                        //   $                         â€” missing closing tag entirely (match to EOS)
-                        // ---------------------------------------------------------------------------
-                        const OFFICIAL_DOC_RE = /<[/]?official_document\s+title=["'](.*?)["'][^>]*>([\s\S]*?)(?:<\/official_document>|\[END OFFICIAL_DOCUMENT\]|$)/i;
-                        const docMatch = OFFICIAL_DOC_RE.exec(msg.content);
-                        if (docMatch) {
-                          docTitle = docMatch[1].trim();
-                          docContent = docMatch[2].trim();
-                          // Strip all occurrences from finalContent using the same fault-tolerant pattern
-                          finalContent = finalContent.replace(
-                            /<[/]?official_document\s+title=["'].*?["'][^>]*>[\s\S]*?(?:<\/official_document>|\[END OFFICIAL_DOCUMENT\]|$)/gi,
-                            ''
-                          ).trim();
-                        }
-                      }
-
-                      return (
-                        <div key={index} className={`flex flex-col w-full ${msg.role === 'user' ? 'items-end' : 'items-start'} gap-1`}>
-                          {/* Timestamp outside the bubble */}
-                          {msg.timestamp && (
-                            <span className="font-mono text-[10px] text-slate-400 tracking-widest px-1 tabular-nums">
-                              {formatStamp(new Date(msg.timestamp))}
-                            </span>
-                          )}
-                          {(msg.role === 'user' || thoughtContent || finalContent.trim().length > 0 || msg.retrievedChunks?.length > 0) && (
-                            <div className={`max-w-[85%] sm:max-w-[75%] rounded-xl p-4 sm:p-5 relative group transition-colors flex flex-col ${msg.role === 'user'
-                                ? 'text-white shadow-[0_2px_20px_rgba(37,99,235,0.25)]'
-                                : 'text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.1)]'
-                              }`}
-                              style={msg.role === 'user' ? {
-                                background: 'linear-gradient(135deg, #1d4ed8, #0891b2)',
-                                border: '1px solid rgba(6,182,212,0.3)'
-                              } : {
-                                background: 'rgba(255,255,255,0.85)',
-                                backdropFilter: 'blur(12px)',
-                                border: '1px solid rgba(0,0,0,0.15)',
-                                boxShadow: '0 2px 12px rgba(0,0,0,0.08)'
-                              }}>
-                              {/* File attachment cards â€” supports multi-file (new) and single-file legacy */}
-                              {msg.role === 'user' && (() => {
-                                const files = msg.attachedFiles?.length > 0
-                                  ? msg.attachedFiles
-                                  : msg.fileName
-                                    ? [{ fileName: msg.fileName, fileType: msg.fileType }]
-                                    : [];
-                                if (files.length === 0) return null;
-                                return (
-                                  <div className="mb-3 flex flex-wrap gap-2">
-                                    {files.map((af, fi) => {
-                                      const ext = (af.fileName || '').split('.').pop().toUpperCase();
-                                      const isDoc = ['DOCX', 'DOC'].includes(ext);
-                                      const isPdf = ext === 'PDF';
-                                      const isCsv = ext === 'CSV';
-                                      return (
-                                        <div key={fi} className="flex items-center gap-3 bg-blue-950/60 border border-blue-500/30 rounded-xl px-3 py-2.5 w-fit max-w-full">
-                                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isPdf ? 'bg-red-500/20' : isDoc ? 'bg-blue-500/20' : isCsv ? 'bg-green-500/20' : 'bg-slate-500/20'
+                         return (
+                         <div key={index} className={`flex flex-col w-full ${msg.role === 'user' ? 'items-end' : 'items-start'} gap-1`}>
+                            {/* Timestamp outside the bubble */}
+                            {msg.timestamp && (
+                              <span className="font-mono text-[10px] text-slate-500 tracking-widest px-1 tabular-nums">
+                                {formatStamp(new Date(msg.timestamp))}
+                              </span>
+                            )}
+                            {(msg.role === 'user' || thoughtContent || finalContent.trim().length > 0 || msg.retrievedChunks?.length > 0) && (
+                            <div className={`max-w-[85%] sm:max-w-[75%] rounded-lg p-4 sm:p-5 relative group transition-colors flex flex-col ${
+                                msg.role === 'user' 
+                                ? 'bg-blue-900/40 border border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.2)] text-blue-50' 
+                                : 'bg-[#0b0f19] border border-cyan-900/50 shadow-[0_0_20px_rgba(0,255,255,0.05)] hover:border-cyan-500/50 text-cyan-50'
+                            }`}>
+                                {/* File attachment cards — supports multi-file (new) and single-file legacy */}
+                                {msg.role === 'user' && (() => {
+                                  const files = msg.attachedFiles?.length > 0
+                                    ? msg.attachedFiles
+                                    : msg.fileName
+                                      ? [{ fileName: msg.fileName, fileType: msg.fileType }]
+                                      : [];
+                                  if (files.length === 0) return null;
+                                  return (
+                                    <div className="mb-3 flex flex-wrap gap-2">
+                                      {files.map((af, fi) => {
+                                        const ext = (af.fileName || '').split('.').pop().toUpperCase();
+                                        const isDoc = ['DOCX','DOC'].includes(ext);
+                                        const isPdf = ext === 'PDF';
+                                        const isCsv = ext === 'CSV';
+                                        return (
+                                          <div key={fi} className="flex items-center gap-3 bg-blue-950/60 border border-blue-500/30 rounded-xl px-3 py-2.5 w-fit max-w-full">
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                              isPdf ? 'bg-red-500/20' : isDoc ? 'bg-blue-500/20' : isCsv ? 'bg-green-500/20' : 'bg-slate-500/20'
                                             }`}>
-                                            {isPdf ? (
-                                              <svg className="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM8.5 15.5h-.75V17H7v-4.5h1.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5zm3.75 1.5h-1.5V12.5h1.5c1.1 0 2 .9 2 2v.5c0 1.11-.9 2-2 2zm4.25-3.25h-1V15h1v.75H15.5v.75H14v-4.5h3v.75h-2v.75h1v.75zm-8-0h-.75V16h.75c.41 0 .75-.34.75-.75s-.34-.75-.75-.75zm3.75 0h-.75V16h.75c.69 0 1.25-.56 1.25-1.25v-.5c0-.69-.56-1.25-1.25-1.25z" /></svg>
-                                            ) : isDoc ? (
-                                              <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM7 17v-1.5h10V17H7zm0-3v-1.5h10V14H7zm0-3V9.5h7V11H7z" /></svg>
-                                            ) : (
-                                              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                            )}
+                                              {isPdf ? (
+                                                <svg className="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM8.5 15.5h-.75V17H7v-4.5h1.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5zm3.75 1.5h-1.5V12.5h1.5c1.1 0 2 .9 2 2v.5c0 1.11-.9 2-2 2zm4.25-3.25h-1V15h1v.75H15.5v.75H14v-4.5h3v.75h-2v.75h1v.75zm-8-0h-.75V16h.75c.41 0 .75-.34.75-.75s-.34-.75-.75-.75zm3.75 0h-.75V16h.75c.69 0 1.25-.56 1.25-1.25v-.5c0-.69-.56-1.25-1.25-1.25z"/></svg>
+                                              ) : isDoc ? (
+                                                <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM7 17v-1.5h10V17H7zm0-3v-1.5h10V14H7zm0-3V9.5h7V11H7z"/></svg>
+                                              ) : (
+                                                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                              )}
+                                            </div>
+                                            <div className="overflow-hidden">
+                                              <p className="text-xs font-semibold text-blue-100 truncate max-w-[200px]">{(af.fileName || '').replace(/\.[^.]+$/, '')}</p>
+                                              <p className="text-[10px] font-mono text-blue-400 uppercase tracking-wider">{ext}</p>
+                                            </div>
                                           </div>
-                                          <div className="overflow-hidden">
-                                            <p className="text-xs font-semibold text-blue-100 truncate max-w-[200px]">{(af.fileName || '').replace(/\.[^.]+$/, '')}</p>
-                                            <p className="text-[10px] font-mono text-blue-400 uppercase tracking-wider">{ext}</p>
+                                        );
+                                      })}
+                                    </div>
+                                  );
+                                })()}
+                                
+                                {/* AI "Show Thinking" Dropdown Component */}
+                                {thoughtContent && (
+                                  <details className="mb-4 group/think cursor-pointer">
+                                    <summary className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-600 transition-colors list-none">
+                                      <svg className="w-3.5 h-3.5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                      <span className="text-xs font-mono tracking-widest text-slate-400 group-hover/think:text-cyan-400 font-bold uppercase select-none">
+                                         Processing Intent
+                                      </span>
+                                      <svg className="w-4 h-4 text-slate-500 transform transition-transform group-open/think:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </summary>
+                                    <div className="mt-3 pl-4 border-l-2 border-slate-700 py-2">
+                                      <p className="font-mono text-xs text-slate-500 whitespace-pre-wrap leading-relaxed">
+                                         {thoughtContent}
+                                      </p>
+                                    </div>
+                                  </details>
+                                )}
+
+                                {finalContent.trim().length > 0 && (
+                                <div className={`font-sans leading-relaxed prose-chat ${msg.role === 'assistant' ? 'text-cyan-100 font-normal text-sm sm:text-[15px]' : 'font-normal'}`}>
+                                   <ReactMarkdown
+                                     components={{
+                                       p: ({ children }) => {
+                                         if (typeof children === 'string' && children.includes('[[SUGGESTIONS_LINK]]')) {
+                                           const parts = children.split('[[SUGGESTIONS_LINK]]');
+                                           return <p>{parts[0]}<button onClick={() => setCurrentView('suggestions')} className="inline-flex items-center gap-1 px-2 py-0.5 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/50 text-cyan-300 hover:text-cyan-100 rounded-md text-sm font-bold transition-all">Go Here →</button>{parts[1]}</p>;
+                                         }
+                                         return <p>{children}</p>;
+                                       }
+                                     }}
+                                   >{finalContent}</ReactMarkdown>
+                                </div>
+                                )}
+
+
+                            </div>
+                            )}
+                            {/* Official Document Export Panel — outside the bubble for clean visual separation */}
+                            {msg.role === 'assistant' && docTitle && docContent && (
+                              <div className="w-full max-w-[85%] sm:max-w-[75%] rounded-xl border border-cyan-500/30 bg-slate-900/80 backdrop-blur-sm p-4 flex flex-col gap-3 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+                                <div className="flex items-center gap-2.5">
+                                  <span className="text-base leading-none select-none">📄</span>
+                                  <span className="text-xs font-mono text-slate-400 tracking-wide">
+                                    Official Document Drafted:{' '}
+                                    <span className="text-cyan-300 font-semibold">{docTitle}</span>
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  <button
+                                    onClick={() => handleExport(docContent, docTitle, 'docx')}
+                                    className="px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest rounded-lg bg-blue-900/40 border border-blue-500/50 text-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-500 transition-all"
+                                  >
+                                    ↓ Export as DOCX
+                                  </button>
+                                  <button
+                                    onClick={() => handleExport(docContent, docTitle, 'pdf')}
+                                    className="px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest rounded-lg bg-cyan-900/40 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-600 hover:text-white hover:border-cyan-500 transition-all"
+                                  >
+                                    ↓ Export as PDF
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            {/* Export Response Button — appears on every completed assistant message (Phase 5) */}
+                            {msg.role === 'assistant' && finalContent.trim().length > 0 && (
+                              <div className="flex justify-end max-w-[85%] sm:max-w-[75%]">
+                                <ExportResponseButton
+                                  messageContent={finalContent}
+                                  hasOfficialDocument={!!(docTitle && docContent)}
+                                  officialDocTitle={docTitle}
+                                  officialDocContent={docContent}
+                                  authHeaders={authHeaders}
+                                />
+                              </div>
+                            )}
+                            {/* Sources Panel — Phase 5 Feature 2: shows document source matches with displayScore */}
+                            {msg.role === 'assistant' && (() => {
+                              if (!msg.retrievedChunks || msg.retrievedChunks.length === 0) return null;
+                              // Phase 2: compute displayScore with 1.15x boost, clamped to 1.0
+                              const withDisplay = msg.retrievedChunks.map(c => ({
+                                ...c,
+                                displayScore: Math.min(c.score * 1.15, 1.0)
+                              }));
+                              // Phase B: filter to displayScore >= 0.30
+                              const qualifying = withDisplay.filter(c => c.displayScore >= 0.30);
+                              if (qualifying.length === 0) return null;
+                              // Group by filename, keep highest displayScore per file
+                              const grouped = Object.values(qualifying.reduce((acc, c) => {
+                                const key = c.source;
+                                if (!acc[key] || c.displayScore > acc[key].displayScore) {
+                                  acc[key] = { ...c };
+                                }
+                                return acc;
+                              }, {}));
+                              grouped.sort((a, b) => b.displayScore - a.displayScore);
+                              const topScore = grouped[0].displayScore;
+                              const headerBg = topScore >= 0.90 ? 'bg-green-900' : topScore >= 0.70 ? 'bg-green-800' : topScore >= 0.50 ? 'bg-yellow-900' : 'bg-gray-700';
+                              const headerLabel = topScore >= 0.90 ? 'Very High Match' : topScore >= 0.70 ? 'High Match' : topScore >= 0.50 ? 'Moderate Match' : 'Low Match';
+                              const topPct = Math.round(topScore * 100);
+                              const topPillColor = topScore >= 0.70 ? 'bg-green-900/60 text-green-400' : topScore >= 0.50 ? 'bg-yellow-900/60 text-yellow-400' : 'bg-slate-800 text-slate-400';
+                              return (
+                                <details className="w-full max-w-[85%] sm:max-w-[75%] group/sources cursor-pointer">
+                                  <summary className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl ${headerBg} border border-slate-700 hover:border-cyan-600 transition-colors list-none select-none`}>
+                                    <div className="flex items-center gap-2">
+                                      <svg className="w-3.5 h-3.5 text-white/80 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                      <span className="text-xs font-mono tracking-widest text-white font-bold uppercase">
+                                        SOURCES ({grouped.length})
+                                      </span>
+                                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${topPillColor}`}>
+                                        {topPct}% match
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] font-mono text-white/60 tracking-wide hidden sm:inline">{headerLabel}</span>
+                                      <svg className="w-4 h-4 text-white/60 transform transition-transform group-open/sources:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                  </summary>
+                                  <div className="mt-2 flex flex-col gap-2">
+                                    {grouped.map((chunk, ci) => {
+                                      const pct = Math.round(chunk.displayScore * 100);
+                                      const pillColor = chunk.displayScore >= 0.70 ? 'bg-green-900/40 text-green-400' : chunk.displayScore >= 0.50 ? 'bg-yellow-900/40 text-yellow-400' : 'bg-slate-800 text-slate-400';
+                                      const snippet = chunk.textSnippet || (chunk.text ? chunk.text.slice(0, 300) : '');
+                                      return (
+                                        <div key={ci} className="rounded-lg border border-slate-700 bg-slate-900/60 overflow-hidden">
+                                          <div className="flex items-center justify-between px-3 py-2 border-b border-slate-700/60">
+                                            <div className="flex items-center gap-2 overflow-hidden">
+                                              <svg className="w-3 h-3 text-cyan-500 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5z"/></svg>
+                                              <span className="text-[11px] font-mono text-cyan-300 truncate max-w-[180px]">{chunk.source}</span>
+                                            </div>
+                                            <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${pillColor}`}>
+                                              {pct}% match
+                                            </span>
                                           </div>
+                                          <details className="group/snippet">
+                                            <summary className="px-3 py-1.5 text-[10px] font-mono text-slate-500 hover:text-cyan-400 cursor-pointer select-none list-none transition-colors">▶ View Snippet</summary>
+                                            <pre className="px-3 pb-3 pt-1 text-[10px] font-mono text-slate-400 whitespace-pre-wrap leading-relaxed border-t border-slate-700/40">{snippet}{snippet.length >= 300 ? '...' : ''}</pre>
+                                          </details>
                                         </div>
                                       );
                                     })}
                                   </div>
-                                );
-                              })()}
-
-                              {/* AI "Show Thinking" Dropdown Component */}
-                              {thoughtContent && (
-                                <details className="mb-4 group/think cursor-pointer">
-                                  <summary className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-600 transition-colors list-none">
-                                    <svg className="w-3.5 h-3.5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                                    <span className="text-xs font-mono tracking-widest text-slate-400 group-hover/think:text-cyan-400 font-bold uppercase select-none">
-                                      Processing Intent
-                                    </span>
-                                    <svg className="w-4 h-4 text-slate-500 transform transition-transform group-open/think:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                  </summary>
-                                  <div className="mt-3 pl-4 border-l-2 border-slate-700 py-2">
-                                    <p className="font-mono text-xs text-slate-500 whitespace-pre-wrap leading-relaxed">
-                                      {thoughtContent}
-                                    </p>
-                                  </div>
                                 </details>
-                              )}
-
-                              {finalContent.trim().length > 0 && (
-                                <div className={`font-sans leading-relaxed prose-chat ${msg.role === 'assistant' ? 'text-slate-900 font-normal text-sm sm:text-[15px]' : 'font-normal text-white'}`}>
-                                  <ReactMarkdown
-                                    components={{
-                                      p: ({ children }) => {
-                                        if (typeof children === 'string' && children.includes('[[SUGGESTIONS_LINK]]')) {
-                                          const parts = children.split('[[SUGGESTIONS_LINK]]');
-                                          return <p>{parts[0]}<button onClick={() => setCurrentView('suggestions')} className="inline-flex items-center gap-1 px-2 py-0.5 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/50 text-cyan-300 hover:text-cyan-100 rounded-md text-sm font-bold transition-all">Go Here â†’</button>{parts[1]}</p>;
-                                        }
-                                        return <p>{children}</p>;
-                                      }
-                                    }}
-                                  >{finalContent}</ReactMarkdown>
-                                </div>
-                              )}
-
-
+                              );
+                            })()}
+                         </div>
+                         );
+                      })}
+                      
+                      {/* Phase-aware loading indicators */}
+                      {loading && streamPhase !== 'GENERATING' && (
+                         <div className="flex w-full justify-start">
+                            <div className="max-w-[80%] bg-[#0b0f19] border border-cyan-900/50 shadow-[0_0_20px_rgba(0,255,255,0.05)] rounded-lg p-5 flex items-center gap-3">
+                               {/* Spinning ring for indexing/searching phases */}
+                               <svg className="w-4 h-4 text-cyan-500 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
+                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                               </svg>
+                               <span className="text-xs font-mono text-cyan-600 tracking-widest uppercase animate-pulse">
+                                 {streamPhase === 'INDEXING_DOCUMENTS'  && 'Indexing Documents...'}
+                                 {streamPhase === 'RETRIEVING_CONTEXT'  && 'Searching Knowledge Base...'}
+                               </span>
                             </div>
-                          )}
-                          {/* Official Document Export Panel â€” outside the bubble for clean visual separation */}
-                          {msg.role === 'assistant' && docTitle && docContent && (
-                            <div className="w-full max-w-[85%] sm:max-w-[75%] rounded-xl border border-cyan-500/30 bg-slate-900/80 backdrop-blur-sm p-4 flex flex-col gap-3 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-                              <div className="flex items-center gap-2.5">
-                                <span className="text-base leading-none select-none">ðŸ“„</span>
-                                <span className="text-xs font-mono text-slate-400 tracking-wide">
-                                  Official Document Drafted:{' '}
-                                  <span className="text-cyan-300 font-semibold">{docTitle}</span>
-                                </span>
-                              </div>
-                              <div className="flex flex-wrap gap-2">
-                                <button
-                                  onClick={() => handleExport(docContent, docTitle, 'docx')}
-                                  className="px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest rounded-lg bg-blue-900/40 border border-blue-500/50 text-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-500 transition-all"
-                                >
-                                  â†“ Export as DOCX
-                                </button>
-                                <button
-                                  onClick={() => handleExport(docContent, docTitle, 'pdf')}
-                                  className="px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest rounded-lg bg-cyan-900/40 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-600 hover:text-white hover:border-cyan-500 transition-all"
-                                >
-                                  â†“ Export as PDF
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                          {/* Export Response Button â€” appears on every completed assistant message (Phase 5) */}
-                          {msg.role === 'assistant' && finalContent.trim().length > 0 && (
-                            <div className="flex justify-end max-w-[85%] sm:max-w-[75%]">
-                              <ExportResponseButton
-                                messageContent={finalContent}
-                                hasOfficialDocument={!!(docTitle && docContent)}
-                                officialDocTitle={docTitle}
-                                officialDocContent={docContent}
-                                authHeaders={authHeaders}
-                              />
-                            </div>
-                          )}
-                          {/* Sources Panel â€” Phase 5 Feature 2: shows document source matches with displayScore */}
-                          {msg.role === 'assistant' && (() => {
-                            if (!msg.retrievedChunks || msg.retrievedChunks.length === 0) return null;
-                            // Phase 2: compute displayScore with 1.15x boost, clamped to 1.0
-                            const withDisplay = msg.retrievedChunks.map(c => ({
-                              ...c,
-                              displayScore: Math.min(c.score * 1.15, 1.0)
-                            }));
-                            // Phase B: filter to displayScore >= 0.30
-                            const qualifying = withDisplay.filter(c => c.displayScore >= 0.30);
-                            if (qualifying.length === 0) return null;
-                            // Group by filename, keep highest displayScore per file
-                            const grouped = Object.values(qualifying.reduce((acc, c) => {
-                              const key = c.source;
-                              if (!acc[key] || c.displayScore > acc[key].displayScore) {
-                                acc[key] = { ...c };
-                              }
-                              return acc;
-                            }, {}));
-                            grouped.sort((a, b) => b.displayScore - a.displayScore);
-                            const topScore = grouped[0].displayScore;
-                            const headerBg = topScore >= 0.90 ? 'bg-green-900' : topScore >= 0.70 ? 'bg-green-800' : topScore >= 0.50 ? 'bg-yellow-900' : 'bg-gray-700';
-                            const headerLabel = topScore >= 0.90 ? 'Very High Match' : topScore >= 0.70 ? 'High Match' : topScore >= 0.50 ? 'Moderate Match' : 'Low Match';
-                            const topPct = Math.round(topScore * 100);
-                            const topPillColor = topScore >= 0.70 ? 'bg-green-900/60 text-green-400' : topScore >= 0.50 ? 'bg-yellow-900/60 text-yellow-400' : 'bg-slate-800 text-slate-400';
-                            return (
-                              <details className="w-full max-w-[85%] sm:max-w-[75%] group/sources cursor-pointer">
-                                <summary className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl ${headerBg} border border-slate-700 hover:border-cyan-600 transition-colors list-none select-none`}>
-                                  <div className="flex items-center gap-2">
-                                    <svg className="w-3.5 h-3.5 text-white/80 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                    <span className="text-xs font-mono tracking-widest text-white font-bold uppercase">
-                                      SOURCES ({grouped.length})
-                                    </span>
-                                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${topPillColor}`}>
-                                      {topPct}% match
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-mono text-white/60 tracking-wide hidden sm:inline">{headerLabel}</span>
-                                    <svg className="w-4 h-4 text-white/60 transform transition-transform group-open/sources:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                  </div>
-                                </summary>
-                                <div className="mt-2 flex flex-col gap-2">
-                                  {grouped.map((chunk, ci) => {
-                                    const pct = Math.round(chunk.displayScore * 100);
-                                    const pillColor = chunk.displayScore >= 0.70 ? 'bg-green-900/40 text-green-400' : chunk.displayScore >= 0.50 ? 'bg-yellow-900/40 text-yellow-400' : 'bg-slate-800 text-slate-400';
-                                    const snippet = chunk.textSnippet || (chunk.text ? chunk.text.slice(0, 300) : '');
-                                    return (
-                                      <div key={ci} className="rounded-lg border border-slate-700 bg-slate-900/60 overflow-hidden">
-                                        <div className="flex items-center justify-between px-3 py-2 border-b border-slate-700/60">
-                                          <div className="flex items-center gap-2 overflow-hidden">
-                                            <svg className="w-3 h-3 text-cyan-500 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5z" /></svg>
-                                            <span className="text-[11px] font-mono text-cyan-300 truncate max-w-[180px]">{chunk.source}</span>
-                                          </div>
-                                          <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${pillColor}`}>
-                                            {pct}% match
-                                          </span>
-                                        </div>
-                                        <details className="group/snippet">
-                                          <summary className="px-3 py-1.5 text-[10px] font-mono text-slate-500 hover:text-cyan-400 cursor-pointer select-none list-none transition-colors">â–¶ View Snippet</summary>
-                                          <pre className="px-3 pb-3 pt-1 text-[10px] font-mono text-slate-400 whitespace-pre-wrap leading-relaxed border-t border-slate-700/40">{snippet}{snippet.length >= 300 ? '...' : ''}</pre>
-                                        </details>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </details>
-                            );
-                          })()}
-                        </div>
-                      );
-                    })}
+                         </div>
+                      )}
 
-                    {/* Phase-aware loading indicators */}
-                    {loading && streamPhase !== 'GENERATING' && (
-                      <div className="flex w-full justify-start">
-                        <div className="max-w-[80%] rounded-xl p-5 flex items-center gap-3" style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(0,0,0,0.15)', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
-                          {/* Spinning ring for indexing/searching phases */}
-                          <svg className="w-4 h-4 text-cyan-500 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                          <span className="text-xs font-mono text-cyan-600 tracking-widest uppercase animate-pulse">
-                            {streamPhase === 'INDEXING_DOCUMENTS' && 'Indexing Documents...'}
-                            {streamPhase === 'RETRIEVING_CONTEXT' && 'Searching Knowledge Base...'}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Live streaming bubble â€” renders tokens in real-time */}
-                    {loading && streamPhase === 'GENERATING' && (
-                      <div className="flex w-full justify-start">
-                        <div className="max-w-[85%] sm:max-w-[75%] rounded-xl p-4 sm:p-5 flex flex-col text-slate-900" style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(0,0,0,0.15)', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
-                          <div className="font-sans leading-relaxed prose-chat text-slate-900 font-normal text-sm sm:text-[15px]">
-                            <ReactMarkdown>{streamingContent.replace(/<official_document[\s\S]*/i, '').trim()}</ReactMarkdown>
-                          </div>
-                          {/* Blinking cursor to indicate streaming is active */}
-                          <span className="mt-1 inline-block w-2 h-4 bg-cyan-400 animate-[pulse_0.8s_ease-in-out_infinite] align-middle" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                      {/* Live streaming bubble — renders tokens in real-time */}
+                      {loading && streamPhase === 'GENERATING' && (
+                         <div className="flex w-full justify-start">
+                            <div className="max-w-[85%] sm:max-w-[75%] bg-[#0b0f19] border border-cyan-900/50 shadow-[0_0_20px_rgba(0,255,255,0.05)] hover:border-cyan-500/50 text-cyan-50 rounded-lg p-4 sm:p-5 flex flex-col">
+                               <div className="font-sans leading-relaxed prose-chat text-cyan-100 font-normal text-sm sm:text-[15px]">
+                                 <ReactMarkdown>{streamingContent.replace(/<official_document[\s\S]*/i, '').trim()}</ReactMarkdown>
+                               </div>
+                               {/* Blinking cursor to indicate streaming is active */}
+                               <span className="mt-1 inline-block w-2 h-4 bg-cyan-400 animate-[pulse_0.8s_ease-in-out_infinite] align-middle" />
+                            </div>
+                         </div>
+                      )}
+                   </div>
                 </div>
 
-                {/* Input Area â€” also serves as the drag-and-drop zone */}
+                {/* Input Area — also serves as the drag-and-drop zone */}
                 <div
-                  className={`p-3 sm:p-5 bg-slate-950 border-t flex-shrink-0 relative transition-all duration-200 ${isDragging
+                  className={`p-3 sm:p-5 bg-slate-950 border-t flex-shrink-0 relative transition-all duration-200 ${
+                    isDragging
                       ? 'border-cyan-500 shadow-[inset_0_0_20px_rgba(6,182,212,0.15)]'
                       : 'border-slate-800'
-                    }`}
+                  }`}
                   onDragOver={handleDragOver}
                   onDragEnter={handleDragEnter}
                   onDragLeave={handleDragLeave}
@@ -3184,101 +3994,102 @@ function App() {
                     <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
                       <div className="flex items-center gap-2 px-4 py-2 bg-cyan-950/80 border border-cyan-500 rounded-lg text-cyan-400 font-mono text-xs tracking-widest uppercase">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                        Drop files to attach (max 5)
+                        Drop files to attach (max 8)
                       </div>
                     </div>
                   )}
-                  <form onSubmit={sendMessage} className="max-w-4xl mx-auto flex flex-col gap-2">
+                   <form onSubmit={sendMessage} className="max-w-4xl mx-auto flex flex-col gap-2">
 
-                    {/* File attachment chips â€” one per selected file, max 5 */}
-                    {selectedFiles.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {selectedFiles.map((f, idx) => (
-                          <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-slate-800/80 border border-cyan-800/50 rounded-lg text-xs font-mono">
-                            <svg className="w-3.5 h-3.5 text-cyan-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                            <span className="text-cyan-400 max-w-[150px] truncate">{f.name}</span>
-                            <button
-                              type="button"
-                              onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
-                              className="text-slate-500 hover:text-red-400 transition-colors ml-1 shrink-0"
-                              title="Remove file"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                          </div>
-                        ))}
-                        {selectedFiles.length >= 5 && (
-                          <span className="self-center text-[10px] font-mono text-amber-500 tracking-wider">MAX 5 FILES</span>
-                        )}
-                      </div>
-                    )}
+                      {/* File attachment chips — one per selected file, max 8 */}
+                      {selectedFiles.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedFiles.map((f, idx) => (
+                            <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-slate-800/80 border border-cyan-800/50 rounded-lg text-xs font-mono">
+                              <svg className="w-3.5 h-3.5 text-cyan-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                              <span className="text-cyan-400 max-w-[150px] truncate">{f.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
+                                className="text-slate-500 hover:text-red-400 transition-colors ml-1 shrink-0"
+                                title="Remove file"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                              </button>
+                            </div>
+                          ))}
+                          {selectedFiles.length >= 8 && (
+                            <span className="self-center text-[10px] font-mono text-amber-500 tracking-wider">MAX 8 FILES</span>
+                          )}
+                        </div>
+                      )}
 
-                    {/* Input row: attach button + textarea + send */}
-                    <div className="flex items-end gap-2">
+                      {/* Input row: attach button + textarea + send */}
+                      <div className="flex items-end gap-2">
 
-                      {/* Hidden file input + visible paperclip button */}
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".pdf,.docx,.txt,.md,.csv,.jpg,.jpeg,.png,.tiff,.tif,.webp"
-                        multiple
-                        className="hidden"
-                        onChange={(e) => {
-                          const picked = Array.from(e.target.files || []);
-                          setSelectedFiles(prev => {
-                            const combined = [...prev, ...picked];
-                            const unique = combined.filter((f, i, arr) => arr.findIndex(x => x.name === f.name) === i);
-                            return unique.slice(0, 5);
-                          });
-                          e.target.value = '';
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={loading || selectedFiles.length >= 5}
-                        title={selectedFiles.length >= 5 ? "Max 5 files reached" : "Attach files (PDF, DOCX, TXT) â€” up to 5"}
-                        className="shrink-0 p-3 rounded-lg border border-slate-700 bg-slate-900/80 text-slate-400 hover:text-cyan-400 hover:border-cyan-600 transition-all disabled:opacity-40"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                      </button>
+                        {/* Hidden file input + visible paperclip button */}
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".pdf,.docx,.txt,.md,.csv,.jpg,.jpeg,.png,.tiff,.tif,.webp"
+                          multiple
+                          className="hidden"
+                          onChange={(e) => {
+                            const picked = Array.from(e.target.files || []);
+                            setSelectedFiles(prev => {
+                              const combined = [...prev, ...picked];
+                              const unique = combined.filter((f, i, arr) => arr.findIndex(x => x.name === f.name) === i);
+                              return unique.slice(0, 8);
+                            });
+                            e.target.value = '';
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={loading || selectedFiles.length >= 8}
+                          title={selectedFiles.length >= 8 ? "Max 8 files reached" : "Attach files (PDF, DOCX, TXT) — up to 8"}
+                          className="shrink-0 p-3 rounded-lg border border-slate-700 bg-slate-900/80 text-slate-400 hover:text-cyan-400 hover:border-cyan-600 transition-all disabled:opacity-40"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                        </button>
 
-                      {/* Auto-expanding textarea */}
-                      <textarea
-                        ref={textareaRef}
-                        value={inputText}
-                        onChange={handleTextareaChange}
-                        onKeyDown={handleKeyDown}
-                        onPaste={handlePaste}
-                        disabled={loading}
-                        placeholder="Initiate prompt..."
-                        rows={1}
-                        style={{ maxHeight: '200px', overflowY: 'auto', resize: 'none' }}
-                        className="flex-1 w-full bg-slate-900/80 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 font-mono text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-all placeholder-slate-500 disabled:opacity-50 leading-relaxed"
-                        autoFocus
-                      />
+                        {/* Auto-expanding textarea */}
+                        <textarea
+                          ref={textareaRef}
+                          value={inputText}
+                          onChange={handleTextareaChange}
+                          onKeyDown={handleKeyDown}
+                          onPaste={handlePaste}
+                          disabled={loading}
+                          placeholder="Initiate prompt..."
+                          rows={1}
+                          style={{ maxHeight: '200px', overflowY: 'auto', resize: 'none' }}
+                          className="flex-1 w-full bg-slate-900/80 border border-slate-700 rounded-lg px-4 py-3 text-cyan-100 font-mono text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all placeholder-slate-600 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] disabled:opacity-50 leading-relaxed"
+                          autoFocus
+                        />
 
-                      {/* Send button */}
-                      <button
-                        type="submit"
-                        disabled={loading || !inputText.trim()}
-                        className={`shrink-0 px-5 py-3 font-display font-bold text-sm tracking-widest uppercase rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${(loading || !inputText.trim())
-                            ? 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700/50'
-                            : 'bg-blue-600/20 text-blue-400 border border-blue-500/50 hover:bg-blue-600 hover:text-white hover:shadow-[0_0_20px_rgba(37,99,235,0.6)] cursor-pointer'
+                        {/* Send button */}
+                        <button
+                          type="submit"
+                          disabled={loading || !inputText.trim()}
+                          className={`shrink-0 px-5 py-3 font-display font-bold text-sm tracking-widest uppercase rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${
+                              (loading || !inputText.trim())
+                              ? 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700/50'
+                              : 'bg-blue-600/20 text-blue-400 border border-blue-500/50 hover:bg-blue-600 hover:text-white hover:shadow-[0_0_20px_rgba(37,99,235,0.6)] cursor-pointer'
                           }`}
-                      >
-                        SEND
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                      </button>
+                        >
+                          SEND
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </button>
 
-                    </div>
-                  </form>
+                      </div>
+                   </form>
                 </div>
               </div>
-            </div>
+           </div>
 
           </>
-          )}
+        )}
 
 
 

@@ -648,6 +648,9 @@ const healthCors = cors({
 app.get('/health', healthCors, (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+app.get('/api/health', healthCors, (_req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 app.get('/ready', healthCors, (_req, res) => {
     res.json({ ready: true, message: 'Cloud AI Fallback Engine ready.' });
 });

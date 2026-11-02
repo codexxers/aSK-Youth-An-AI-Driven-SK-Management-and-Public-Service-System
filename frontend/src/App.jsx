@@ -5,7 +5,9 @@ import ChatbotInactivePage from './ChatbotInactivePage.jsx'
 import EventLogModal from './components/EventLogModal'
 import ScanAttendance from './pages/ScanAttendance'
 
-const API_BASE = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001').replace(/\/$/, '')
+const DEFAULT_PROD_API = 'https://askyouth-backend.onrender.com';
+const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const API_BASE = (import.meta.env.VITE_BACKEND_URL || (isLocal ? 'http://localhost:3001' : DEFAULT_PROD_API)).replace(/\/$/, '')
 
 const formatSGT = (dateString) => {
   if (!dateString) return '--:--';
@@ -29,10 +31,10 @@ const formatSGT = (dateString) => {
   return `${hh}:${mm} // ${mo}/${dd}/${yy}`;
 };
 
-async function fetchBackendHealth(base) {
+async function fetchBackendHealth(base, timeoutMs = 25000) {
   const url = `${base}/health`
   const ctrl = new AbortController()
-  const tid = setTimeout(() => ctrl.abort(), 12000)
+  const tid = setTimeout(() => ctrl.abort(), timeoutMs)
   try {
     const res = await fetch(url, { method: 'GET', signal: ctrl.signal, cache: 'no-store' })
     clearTimeout(tid)
@@ -2041,8 +2043,10 @@ function App() {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [backendStatus, setBackendStatus] = useState('checking')
+  const [backendStatus, setBackendStatus] = useState('checking') // 'checking' | 'warming' | 'up' | 'down'
   const [healthRetryBusy, setHealthRetryBusy] = useState(false)
+  const [warmupSeconds, setWarmupSeconds] = useState(0)
+  const [bypassHealthCheck, setBypassHealthCheck] = useState(false)
   const [showScrollBottom, setShowScrollBottom] = useState(false);
 
   // Monitor scroll for "Scroll to Bottom" button
@@ -2061,25 +2065,72 @@ function App() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   };
 
+  // Live health check with Render cold-start handling
   useEffect(() => {
     let cancelled = false
-    const tick = async () => {
-      const ok = await fetchBackendHealth(API_BASE)
-      if (!cancelled) setBackendStatus(ok ? 'up' : 'down')
+    let timer = null
+    let pollInterval = null
+    const startTime = Date.now()
+
+    timer = setInterval(() => {
+      if (!cancelled) {
+        setWarmupSeconds(Math.floor((Date.now() - startTime) / 1000))
+      }
+    }, 1000)
+
+    const runCheck = async () => {
+      const ok = await fetchBackendHealth(API_BASE, 12000)
+      if (cancelled) return
+
+      if (ok) {
+        setBackendStatus('up')
+        clearInterval(timer)
+        pollInterval = setInterval(async () => {
+          if (!cancelled) {
+            const stillOk = await fetchBackendHealth(API_BASE, 10000)
+            if (!stillOk && !cancelled) setBackendStatus('warming')
+          }
+        }, 30000)
+      } else {
+        setBackendStatus('warming')
+        const pollWarmup = async () => {
+          if (cancelled) return
+          const elapsed = (Date.now() - startTime) / 1000
+          if (elapsed > 75) {
+            setBackendStatus('down')
+            clearInterval(timer)
+            return
+          }
+          const pingOk = await fetchBackendHealth(API_BASE, 6000)
+          if (cancelled) return
+          if (pingOk) {
+            setBackendStatus('up')
+            clearInterval(timer)
+          } else {
+            setTimeout(pollWarmup, 3000)
+          }
+        }
+        setTimeout(pollWarmup, 3000)
+      }
     }
-    tick()
-    const interval = setInterval(tick, 30000)
+
+    runCheck()
+
     return () => {
       cancelled = true
-      clearInterval(interval)
+      clearInterval(timer)
+      clearInterval(pollInterval)
     }
   }, [])
 
   const handleHealthRetry = async () => {
     setHealthRetryBusy(true)
+    setBackendStatus('warming')
     try {
-      const ok = await fetchBackendHealth(API_BASE)
+      const ok = await fetchBackendHealth(API_BASE, 15000)
       setBackendStatus(ok ? 'up' : 'down')
+    } catch {
+      setBackendStatus('down')
     } finally {
       setHealthRetryBusy(false)
     }
@@ -2532,23 +2583,26 @@ function App() {
     streamingTextRef.current = '';
   }
 
-  if (backendStatus === 'checking') {
-    return (
-      <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-slate-300">
-        <div className="absolute inset-0 bg-noise-dark opacity-30 pointer-events-none" aria-hidden />
-        <div className="relative z-10 flex flex-col items-center gap-4">
-          <div className="h-10 w-10 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" />
-          <p className="font-mono text-xs tracking-widest uppercase text-cyan-400/80">Linking uplinkâ€¦</p>
+  if (!bypassHealthCheck && (backendStatus === 'checking' || backendStatus === 'warming' || backendStatus === 'down')) {
+    if (backendStatus === 'checking') {
+      return (
+        <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-slate-300">
+          <div className="absolute inset-0 bg-noise-dark opacity-30 pointer-events-none" aria-hidden />
+          <div className="relative z-10 flex flex-col items-center gap-4">
+            <div className="h-10 w-10 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" />
+            <p className="font-mono text-xs tracking-widest uppercase text-cyan-400/80">Connecting to aSKYOUTH Cloud…</p>
+          </div>
         </div>
-      </div>
-    )
-  }
-
-  if (backendStatus === 'down') {
+      )
+    }
     return (
       <ChatbotInactivePage
+        status={backendStatus}
         onRetry={handleHealthRetry}
         isRetrying={healthRetryBusy}
+        apiBase={API_BASE}
+        elapsedSeconds={warmupSeconds}
+        onBypass={() => setBypassHealthCheck(true)}
       />
     )
   }

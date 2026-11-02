@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# build output (Vercel builds this)
+dist/
+
+# local env (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# logs / OS
+*.log
+.DS_Store
+Thumbs.db
+
+# Vite
+.vite/
+
+# IDE
+.idea/
+.vscode/

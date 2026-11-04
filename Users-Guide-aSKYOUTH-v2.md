@@ -57,10 +57,9 @@ Account management is strictly handled by System Administrators. To ensure secur
 
 ### 1.6 Global Interface Tour
 No matter your role, the main interface is built around three core areas:
-- **The Header (Top Bar):** Contains the current date, your profile menu, a notification bell for alerts, and a quick Sign Out button.
-- **The Sidebar (Left Menu):** Your main navigation hub. It expands and collapses to save space. Click here to jump between the Dashboard, Events, Chat, and other modules.
+- **The Header (Top Bar):** Contains the current date, your profile menu, a notification bell for upcoming event alerts, and a quick Sign Out button.
+- **The Sidebar (Left Menu):** Your main navigation hub. It expands and collapses to save space on mobile. Click here to jump between the Dashboard, Events, Chat, and other modules. The Chat module is accessed directly from the sidebar — not a floating widget.
 - **The Main Workspace (Center):** Where the active module displays its data.
-- **The AI Widget (Bottom Right):** A floating button that allows you to open the AI Chatbot from any screen.
 
 *[INSERT FULL-PAGE SCREENSHOT: Complete UI layout with red bounding boxes highlighting the Header, Sidebar, Workspace, and AI Widget]*
 
@@ -88,15 +87,15 @@ The chatbot is bilingual. If you ask a question in English (e.g., "What are the 
 3. Ask questions like: "How do I apply for the scholarship?", "Where is the sports fest?", or "What is the SK doing for education?"
 4. Press **Send**. The AI will search the SK database and provide an authoritative answer within seconds.
 
-#### 2.2.3 Uploading Documents for Analysis
-You can upload a document and ask the AI to explain it to you.
-1. Click the **Upload** icon next to the chat box.
-2. Select a PDF or DOCX file from your device.
+#### 2.2.3 Uploading Files for Analysis
+You can attach files to your message and ask the AI to explain or summarize them.
+1. Click the **Attach** (paperclip) icon next to the chat box.
+2. Select one or more files from your device (up to 8 files at once; any file type is accepted).
 3. Type a message like, "Summarize this document for me."
 4. Press **Send**.
 
 #### 2.2.4 Chat Limitations & Network Dependency
-- **Cloud Dependency:** The AI requires a stable internet connection. If your connection drops, the chat will fail to send. The system will automatically attempt to retry the connection.
+- **Cloud Dependency:** The AI requires a stable internet connection. If your connection drops mid-send, the message will fail and you will need to resend it manually.
 - **Cold Starts:** If the AI has not been used by anyone for a while, your first message might take 5–30 seconds longer to process as the cloud engine "wakes up."
 
 *[INSERT FULL-PAGE SCREENSHOT: Chat interface showing a bilingual conversation and a document upload]*
@@ -131,9 +130,9 @@ To prove you attended an event, aSK Youth uses QR codes instead of paper sign-up
 ### 2.6 Submitting Suggestions & Feedback
 Your voice matters. You can send feedback directly to the SK Officers.
 1. Go to the **Suggestions** tab.
-2. Fill out the subject and your detailed message.
-3. You can choose to submit this anonymously by checking the "Hide my name" box.
-4. Click **Submit**.
+2. Select a **Category** from the dropdown (e.g., Events, Budget, General).
+3. Type your detailed suggestion in the **Content** field.
+4. Click **Submit**. Your name and role are automatically attached so Officers can follow up if needed.
 
 *[INSERT FULL-PAGE SCREENSHOT: Suggestion submission form]*
 
@@ -142,10 +141,11 @@ Your voice matters. You can send feedback directly to the SK Officers.
 ## PART 3: THE SK OFFICER EXPERIENCE (Management & Planning)
 
 ### 3.1 Officer Dashboard Overview
-SK Officers have elevated privileges. Your dashboard focuses on management and analytics.
-- **Active Projects:** Tracks ongoing events and their registration numbers.
-- **Action Items:** Reminds you of pending document drafts or budget approvals.
-- **Quick Generators:** Buttons to instantly launch the Budget Estimator or Document Automator.
+SK Officers have elevated privileges. Your interface gives you access to event management tools and the AI assistant in addition to everything a Youth user can see.
+- **Events Module:** Create, edit, and manage all SK events. View live attendance numbers per event.
+- **Reports Module:** Access participation charts and export data.
+- **AI Chat:** Use the Chat tab to draft proposals, resolutions, and budgets with AI assistance.
+- **Document Automation:** Generate official SK documents from templates.
 
 *[INSERT FULL-PAGE SCREENSHOT: SK Officer Dashboard showing metrics and action items]*
 
@@ -154,15 +154,16 @@ Officers are responsible for populating the calendar.
 
 #### 3.2.1 Creating a New Event
 1. Go to the **Events** tab and click **Create New Event**.
-2. Fill in the Title, Description, Date, Time, and Location.
-3. Set the maximum capacity for registrations.
-4. Click **Save Event**. It will immediately appear on the Youth calendar.
+2. Fill in the Title, Description, Category, Date, Time, Location, and Organizer.
+3. Enter the expected number of Attendees (total, male, and female counts).
+4. Enter the Budget Allotted (optional).
+5. Click **Save Event**. It will immediately appear on the Youth calendar.
 
 #### 3.2.2 Editing Event Details
-If a venue changes, you can edit the event.
+If a venue changes or details need updating, you can edit the event.
 1. Click the **Edit (Pencil)** icon on the event card.
-2. Change the details and click **Update**.
-3. All registered youth will be notified of the change.
+2. Update the required details and click **Update Event**.
+3. Changes take effect immediately on the calendar.
 
 #### 3.2.3 Generating & Printing QR Codes
 1. Open the event details page.
@@ -190,8 +191,8 @@ The AI analyzes past events in Barangay Concepcion Dos to estimate costs for mea
 
 > *Note: The AI Budget Estimator is a planned feature. In the current live deployment, the base document and budget export tools are available, but the AI-driven cost prediction model requires additional setup.*
 
-#### 3.3.3 Interpreting Warnings
-If your estimated budget exceeds typical barangay limits, the AI will flag a warning. It will cite RA 10742 guidelines to ensure your funds are allocated to the correct mandatory categories (e.g., 10% for youth development).
+#### 3.3.3 Budget Compliance Notes
+When drafting budgets manually or using the AI Chat for budget guidance, keep in mind that RA 10742 mandates specific fund allocations (e.g., 10% for youth development activities). The AI Chat can advise on these guidelines when asked — for example: *"Does this budget comply with RA 10742?"*
 
 *[INSERT FULL-PAGE SCREENSHOT: Budget Estimator tool showing an AI breakdown of costs and compliance warnings]*
 
@@ -238,38 +239,58 @@ The Admin Dashboard provides a bird's-eye view of the entire system.
 Admins must verify and manage all accounts to ensure only legitimate residents access the system.
 
 #### 4.2.1 Viewing the User Directory
-1. Go to **User Management**.
-2. Search for users by name or filter by role (Youth, Officer).
+1. Go to the **Users** tab in the Admin Gateway.
+2. All registered operator accounts are displayed in a table (Username, Full Name, Role, Status, Created Date).
+3. Youth guest users are not shown — only provisioned accounts appear here.
 
-#### 4.2.2 Assigning & Revoking Roles
-1. Click on a user's row.
-2. Change their Role dropdown from Youth to SK Officer.
-3. Click **Update Role**. They will instantly gain officer tools.
+#### 4.2.2 Modifying an Account (Role, Status, Password)
+1. Find the user's row in the directory.
+2. Click the **Edit** button on the right side of their row.
+3. The **Modify Account** modal will open — you can update their Full Legal Name, Privilege Tier (role), Status (Active/Inactive), and Password.
+4. Enter the required **🔐 Authorization Token** (mandatory for all modifications).
+5. Click **Apply Changes**.
 
-#### 4.2.3 Resolving Locked Accounts
+> **Note:** The Authorization Token is required for every edit — not just password changes. This is an additional security safeguard.
+
+#### 4.2.3 Deactivating an Account
+To temporarily revoke a user's access:
+1. Find the user's row in the directory.
+2. Click the **Deactivate** button.
+3. Confirm with a single confirmation dialog. Their status changes to **INACTIVE** immediately.
+
+#### 4.2.4 Deleting an Account (Permanent)
+To permanently remove an account:
+1. Click the **Edit** button for the user.
+2. In the **Modify Account** modal, click **🗑 Delete Account** at the bottom-left.
+3. Step 1: Confirm the deletion prompt.
+4. Step 2: Type the account's **username** exactly to finalize. This two-step process prevents accidental deletion.
+
+#### 4.2.5 Resolving Locked Accounts
 If a user is locked out due to 5 failed login attempts:
-1. Find their name in the directory.
-2. Click **Unlock Account**.
-3. You can also manually update their password using the edit function if they have forgotten it.
+1. Find their row in the directory — a **🔒 Xm locked** badge will appear next to their name.
+2. Click **Lift** beside the badge to immediately clear the lockout.
+3. You can also reset their password via the **Edit** modal if they have forgotten it.
 
 *[INSERT FULL-PAGE SCREENSHOT: User Management table with role assignment dropdowns]*
 
-### 4.3 Admin Reports & Exports
-End-of-year reporting is critical for SK transparency. Admins can export massive datasets instantly.
+### 4.3 Reports & Exports
+Reporting is critical for SK transparency. The system provides aggregated analytics and export tools.
 
-#### 4.3.1 Generating Participation Reports
-1. Go to **Admin Reports**.
-2. Select **Participation Analytics**.
-3. Choose a Date Range (e.g., Jan 1 - Dec 31).
-4. The system aggregates all QR scans across all events into demographic charts.
+#### 4.3.1 Viewing Participation Analytics
+1. Go to the **Reports** tab.
+2. The system displays all-time participation data across all events as demographic charts (male/female breakdown, category distribution).
+3. No date range filter is required — the charts aggregate all recorded events automatically.
 
-#### 4.3.2 Generating Budget Reports
-1. Select **Financial Analytics**.
-2. The system totals the allotted budgets of all completed events.
+#### 4.3.2 Viewing Event Budget Overview
+1. In the **Reports** tab, scroll to the financial analytics section.
+2. The system shows the total budget allotted across all events and a per-event breakdown.
 
-#### 4.3.3 Exporting to PDF/DOCX
-1. Once the charts load on screen, click **Export Full Report**.
-2. Choose PDF for official submission or DOCX if you need to add manual notes before printing.
+#### 4.3.3 Exporting Audit Logs (CSV)
+1. Go to the **Logs** tab in the Admin Gateway.
+2. Click **Export CSV** to download the full system audit log as a spreadsheet.
+3. This is useful for compliance review and end-of-year documentation.
+
+> **Note:** For generating formal SK documents (Resolutions, Project Briefs, Meeting Minutes), use the **Document Automation** feature in the Chat/Reports module.
 
 *[INSERT FULL-PAGE SCREENSHOT: Admin Reports page showing complex bar charts and the Export buttons]*
 
@@ -286,27 +307,27 @@ Admins can monitor how the AI is being used.
 ## PART 5: TROUBLESHOOTING & SUPPORT
 
 ### 5.1 Login & Authentication Issues
-- **"Account Locked" Error:** You typed the wrong password 5 times. Wait 15 minutes. The timer is strictly enforced by the server. If urgent, contact the System Admin.
-- **Forgot Password:** Please contact the System Administrator to have your password reset manually.
+- **"Account Locked" Error:** You typed the wrong password 5 times. A countdown timer will appear — wait up to 15 minutes. The timer is strictly enforced by the server. If urgent, contact the System Admin to have the lockout lifted immediately.
+- **Forgot Password:** Please contact the System Administrator to have your password reset manually via the Modify Account modal.
 
 ### 5.2 AI Chatbot Connectivity & Language Issues
-- **"Uplink Failed" Error:** This means your internet connection dropped right as you hit send. The system will automatically retry once after 2 seconds. If it still fails, check your Wi-Fi.
+- **Message fails to send:** This means your internet connection dropped. The system does not auto-retry — simply resend your message once your connection is restored.
 - **AI replies in the wrong language:** The AI mirrors your input. If you type just "Hello", it replies in English. If you want a Tagalog response, use Tagalog markers like "po", "opo", or "kumusta".
-- **AI refuses to draft a document:** If you are a Youth user, the AI is programmed to refuse document drafting and will direct you to the Secretariat. Only Officers can draft documents.
+- **AI refuses to draft a document:** If you are a Youth user, the AI is programmed to decline document drafting and will direct you to the Secretariat. Only Officers and the Chairperson can request formal document drafts.
 
 ### 5.3 QR Code Scanning Errors
 - **"Camera Permission Denied":** Your browser blocked the camera. Look for the lock icon in your URL bar, click it, and set Camera to "Allow". Reload the page.
 - **"Invalid QR Code":** Ensure you are scanning an aSK Youth QR code, not a generic link.
-- **"Attendance Already Recorded":** You double-scanned the code. Your attendance is safe.
+- **"Attendance Already Recorded":** You double-scanned the code. Your attendance is safe — no duplicate will be created.
 
-### 5.4 Report Generation & Export Errors
-- **Blank PDF:** Ensure you selected a date range that actually contains events. If there were no events in February, a February report will be blank.
-- **Export button unresponsive:** If generating a massive yearly report, the server may take up to 10 seconds. Do not click the button multiple times. Wait for the download prompt.
+### 5.4 Report & Export Issues
+- **Charts show no data:** Ensure events have been created and attendance has been recorded. The analytics reflect actual recorded data only.
+- **CSV export is empty:** The Logs tab must have at least one recorded system action before the export button produces data.
 
 ### 5.5 Contacting the SK Secretariat & IT Support
 If you encounter a bug not listed here:
 - For policy, event, or account questions: Visit the SK Secretariat at the Barangay Concepcion Dos Hall.
-- For severe technical glitches: Use the "Report Bug" link in the footer to email the development team directly.
+- For severe technical glitches: Contact the development team through your designated IT support channel.
 
 ---
 

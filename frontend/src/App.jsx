@@ -189,33 +189,35 @@ function EventFormModal({ event, onClose, onSaved, authHeaders }) {
     finally { setSaving(false); }
   };
 
-  const inputCls = "w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500";
-  const labelCls = "text-xs text-slate-400 mb-1 block";
+  const inputCls = "w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 focus:border-blue-600 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none transition-all shadow-sm";
+  const labelCls = "text-xs font-mono font-bold text-slate-700 mb-1 block uppercase tracking-wider";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-auto p-6 mx-4" onClick={e => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-white mb-4">{isEdit ? 'Edit Event' : 'Add New Event'}</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-white border-2 border-slate-300 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl text-slate-900" onClick={e => e.stopPropagation()}>
+        <h2 className="text-lg font-display font-bold text-slate-900 mb-4 tracking-wide">{isEdit ? 'Edit Event' : 'Add New Event'}</h2>
 
         {/* Document Import */}
         {!isEdit && (
-          <div className="mb-5 border border-dashed border-slate-600 rounded-xl p-4 bg-slate-800/50">
-            <p className="text-xs text-slate-400 mb-2 font-medium">📄 Import from Document (optional)</p>
-            <div className="flex gap-2 items-center">
-              <input type="file" accept=".pdf,.docx,.jpg,.jpeg,.png,.tiff,.tif,.webp,.txt,.csv" onChange={e => setImportFile(e.target.files?.[0] || null)} className="text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-slate-700 file:text-slate-300 hover:file:bg-slate-600 flex-1" />
-              <button onClick={handleImport} disabled={!importFile || importing} className="px-3 py-1.5 bg-cyan-700 hover:bg-cyan-600 disabled:opacity-40 text-white text-xs rounded-lg whitespace-nowrap">
+          <div className="mb-5 border-2 border-dashed border-blue-200 rounded-xl p-4 bg-blue-50/50">
+            <p className="text-xs text-blue-900 mb-2 font-bold flex items-center gap-1.5">
+              <span>📄</span> Import from Document (optional)
+            </p>
+            <div className="flex gap-2 items-center flex-wrap sm:flex-nowrap">
+              <input type="file" accept=".pdf,.docx,.jpg,.jpeg,.png,.tiff,.tif,.webp,.txt,.csv" onChange={e => setImportFile(e.target.files?.[0] || null)} className="text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-slate-200 file:text-slate-800 hover:file:bg-slate-300 flex-1 cursor-pointer" />
+              <button onClick={handleImport} disabled={!importFile || importing} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-bold text-xs rounded-xl whitespace-nowrap shadow-sm transition-all cursor-pointer">
                 {importing ? '⏳ Extracting...' : 'Extract'}
               </button>
             </div>
-            {importBanner && <p className="text-xs text-yellow-400 mt-2">⚠️ {importBanner}</p>}
+            {importBanner && <p className="text-xs text-amber-700 font-semibold mt-2">⚠️ {importBanner}</p>}
           </div>
         )}
 
-        {error && <p className="text-red-400 text-xs mb-3 bg-red-950/50 border border-red-800 rounded-lg p-2">{error}</p>}
+        {error && <p className="text-red-600 text-xs mb-3 bg-red-50 border border-red-200 rounded-xl p-2.5 font-medium">{error}</p>}
 
         {/* Form grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-          <div className="col-span-2"><label className={labelCls}>Title</label><input value={form.title} onChange={e => set('title', e.target.value)} className={inputCls} /></div>
+          <div className="col-span-1 sm:col-span-2"><label className={labelCls}>Title</label><input value={form.title} onChange={e => set('title', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Category</label><select value={form.category} onChange={e => set('category', e.target.value)} className={inputCls}>{EVENT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
           {form.category === 'others' && (
             <div className="col-span-1 sm:col-span-2"><label className={labelCls}>Specify Category</label><input value={form.category_other_label || ''} onChange={e => set('category_other_label', e.target.value)} placeholder="e.g. Blood Donation" className={inputCls} /></div>
@@ -225,24 +227,24 @@ function EventFormModal({ event, onClose, onSaved, authHeaders }) {
           <div><label className={labelCls}>Time</label><input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Location</label><input value={form.location} onChange={e => set('location', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Organizer</label><input value={form.organizer} onChange={e => set('organizer', e.target.value)} className={inputCls} /></div>
-          <div className="col-span-2"><label className={labelCls}>Description</label><textarea value={form.description} onChange={e => set('description', e.target.value)} rows={2} className={inputCls} /></div>
-          <div className="col-span-2"><label className={labelCls}>Requirements</label><input value={form.requirements} onChange={e => set('requirements', e.target.value)} className={inputCls} /></div>
-          <div className="col-span-2"><label className={labelCls}>Contact</label><input value={form.contact} onChange={e => set('contact', e.target.value)} className={inputCls} /></div>
+          <div className="col-span-1 sm:col-span-2"><label className={labelCls}>Description</label><textarea value={form.description} onChange={e => set('description', e.target.value)} rows={2} className={inputCls} /></div>
+          <div className="col-span-1 sm:col-span-2"><label className={labelCls}>Requirements</label><input value={form.requirements} onChange={e => set('requirements', e.target.value)} className={inputCls} /></div>
+          <div className="col-span-1 sm:col-span-2"><label className={labelCls}>Contact</label><input value={form.contact} onChange={e => set('contact', e.target.value)} className={inputCls} /></div>
         </div>
 
         {/* Attendance & Budget */}
-        <p className="text-xs text-slate-400 font-medium mb-2 mt-2">Attendance & Budget</p>
+        <p className="text-xs font-display font-bold text-slate-800 uppercase tracking-wider mb-2 mt-2">Attendance & Budget</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
           <div><label className={labelCls}>Attendees</label><input type="number" min="0" value={form.attendees} onChange={e => set('attendees', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Male</label><input type="number" min="0" value={form.male_count} onChange={e => set('male_count', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Female</label><input type="number" min="0" value={form.female_count} onChange={e => set('female_count', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Staff (optional)</label><input type="number" min="0" value={form.staff_count} onChange={e => set('staff_count', e.target.value)} placeholder="—" className={inputCls} /></div>
-          <div className="col-span-2"><label className={labelCls}>Budget Allotted (₱)</label><input type="number" min="0" step="0.01" value={form.budget_allotted} onChange={e => set('budget_allotted', e.target.value)} placeholder="0.00" className={inputCls} /></div>
+          <div className="col-span-2 sm:col-span-2"><label className={labelCls}>Budget Allotted (₱)</label><input type="number" min="0" step="0.01" value={form.budget_allotted} onChange={e => set('budget_allotted', e.target.value)} placeholder="0.00" className={inputCls} /></div>
         </div>
 
-        <div className="flex justify-end gap-2 mt-3">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm bg-slate-700 text-slate-300 hover:bg-slate-600">Cancel</button>
-          <button onClick={handleSave} disabled={saving || !form.title} className="px-4 py-2 rounded-lg text-sm bg-cyan-600 text-white hover:bg-cyan-500 disabled:opacity-40">{saving ? 'Saving...' : isEdit ? 'Update' : 'Create'}</button>
+        <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-slate-200">
+          <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer">Cancel</button>
+          <button onClick={handleSave} disabled={saving || !form.title} className="px-5 py-2 rounded-xl text-sm font-display font-bold bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-md disabled:opacity-40 transition-all cursor-pointer">{saving ? 'Saving...' : isEdit ? 'Update Event' : 'Create Event'}</button>
         </div>
       </div>
     </div>
@@ -530,69 +532,62 @@ function SystemHealthTab({ authHeaders }) {
     finally { setAiLogsLoading(false); }
   };
 
-  if (loading) return <div className="p-6 text-slate-400">Loading system metrics...</div>;
-  if (!health) return <div className="p-6 text-red-400">Failed to load system health.</div>;
+  if (loading) return <div className="p-6 font-mono text-slate-500">Loading system metrics...</div>;
+  if (!health) return <div className="p-6 font-mono text-red-600 bg-red-50 border border-red-200 rounded-xl m-4">Failed to load system health.</div>;
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-          <p className="text-xs font-bold text-slate-500 uppercase">Memory Usage</p>
+        <div className="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm">
+          <p className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">Memory Usage</p>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className={`text-2xl font-black ${health.ramUsagePct > 85 ? 'text-red-500' : 'text-cyan-400'}`}>{health.ramUsagePct}%</span>
-            <span className="text-xs text-slate-400">{health.freeMemGB}GB free</span>
+            <span className={`text-2xl font-display font-black ${health.ramUsagePct > 85 ? 'text-red-600' : 'text-blue-600'}`}>{health.ramUsagePct}%</span>
+            <span className="text-xs text-slate-500 font-mono">{health.freeMemGB}GB free</span>
           </div>
         </div>
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-          <p className="text-xs font-bold text-slate-500 uppercase">Python Engine</p>
+        <div className="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm">
+          <p className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">Python Engine</p>
           <div className="mt-2 flex items-center gap-2">
-            <span className={`w-3 h-3 rounded-full ${health.pythonToolsOnline ? 'bg-green-500' : 'bg-red-500'}`} />
-            <span className="text-lg font-bold text-white">{health.pythonToolsOnline ? 'Online' : 'Offline'}</span>
+            <span className={`w-3 h-3 rounded-full ${health.pythonToolsOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500'}`} />
+            <span className="text-lg font-display font-bold text-slate-900">{health.pythonToolsOnline ? 'Online' : 'Offline'}</span>
           </div>
         </div>
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-          <p className="text-xs font-bold text-slate-500 uppercase">Vector DB (HNSW)</p>
+        <div className="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm">
+          <p className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">Vector DB (HNSW)</p>
           <div className="mt-2">
-            <span className="text-lg font-bold text-cyan-400">{health.hnswChunkCount}</span> <span className="text-xs text-slate-400">chunks</span>
-            <p className="text-[10px] text-slate-500 mt-1">{health.hnswIndexSizeMB || '<1'} MB</p>
+            <span className="text-lg font-display font-bold text-blue-600">{health.hnswChunkCount}</span> <span className="text-xs text-slate-500 font-mono">chunks</span>
+            <p className="text-[10px] font-mono text-slate-400 mt-1">{health.hnswIndexSizeMB || '<1'} MB</p>
           </div>
         </div>
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-          <p className="text-xs font-bold text-slate-500 uppercase">SQLite DB</p>
+        <div className="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm">
+          <p className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">SQLite DB</p>
           <div className="mt-2">
-            <span className="text-lg font-bold text-cyan-400">{health.dbSizeMB || '<1'} MB</span>
+            <span className="text-lg font-display font-bold text-emerald-600">{health.dbSizeMB || '<1'} MB</span>
           </div>
         </div>
       </div>
 
       {/* Maintenance Actions */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-        <h3 className="text-sm font-bold text-white mb-4">Maintenance Actions</h3>
+      <div className="bg-white border-2 border-slate-200 rounded-2xl p-5 shadow-sm">
+        <h3 className="text-xs font-display font-bold text-slate-900 uppercase tracking-wider mb-4">Maintenance Actions</h3>
         <div className="flex flex-wrap gap-3">
           <button
             id="btn-backup-now"
             onClick={handleBackupNow}
             disabled={backupNowLoading}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold font-mono rounded-xl transition-all shadow-sm disabled:opacity-50 cursor-pointer"
           >
             {backupNowLoading ? 'Backing up…' : 'Backup Now'}
           </button>
-          {/* <button
-            id="btn-purge-logs"
-            onClick={() => handleAction('/api/admin/purge-logs', { days: 30 })}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold rounded-lg transition-colors"
-          >
-            Purge Logs (&gt;30 days)
-          </button> */}
           <button
             id="btn-restore-backup"
             onClick={handleOpenPicker}
-            className="px-4 py-2 bg-amber-900/40 hover:bg-amber-900/60 border border-amber-700 text-amber-300 text-xs font-bold rounded-lg transition-colors"
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold font-mono rounded-xl transition-all shadow-sm cursor-pointer"
           >
             🗃 Restore Backup
           </button>
           {health.orphanedEventLogs > 0 && (
-            <div className="px-4 py-2 bg-amber-900/30 border border-amber-800 text-amber-400 text-xs font-bold rounded-lg flex items-center gap-2">
+            <div className="px-4 py-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold rounded-xl flex items-center gap-2">
               ⚠️ {health.orphanedEventLogs} orphaned logs detected
             </div>
           )}
@@ -601,41 +596,41 @@ function SystemHealthTab({ authHeaders }) {
 
       {/* ── Backup Picker Panel ── */}
       {showPicker && restoreStep === 0 && (
-        <div className="bg-slate-900 border border-amber-800/50 rounded-xl p-5 space-y-4">
+        <div className="bg-white border-2 border-amber-300 rounded-2xl p-5 space-y-4 shadow-md">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-amber-300">🗃 Available Snapshots</h3>
-            <button onClick={() => setShowPicker(false)} className="text-slate-500 hover:text-slate-300 text-xs font-bold">✕ Close</button>
+            <h3 className="text-xs font-display font-bold text-amber-800 uppercase tracking-wider">🗃 Available Snapshots</h3>
+            <button onClick={() => setShowPicker(false)} className="text-slate-400 hover:text-slate-700 text-xs font-bold cursor-pointer">✕ Close</button>
           </div>
-          {backupsLoading && <p className="text-slate-400 text-sm">Loading snapshots…</p>}
-          {backupsError && <p className="text-red-400 text-sm">{backupsError}</p>}
+          {backupsLoading && <p className="text-slate-500 text-sm font-mono">Loading snapshots…</p>}
+          {backupsError && <p className="text-red-600 text-sm font-mono">{backupsError}</p>}
           {!backupsLoading && !backupsError && backups && (
             backups.length === 0
-              ? <p className="text-slate-500 text-sm">No snapshots found in bucket.</p>
+              ? <p className="text-slate-500 text-sm font-mono">No snapshots found in bucket.</p>
               : (
                 <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                   {backups.map((snap) => (
                     <button
                       key={snap.filename}
                       onClick={() => handleSelectSnapshot(snap)}
-                      className={`w-full text-left px-4 py-3 rounded-lg border transition-colors ${
+                      className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all cursor-pointer ${
                         snap.isSafety
-                          ? 'bg-blue-950/40 border-blue-800/60 hover:bg-blue-900/40'
-                          : 'bg-slate-800 border-slate-700 hover:bg-slate-700'
+                          ? 'bg-blue-50/60 border-blue-200 hover:bg-blue-100/50'
+                          : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-blue-400'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-white truncate">{snap.filename}</p>
-                          <p className="text-[11px] text-slate-400 mt-0.5">
+                          <p className="text-xs font-mono font-bold text-slate-900 truncate">{snap.filename}</p>
+                          <p className="text-[11px] text-slate-500 font-mono mt-0.5">
                             {snap.timestamp ? new Date(snap.timestamp).toLocaleString() : 'Unknown time'}
                             {' · '}
                             {fmt(snap.size)}
                           </p>
                         </div>
                         <div className="flex-shrink-0 flex flex-col items-end gap-1">
-                          <span className="text-[11px] font-bold text-slate-300">{snap.relativeTime}</span>
+                          <span className="text-[11px] font-mono font-bold text-slate-600">{snap.relativeTime}</span>
                           {snap.isSafety && (
-                            <span className="text-[10px] bg-blue-800/60 text-blue-300 px-1.5 py-0.5 rounded font-bold">Safety</span>
+                            <span className="text-[10px] bg-blue-100 text-blue-800 border border-blue-200 px-1.5 py-0.5 rounded font-bold">Safety</span>
                           )}
                         </div>
                       </div>
@@ -649,32 +644,32 @@ function SystemHealthTab({ authHeaders }) {
 
       {/* ── Confirm Step (Step 1) ── */}
       {restoreStep === 1 && selectedBackup && (
-        <div className="bg-slate-900 border border-red-800/60 rounded-xl p-5 space-y-4">
-          <h3 className="text-sm font-bold text-red-400">⚠ Confirm Restore</h3>
-          <div className="bg-slate-800 rounded-lg p-4 space-y-1">
-            <p className="text-xs font-bold text-slate-300">Restoring to:</p>
-            <p className="text-sm font-mono text-amber-300 break-all">{selectedBackup.filename}</p>
-            <p className="text-xs text-slate-400">
+        <div className="bg-white border-2 border-red-300 rounded-2xl p-5 space-y-4 shadow-xl">
+          <h3 className="text-sm font-display font-bold text-red-600 uppercase tracking-wider">⚠ Confirm Restore</h3>
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-1">
+            <p className="text-xs font-bold text-slate-700">Restoring to:</p>
+            <p className="text-sm font-mono text-blue-700 font-bold break-all">{selectedBackup.filename}</p>
+            <p className="text-xs text-slate-500 font-mono">
               {selectedBackup.timestamp ? new Date(selectedBackup.timestamp).toLocaleString() : 'Unknown time'}
               {' · '}{fmt(selectedBackup.size)} · {selectedBackup.relativeTime}
             </p>
           </div>
-          <div className="text-xs text-slate-400 space-y-1.5">
-            <p>⚠ <strong className="text-red-400">Everything written after this snapshot will be permanently discarded</strong> — events, users, changes, all of it.</p>
-            <p>✅ A safety snapshot of the <strong className="text-white">current live state</strong> will be taken automatically before restoring, so you can undo this if needed.</p>
-            <p>⏳ The system will <strong className="text-white">restart and be unavailable for ~30–60 seconds</strong>.</p>
+          <div className="text-xs text-slate-600 space-y-1.5 font-mono">
+            <p>⚠ <strong className="text-red-600">Everything written after this snapshot will be permanently discarded</strong> — events, users, changes, all of it.</p>
+            <p>✅ A safety snapshot of the <strong className="text-slate-900">current live state</strong> will be taken automatically before restoring, so you can undo this if needed.</p>
+            <p>⏳ The system will <strong className="text-slate-900">restart and be unavailable for ~30–60 seconds</strong>.</p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={() => { setRestoreStep(0); setSelectedBackup(null); }}
-              className="px-4 py-2 text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg transition-colors"
+              className="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               id="btn-confirm-restore"
               onClick={handleConfirmRestore}
-              className="px-4 py-2 text-xs font-bold text-white bg-red-700 hover:bg-red-600 border border-red-600 rounded-lg transition-colors"
+              className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors shadow-sm cursor-pointer"
             >
               Yes, Restore This Backup
             </button>
@@ -684,11 +679,11 @@ function SystemHealthTab({ authHeaders }) {
 
       {/* ── Restoring Overlay (Step 2) ── */}
       {restoreStep === 2 && (
-        <div className="bg-slate-900 border border-amber-700/60 rounded-xl p-6 text-center space-y-3">
+        <div className="bg-white border-2 border-amber-400 rounded-2xl p-6 text-center space-y-3 shadow-xl">
           <div className="text-3xl animate-pulse">⏳</div>
-          <h3 className="text-sm font-bold text-amber-300">Restoring backup…</h3>
-          <p className="text-xs text-slate-400">Safety snapshot taken. The service is restarting.</p>
-          <p className="text-xs text-slate-500">This page will be <strong className="text-slate-300">unavailable for ~30–60 seconds</strong>. Please wait before refreshing.</p>
+          <h3 className="text-sm font-display font-bold text-amber-800 uppercase tracking-wider">Restoring backup…</h3>
+          <p className="text-xs text-slate-600 font-mono">Safety snapshot taken. The service is restarting.</p>
+          <p className="text-xs text-slate-500 font-mono">This page will be <strong className="text-slate-900">unavailable for ~30–60 seconds</strong>. Please wait before refreshing.</p>
           {selectedBackup && (
             <p className="text-[11px] font-mono text-slate-500 mt-2 break-all">Restoring to: {selectedBackup.filename}</p>
           )}
@@ -696,17 +691,17 @@ function SystemHealthTab({ authHeaders }) {
       )}
 
       {/* ── AI / Server Log Viewer ── */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+      <div className="bg-white border-2 border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <span className="text-cyan-400">📡</span> AI / Server Log Viewer
+          <h3 className="text-xs font-display font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+            <span className="text-blue-600">📡</span> AI / Server Log Viewer
             <span className="text-[10px] font-mono text-slate-500 font-normal ml-1">last 250 entries · in-memory only</span>
           </h3>
           <div className="flex items-center gap-2">
             <select
               value={aiLogFilter}
               onChange={e => setAiLogFilter(e.target.value)}
-              className="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-[10px] font-mono text-slate-300 focus:outline-none focus:border-cyan-500"
+              className="bg-slate-50 border-2 border-slate-200 rounded-xl px-2.5 py-1 text-[11px] font-mono text-slate-800 focus:outline-none focus:border-blue-600"
             >
               <option value="">All sources</option>
               {['SSE','Cache','RAG','Snapshot','VectorStore','Python AI'].map(s => (
@@ -716,16 +711,16 @@ function SystemHealthTab({ authHeaders }) {
             <button
               onClick={fetchAiLogs}
               disabled={aiLogsLoading}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[10px] font-bold font-mono rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 text-[11px] font-bold font-mono rounded-xl transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
             >
-              <svg className={`w-3 h-3 ${aiLogsLoading ? 'animate-spin text-cyan-400' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              <svg className={`w-3.5 h-3.5 ${aiLogsLoading ? 'animate-spin text-blue-600' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
               {aiLogsLoading ? 'Loading…' : 'Refresh'}
             </button>
           </div>
         </div>
 
         {aiLogsError && (
-          <div className="bg-red-950/40 border border-red-800 text-red-300 p-3 rounded-lg text-[11px] font-mono">
+          <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl text-xs font-mono">
             ⚠ {aiLogsError}
           </div>
         )}
@@ -739,29 +734,29 @@ function SystemHealthTab({ authHeaders }) {
           return filtered.length === 0 ? (
             <p className="text-slate-500 text-center py-6 text-xs font-mono">No entries{aiLogFilter ? ` for source "${aiLogFilter}"` : ''} in buffer.</p>
           ) : (
-            <div className="max-h-80 overflow-y-auto rounded-lg border border-slate-800 font-mono text-[10px]">
+            <div className="max-h-80 overflow-y-auto rounded-xl border-2 border-slate-200 font-mono text-[11px] bg-white">
               <table className="w-full border-collapse">
-                <thead className="sticky top-0 bg-slate-950 z-10">
-                  <tr className="text-slate-500 text-[9px] uppercase tracking-wider">
+                <thead className="sticky top-0 bg-slate-100 border-b-2 border-slate-200 z-10">
+                  <tr className="text-slate-600 text-[10px] uppercase font-bold tracking-wider">
                     <th className="px-3 py-2 text-left w-24">Time</th>
                     <th className="px-3 py-2 text-left w-14">Level</th>
-                    <th className="px-3 py-2 text-left w-20">Source</th>
+                    <th className="px-3 py-2 text-left w-24">Source</th>
                     <th className="px-3 py-2 text-left">Message</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
                   {filtered.map((entry, i) => (
-                    <tr key={i} className={`border-t border-slate-800/60 ${i % 2 === 0 ? 'bg-slate-900/30' : 'bg-slate-950/30'}`}>
+                    <tr key={i} className={`hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                       <td className="px-3 py-1.5 text-slate-500 whitespace-nowrap">{new Date(entry.ts).toLocaleTimeString()}</td>
                       <td className="px-3 py-1.5">
-                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                          entry.level === 'warn'  ? 'bg-amber-900/50 text-amber-300' :
-                          entry.level === 'error' ? 'bg-red-900/50 text-red-300' :
-                                                    'bg-slate-800 text-slate-400'
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                          entry.level === 'warn'  ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+                          entry.level === 'error' ? 'bg-red-100 text-red-800 border border-red-300' :
+                                                    'bg-slate-100 text-slate-700 border border-slate-200'
                         }`}>{entry.level}</span>
                       </td>
-                      <td className="px-3 py-1.5 text-cyan-400 font-bold whitespace-nowrap">{entry.source}</td>
-                      <td className="px-3 py-1.5 text-slate-300 break-all">{entry.message}</td>
+                      <td className="px-3 py-1.5 text-blue-700 font-bold whitespace-nowrap">{entry.source}</td>
+                      <td className="px-3 py-1.5 text-slate-800 break-all">{entry.message}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -875,52 +870,74 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
   const fmtBudget = (v) => (v != null && v !== '') ? `₱${Number(v).toLocaleString()}` : '';
 
   return (
-    <div className="flex flex-col h-full bg-slate-950 text-white overflow-auto relative">
+    <div className="flex flex-col h-full bg-transparent overflow-y-auto relative text-slate-900">
       {/* Header */}
-      <div className="shrink-0 border-b border-slate-800 bg-slate-900/95 backdrop-blur-xl flex flex-wrap items-center px-4 sm:px-6 py-3 gap-x-4 gap-y-2 min-h-[4rem] sticky top-0 z-30">
-        <span className="text-base sm:text-lg font-bold tracking-wide truncate flex-1 min-w-0">📅 Events &amp; Attendance</span>
+      <div className="shrink-0 border-b border-slate-200/80 bg-white/70 backdrop-blur-md flex flex-wrap items-center px-4 sm:px-6 py-3 gap-x-4 gap-y-2 min-h-[4rem] sticky top-0 z-30 justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          {!sidebarOpen && (
+            <button
+              onClick={onToggleSidebar}
+              className="text-slate-500 hover:text-blue-600 transition-all p-1.5 hover:bg-slate-100 rounded-lg border border-slate-200/60 flex items-center justify-center cursor-pointer md:hidden"
+              title="Open Menu"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
+            </button>
+          )}
+          <span className="text-base sm:text-lg font-display font-black tracking-wider text-slate-900 truncate">📅 EVENTS &amp; ATTENDANCE</span>
+        </div>
         <div className="flex flex-wrap gap-2">
           {['dashboard','events'].map(t => (
-            <button key={t} onClick={() => setMainTab(t)} className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-lg text-[11px] sm:text-sm font-bold uppercase tracking-wider transition-all ${mainTab === t ? 'bg-cyan-600 text-white shadow-[0_0_15px_rgba(6,182,212,0.4)]' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>
+            <button
+              key={t}
+              onClick={() => setMainTab(t)}
+              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-display font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                mainTab === t
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+              }`}
+            >
               {t === 'dashboard' ? '📊 Dashboard' : '📋 Events'}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="flex-1 p-3 sm:p-6 overflow-auto">
+      <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-6 max-w-6xl w-full mx-auto">
         {/* ==================== DASHBOARD TAB ==================== */}
         {mainTab === 'dashboard' && (() => {
           const activeEvent = events.find(e => e.status === 'active');
           return (
-            <div className="space-y-6 max-w-4xl">
+            <div className="space-y-6 max-w-4xl mx-auto">
               <div>
-                <h2 className="text-3xl font-black text-white">Dashboard</h2>
-                <p className="text-slate-400 mt-1">Live attendance overview</p>
+                <h2 className="text-2xl sm:text-3xl font-display font-black text-slate-900">Dashboard</h2>
+                <p className="text-slate-500 font-mono text-xs sm:text-sm mt-1">Live attendance &amp; event monitoring overview</p>
               </div>
               
               {activeEvent ? (
                 <>
-                  <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col justify-center items-center sm:items-start text-center sm:text-left">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Total Attendees</p>
-                    <p className="text-6xl sm:text-7xl font-black text-cyan-400">{activeEvent.attendees || 0}</p>
+                  <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 sm:p-8 flex flex-col justify-center items-center sm:items-start text-center sm:text-left shadow-sm">
+                    <p className="text-xs font-mono font-bold text-slate-500 uppercase tracking-widest mb-2">Total Attendees</p>
+                    <p className="text-6xl sm:text-7xl font-display font-black text-blue-600">{activeEvent.attendees || 0}</p>
                   </div>
                   
-                  <div className="bg-slate-900 border border-slate-700 rounded-xl p-6">
+                  <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm">
                     <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-2 mb-4">
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Active events — attendance scanning</p>
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-slate-800 px-2 py-1 rounded">{activeEvent.title}</span>
+                      <p className="text-xs font-mono font-bold text-slate-500 uppercase tracking-widest">Active events — attendance scanning</p>
+                      <span className="text-xs font-mono font-bold text-slate-700 uppercase tracking-widest bg-slate-100 border border-slate-200 px-3 py-1 rounded-xl">{activeEvent.title}</span>
                     </div>
-                    <button onClick={() => setQrEvent(activeEvent)} className="w-full flex items-center justify-between bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-xl font-bold transition-all shadow-lg hover:shadow-green-900/50">
+                    <button onClick={() => setQrEvent(activeEvent)} className="w-full flex items-center justify-between bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-4 rounded-xl font-display font-bold transition-all shadow-md active:scale-[0.99] cursor-pointer">
                       <span className="text-lg truncate mr-4">{activeEvent.title}</span>
-                      <span className="shrink-0">Show QR Code →</span>
+                      <span className="shrink-0 font-mono text-sm uppercase tracking-wider">Show QR Code →</span>
                     </button>
                   </div>
                 </>
               ) : (
-                <div className="bg-slate-900 border border-slate-700 rounded-xl p-12 text-center">
-                  <p className="text-slate-400 font-semibold text-lg">No active event right now.</p>
-                  <p className="text-sm text-slate-500 mt-2">Start an event in the Events tab to see live analytics.</p>
+                <div className="bg-white border-2 border-slate-200 rounded-2xl p-12 text-center shadow-sm">
+                  <div className="text-4xl mb-3">🎪</div>
+                  <p className="text-slate-800 font-display font-bold text-lg">No active event right now.</p>
+                  <p className="text-sm font-mono text-slate-500 mt-2">Start an event in the Events tab to see live analytics and attendance scanning.</p>
                 </div>
               )}
             </div>
@@ -930,30 +947,34 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
         {/* ==================== MANAGE EVENTS TAB ==================== */}
         {mainTab === 'events' && (<>
           {/* Toolbar */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-5 items-stretch sm:items-center">
-            <div className="flex-1 flex gap-2">
-              <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search..." className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500" />
-              <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="bg-slate-800 border border-slate-600 rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 max-w-[120px]">
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+            <div className="flex-1 flex gap-2 flex-wrap sm:flex-nowrap">
+              <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search events..." className="flex-1 bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 focus:border-blue-600 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none transition-all shadow-sm" />
+              <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 focus:border-blue-600 rounded-xl px-2 py-2 text-xs font-mono text-slate-900 focus:outline-none max-w-[140px] shadow-sm">
                 <option value="">All Categories</option>
                 {EVENT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div className="flex gap-2">
-              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 focus:border-blue-600 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 focus:outline-none shadow-sm">
                 <option value="">All Statuses</option>
                 <option value="upcoming">Upcoming</option>
                 <option value="completed">Completed</option>
               </select>
-              <button onClick={() => setModalEvent(null)} className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-bold rounded-lg">+ Add</button>
+              <button onClick={() => setModalEvent(null)} className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-display font-bold uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 cursor-pointer">+ Add Event</button>
             </div>
           </div>
 
           {/* Event cards */}
-          {eventsLoading && <div className="flex items-center justify-center py-12"><div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" /></div>}
-          {!eventsLoading && filteredEvents.length === 0 && <p className="text-slate-500 text-sm">No events found.</p>}
-          <div className="overflow-x-auto rounded-xl border border-slate-700 bg-slate-900/50">
-            <table className="w-full text-left text-sm text-slate-300">
-              <thead className="bg-slate-800/80 text-xs uppercase font-semibold text-slate-400 border-b border-slate-700">
+          {eventsLoading && <div className="flex items-center justify-center py-12"><div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" /></div>}
+          {!eventsLoading && filteredEvents.length === 0 && (
+            <div className="bg-white border-2 border-slate-200 rounded-2xl p-8 text-center shadow-sm">
+              <p className="text-slate-500 font-mono text-sm">No events found matching your filter criteria.</p>
+            </div>
+          )}
+          <div className="overflow-x-auto rounded-2xl border-2 border-slate-200 bg-white shadow-sm">
+            <table className="w-full text-left text-sm text-slate-700">
+              <thead className="bg-slate-50 text-xs font-display font-bold uppercase text-slate-600 border-b-2 border-slate-200">
                 <tr>
                   <th className="px-4 py-3">Event Name</th>
                   <th className="px-4 py-3">Date</th>
@@ -964,45 +985,45 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50">
+              <tbody className="divide-y divide-slate-100">
                 {filteredEvents.map(ev => (
-                  <tr key={ev.id} className="hover:bg-slate-800/50 transition-colors">
-                    <td className="px-4 py-3 font-semibold text-white">
+                  <tr key={ev.id} className="hover:bg-blue-50/40 transition-colors">
+                    <td className="px-4 py-3 font-display font-bold text-slate-900">
                       {ev.title}
-                      {ev.time && <div className="text-xs text-slate-500 font-normal">{ev.time}</div>}
+                      {ev.time && <div className="text-xs text-slate-500 font-mono font-normal">{ev.time}</div>}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-slate-600">
                       {ev.date ? new Date(ev.date + 'T00:00:00+08:00').toLocaleDateString('en-US', { timeZone: 'Asia/Singapore', month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                     </td>
-                    <td className="px-4 py-3">{ev.location || '—'}</td>
+                    <td className="px-4 py-3 text-slate-600">{ev.location || '—'}</td>
                     <td className="px-4 py-3">
-                      <span className="text-xs bg-cyan-900/50 text-cyan-300 px-2 py-0.5 rounded-full">
+                      <span className="text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full">
                         {ev.category === 'others' && ev.category_other_label ? `Others: ${ev.category_other_label}` : ev.category}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        ev.status === 'completed' ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-800/50' : 
-                        ev.status === 'active' ? 'bg-green-600 text-white' : 
-                        'bg-amber-600 text-white'
+                      <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                        ev.status === 'completed' ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' : 
+                        ev.status === 'active' ? 'bg-emerald-600 text-white shadow-sm' : 
+                        'bg-amber-50 text-amber-800 border border-amber-300'
                       }`}>
                         {ev.status === 'completed' ? 'Completed' : ev.status === 'active' ? 'Active' : 'Not Started'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-mono">{ev.attendees || 0}</td>
+                    <td className="px-4 py-3 font-mono font-bold text-blue-700">{ev.attendees || 0}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex flex-col items-end gap-1">
-                        <div className="flex gap-1 justify-end">
-                          <button onClick={() => setModalEvent(ev)} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-[10px] uppercase font-bold rounded">Edit</button>
+                        <div className="flex gap-1.5 justify-end">
+                          <button onClick={() => setModalEvent(ev)} className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] uppercase font-bold rounded-lg border border-slate-200 cursor-pointer transition-colors">Edit</button>
                           {['admin', 'chairman', 'officer'].includes(authUser?.role) && (
-                            <button onClick={() => setLogEvent(ev)} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-[10px] uppercase font-bold rounded">Event log</button>
+                            <button onClick={() => setLogEvent(ev)} className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] uppercase font-bold rounded-lg border border-blue-200 cursor-pointer transition-colors">Event log</button>
                           )}
                           {['admin', 'chairman'].includes(authUser?.role) && (
-                            <button onClick={() => setDeleteId(ev.id)} className="px-2 py-1 bg-red-900/60 hover:bg-red-800 text-red-300 text-[10px] uppercase font-bold rounded">Delete</button>
+                            <button onClick={() => setDeleteId(ev.id)} className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] uppercase font-bold rounded-lg border border-red-200 cursor-pointer transition-colors">Delete</button>
                           )}
                         </div>
                         {ev.status === 'active' && (
-                          <button onClick={() => setQrEvent(ev)} className="mt-1 px-3 py-1.5 bg-green-700 hover:bg-green-600 text-white text-[10px] uppercase font-bold tracking-wider rounded-lg shadow-sm">
+                          <button onClick={() => setQrEvent(ev)} className="mt-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] uppercase font-bold tracking-wider rounded-lg shadow-sm cursor-pointer transition-all">
                             Show QR Code
                           </button>
                         )}
@@ -1028,12 +1049,13 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
 
       {/* Delete confirmation */}
       {deleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDeleteId(null)}>
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-sm" onClick={e => e.stopPropagation()}>
-            <p className="text-white text-sm mb-4">Are you sure you want to delete this event?</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4" onClick={() => setDeleteId(null)}>
+          <div className="bg-white border-2 border-red-300 rounded-2xl p-6 max-w-sm shadow-2xl text-slate-900" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-display font-bold text-red-600 mb-2">Delete Event?</h3>
+            <p className="text-slate-600 text-sm mb-4">Are you sure you want to delete this event? This action cannot be undone.</p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setDeleteId(null)} className="px-4 py-2 bg-slate-700 text-slate-300 text-sm rounded-lg hover:bg-slate-600">Cancel</button>
-              <button onClick={() => handleDelete(deleteId)} className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-500">Delete</button>
+              <button onClick={() => setDeleteId(null)} className="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-bold rounded-xl hover:bg-slate-200 transition-colors cursor-pointer">Cancel</button>
+              <button onClick={() => handleDelete(deleteId)} className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-500 transition-colors shadow-sm cursor-pointer">Delete</button>
             </div>
           </div>
         </div>
@@ -1041,22 +1063,22 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
 
       {/* QR Modal */}
       {qrEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setQrEvent(null)}>
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 max-w-sm flex flex-col items-center" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold text-white mb-2 text-center">{qrEvent.title}</h3>
-            <p className="text-sm text-slate-400 mb-6 text-center">Youth can scan this QR code to mark their attendance.</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4" onClick={() => setQrEvent(null)}>
+          <div className="bg-white border-2 border-slate-300 rounded-2xl p-8 max-w-sm flex flex-col items-center shadow-2xl text-slate-900" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-display font-bold text-slate-900 mb-2 text-center">{qrEvent.title}</h3>
+            <p className="text-sm text-slate-500 mb-6 text-center font-mono">Youth can scan this QR code to mark their attendance.</p>
             
-            <div className="bg-white p-4 rounded-xl mb-6 shadow-[0_0_30px_rgba(6,182,212,0.3)]">
+            <div className="bg-white p-4 rounded-2xl mb-6 border-2 border-slate-200 shadow-lg">
               <img src={`${API_BASE}/api/events/${qrEvent.id}/qr?h=${qrRefreshHash}`} alt="Event QR Code" className="w-48 h-48" />
             </div>
             
             {authUser?.role === 'admin' && (
-              <button onClick={() => handleRefreshQR(qrEvent.id)} className="w-full mb-3 px-4 py-3 bg-amber-700 text-white font-bold rounded-xl hover:bg-amber-600 transition-colors">
+              <button onClick={() => handleRefreshQR(qrEvent.id)} className="w-full mb-3 px-4 py-2.5 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 transition-colors shadow-sm cursor-pointer font-mono text-xs uppercase tracking-wider">
                 Refresh QR (Admin Only)
               </button>
             )}
 
-            <button onClick={() => setQrEvent(null)} className="w-full px-4 py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 transition-colors">
+            <button onClick={() => setQrEvent(null)} className="w-full px-4 py-2.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors shadow-sm cursor-pointer font-mono text-xs uppercase tracking-wider">
               Close
             </button>
           </div>
@@ -1202,13 +1224,27 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
   ];
 
   return (
-    <div className="flex flex-col h-full bg-slate-950 text-white overflow-auto relative">
+    <div className="flex flex-col h-full bg-transparent overflow-y-auto relative text-slate-900">
       {/* Header */}
-      <div className="shrink-0 border-b border-slate-800 bg-slate-900/95 backdrop-blur-xl flex items-center px-4 sm:px-6 py-3 min-h-[4rem] sticky top-0 z-30">
-        <span className="ml-10 text-base sm:text-lg font-bold tracking-wide truncate">🗂️ Official Reports — Document Generator</span>
+      <div className="shrink-0 border-b border-slate-200/80 bg-white/70 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 py-3 min-h-[4rem] sticky top-0 z-30">
+        <div className="flex items-center gap-3 min-w-0">
+          {!sidebarOpen && (
+            <button
+              onClick={onToggleSidebar}
+              className="text-slate-500 hover:text-blue-600 transition-all p-1.5 hover:bg-slate-100 rounded-lg border border-slate-200/60 flex items-center justify-center cursor-pointer md:hidden"
+              title="Open Menu"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
+            </button>
+          )}
+          <span className="text-base sm:text-lg font-display font-black tracking-wider text-slate-900 truncate">🗂️ OFFICIAL REPORTS</span>
+        </div>
+        <span className="font-mono text-xs text-blue-700 font-bold hidden sm:block bg-blue-50 border border-blue-200 px-3 py-1 rounded-xl">DOCUMENT ENGINE</span>
       </div>
 
-      <div className="flex-1 p-4 sm:p-6 overflow-auto">
+      <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
         <div className="max-w-2xl mx-auto space-y-6">
           {/* Template selector */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -1216,26 +1252,29 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
               <button
                 key={t.id}
                 onClick={() => setTemplateId(t.id)}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border text-sm font-medium transition-all ${
+                className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 text-sm font-display font-bold transition-all cursor-pointer ${
                   templateId === t.id
-                    ? 'bg-cyan-950 border-cyan-600 text-cyan-300 shadow-lg'
-                    : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800 hover:border-slate-600'
+                    ? 'bg-blue-50 border-blue-600 text-blue-900 shadow-md scale-[1.02]'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 shadow-sm'
                 }`}
               >
-                <span className="text-2xl">{t.emoji}</span>
-                <span className="text-center leading-tight">{t.label}</span>
+                <span className="text-2xl drop-shadow-sm">{t.emoji}</span>
+                <span className="text-center leading-tight tracking-wide text-xs">{t.label}</span>
               </button>
             ))}
           </div>
 
           {/* Dynamic form fields */}
-          <div className="space-y-4">
+          <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+            <h3 className="text-xs font-display font-bold text-slate-800 uppercase tracking-wider mb-2">
+              Template Information: {templates.find(t => t.id === templateId)?.label}
+            </h3>
             {templateFields[templateId].map(field => (
               <div key={field.key}>
-                <label className="block text-xs font-mono text-slate-400 mb-1.5">{field.label}</label>
+                <label className="block text-xs font-mono font-bold text-slate-700 mb-1.5 uppercase tracking-wide">{field.label}</label>
                 {field.multiline ? (
                   <textarea
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-cyan-600 focus:outline-none resize-y min-h-[80px]"
+                    className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-600 focus:outline-none resize-y min-h-[80px] transition-all shadow-sm"
                     placeholder={field.placeholder}
                     value={formData[field.key] || ''}
                     onChange={e => handleFieldChange(field.key, e.target.value, field.isList)}
@@ -1244,7 +1283,7 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
                 ) : (
                   <input
                     type="text"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-cyan-600 focus:outline-none"
+                    className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-600 focus:outline-none transition-all shadow-sm"
                     placeholder={field.placeholder}
                     value={formData[field.key] || ''}
                     onChange={e => handleFieldChange(field.key, e.target.value)}
@@ -1252,33 +1291,33 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
                 )}
               </div>
             ))}
-          </div>
 
-          {/* Format selector + Generate button */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-mono text-slate-400">Format:</label>
-              <select
-                value={format}
-                onChange={e => setFormat(e.target.value)}
-                className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-cyan-600 focus:outline-none"
+            {/* Format selector + Generate button */}
+            <div className="flex items-center gap-4 pt-3 border-t border-slate-100">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-mono font-bold text-slate-600 uppercase tracking-wider">Format:</label>
+                <select
+                  value={format}
+                  onChange={e => setFormat(e.target.value)}
+                  className="bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:border-blue-600 focus:outline-none shadow-sm cursor-pointer"
+                >
+                  <option value="docx">DOCX</option>
+                  <option value="pdf">PDF</option>
+                </select>
+              </div>
+              <button
+                onClick={handleGenerate}
+                disabled={generating}
+                className="flex-1 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 hover:from-blue-500 hover:to-cyan-500 disabled:opacity-40 text-white font-display font-bold py-3 rounded-xl transition-all text-xs uppercase tracking-wider shadow-md cursor-pointer active:scale-[0.99]"
               >
-                <option value="docx">DOCX</option>
-                <option value="pdf">PDF</option>
-              </select>
+                {generating ? 'Generating Document...' : `Generate ${format.toUpperCase()}`}
+              </button>
             </div>
-            <button
-              onClick={handleGenerate}
-              disabled={generating}
-              className="flex-1 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold py-2.5 rounded-xl transition-all text-sm tracking-wide"
-            >
-              {generating ? 'Generating...' : `Generate ${format.toUpperCase()}`}
-            </button>
           </div>
 
           {error && (
-            <div className="bg-red-950/50 border border-red-800 rounded-xl p-4 text-red-300 text-sm">
-              {error}
+            <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 text-red-600 text-xs font-mono shadow-sm">
+              ⚠ Error: {error}
             </div>
           )}
         </div>
@@ -1573,34 +1612,42 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-950 text-white overflow-y-auto relative">
-      {/* Dynamic ambient header glow */}
-      <div className="absolute top-0 left-1/4 w-96 h-32 bg-cyan-500/10 blur-[100px] pointer-events-none" />
-
+    <div className="flex-1 flex flex-col h-full bg-transparent text-slate-900 overflow-y-auto relative">
       {/* Top Banner */}
-      <div className="shrink-0 border-b border-slate-800 bg-slate-900/95 backdrop-blur-xl px-3 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sticky top-0 z-30">
-        <div className="flex items-center gap-3 ml-10">
+      <div className="shrink-0 border-b border-slate-200/80 bg-white/70 backdrop-blur-md px-3 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sticky top-0 z-30">
+        <div className="flex items-center gap-3 min-w-0">
+          {!sidebarOpen && (
+            <button
+              onClick={onToggleSidebar}
+              className="text-slate-500 hover:text-blue-600 transition-all p-1.5 hover:bg-slate-100 rounded-lg border border-slate-200/60 flex items-center justify-center cursor-pointer md:hidden"
+              title="Open Menu"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
+            </button>
+          )}
           <div className="min-w-0">
-            <h1 className="text-base sm:text-xl font-display font-bold text-white tracking-wide truncate">
-              <span className="text-cyan-500">🛡️</span> ADMIN GATEWAY
+            <h1 className="text-base sm:text-xl font-display font-black text-slate-900 tracking-wide truncate">
+              🛡️ ADMIN GATEWAY
             </h1>
           </div>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-2 bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800 font-mono text-[10px]">
+        <div className="flex items-center justify-between sm:justify-end gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border-2 border-slate-200 font-mono text-[11px]">
           <div className="flex items-center gap-2 truncate">
-            <span className="text-slate-500 select-none">ID:</span>
-            <span className="text-white font-bold truncate max-w-[100px]">{authUser?.full_name}</span>
+            <span className="text-slate-500 select-none font-bold">OPERATOR:</span>
+            <span className="text-slate-900 font-bold truncate max-w-[120px]">{authUser?.full_name}</span>
           </div>
-          <span className="px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-bold uppercase text-[9px] shrink-0">
+          <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200 font-bold uppercase text-[9px] shrink-0">
             {effectiveRole}
           </span>
         </div>
       </div>
 
-      {/* Tabs navigation — horizontally scrollable on mobile; fade-right indicates overflow */}
+      {/* Tabs navigation */}
       <div className="relative shrink-0">
-        <div className="px-3 sm:px-6 pt-2 sm:pt-4 flex flex-nowrap gap-1 sm:gap-2 border-b border-slate-800/60 overflow-x-auto scrollbar-none">
+        <div className="px-3 sm:px-6 pt-2 sm:pt-4 flex flex-nowrap gap-1 sm:gap-2 border-b-2 border-slate-200 overflow-x-auto scrollbar-none">
           {[
             { id: 'overview', label: 'Analytics', icon: '📊' },
             { id: 'users', label: 'Users', icon: '👥' },
@@ -1610,10 +1657,10 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`shrink-0 flex items-center gap-2 px-3 sm:px-4 py-2 border-b-2 font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`shrink-0 flex items-center gap-2 px-3 sm:px-4 py-2 border-b-2 font-display text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === tab.id
-                  ? 'border-cyan-500 text-cyan-400 bg-slate-900/40 rounded-t-lg'
-                  : 'border-transparent text-slate-500 hover:text-slate-300'
+                  ? 'border-blue-600 text-blue-700 bg-blue-50/60 rounded-t-xl'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50/50 rounded-t-xl'
               }`}
             >
               <span>{tab.icon}</span>
@@ -1623,20 +1670,18 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
           <button
             onClick={fetchDashboardData}
             disabled={loading}
-            className="ml-auto my-auto p-1.5 text-slate-500 hover:text-cyan-400 transition-colors rounded-lg hover:bg-slate-900 shrink-0"
+            className="ml-auto my-auto p-2 text-slate-400 hover:text-blue-600 transition-colors rounded-xl hover:bg-slate-100 shrink-0 cursor-pointer"
             title="Refresh Data"
           >
-            <svg className={`w-4 h-4 ${loading ? 'animate-spin text-cyan-500' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <svg className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           </button>
         </div>
-        {/* Right-edge scroll fade — signals that more tabs exist off screen on mobile */}
-        <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-slate-900 to-transparent sm:hidden" aria-hidden />
       </div>
 
       {/* Tab content wrappers */}
       <div className="flex-1 p-3 sm:p-6 max-w-7xl w-full mx-auto space-y-4 sm:space-y-6">
         {error && (
-          <div className="bg-red-950/40 border border-red-800 text-red-300 p-3 rounded-lg text-xs font-mono">
+          <div className="bg-red-50 border-2 border-red-200 text-red-600 p-3 rounded-2xl text-xs font-mono shadow-sm">
             ⚠️ Gateway Error: {error}
           </div>
         )}
@@ -1647,20 +1692,19 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             {/* Stats Row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'TOTAL SK EVENTS',    val: stats.totalEvents,                                       color: 'border-blue-500/30 text-blue-400',       icon: '📅' },
-                { label: 'ACTIVE ATTENDEES',    val: (stats.totalAttendees ?? 0).toLocaleString(),            color: 'border-cyan-500/30 text-cyan-400',        icon: '🙋‍♂️' },
-                { label: 'BUDGET UTILIZED',     val: `₱${(stats.totalBudget ?? 0).toLocaleString()}`,         color: 'border-emerald-500/30 text-emerald-400',  icon: '💰' },
-                { label: 'PENDING SUGGESTIONS', val: stats.pendingSuggestions,                                color: 'border-amber-500/30 text-amber-400',      icon: '📬' },
+                { label: 'TOTAL SK EVENTS',    val: stats.totalEvents,                                       color: 'border-blue-200 text-blue-600',       icon: '📅' },
+                { label: 'ACTIVE ATTENDEES',    val: (stats.totalAttendees ?? 0).toLocaleString(),            color: 'border-cyan-200 text-cyan-600',        icon: '🙋‍♂️' },
+                { label: 'BUDGET UTILIZED',     val: `₱${(stats.totalBudget ?? 0).toLocaleString()}`,         color: 'border-emerald-200 text-emerald-600',  icon: '💰' },
+                { label: 'PENDING SUGGESTIONS', val: stats.pendingSuggestions,                                color: 'border-amber-200 text-amber-600',      icon: '📬' },
               ].map((st, i) => (
-                <div key={i} className={`bg-slate-900/40 border ${st.color} rounded-xl p-4 relative group hover:bg-slate-900/80 transition-all overflow-hidden`}>
+                <div key={i} className={`bg-white border-2 ${st.color} rounded-2xl p-5 relative group hover:shadow-md transition-all overflow-hidden`}>
                   <div className="flex justify-between items-start">
                     <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest">{st.label}</span>
-                    <span className="text-sm opacity-60 select-none">{st.icon}</span>
+                    <span className="text-base select-none">{st.icon}</span>
                   </div>
-                  <div className="mt-2 text-2xl sm:text-3xl font-display font-black tracking-tight text-white group-hover:scale-105 origin-left transition-transform">
+                  <div className="mt-2 text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 group-hover:scale-105 origin-left transition-transform">
                     {st.val ?? '—'}
                   </div>
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-current to-transparent opacity-20 group-hover:opacity-100 transition-opacity" />
                 </div>
               ))}
             </div>
@@ -1668,17 +1712,17 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             {/* Side-by-Side Charts Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Participation Bar Chart */}
-              <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex flex-col h-[360px]">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
-                  <h3 className="text-xs font-mono text-slate-400 uppercase tracking-wider font-bold flex items-center gap-2 m-0">
-                    <span className="w-2 h-2 rounded-full bg-cyan-500" /> Event Statistics
+              <div className="bg-white border-2 border-slate-200 rounded-2xl p-5 flex flex-col h-[400px] shadow-sm">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
+                  <h3 className="text-xs font-display text-slate-800 uppercase tracking-wider font-bold flex items-center gap-2 m-0">
+                    <span className="w-2 h-2 rounded-full bg-blue-600" /> Event Statistics
                   </h3>
                   <div className="flex items-center gap-2 text-[10px] font-mono shrink-0">
-                    <span className="text-slate-500">Sort:</span>
+                    <span className="text-slate-500 font-bold">Sort:</span>
                     <select
                       value={leaderboardSortBy}
                       onChange={e => setLeaderboardSortBy(e.target.value)}
-                      className="bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-slate-300 focus:outline-none focus:border-cyan-500"
+                      className="bg-slate-50 border-2 border-slate-200 rounded-lg px-2 py-0.5 text-slate-800 focus:outline-none focus:border-blue-600 font-bold"
                     >
                       <option value="date">Date</option>
                       <option value="attendees">Attendees</option>
@@ -1686,16 +1730,16 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     </select>
                     <button
                       onClick={() => setLeaderboardSortAsc(!leaderboardSortAsc)}
-                      className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-cyan-400 transition-colors"
+                      className="p-1 hover:bg-slate-100 rounded text-slate-600 hover:text-blue-600 transition-colors cursor-pointer"
                       title={leaderboardSortAsc ? "Ascending" : "Descending"}
                     >
                       {leaderboardSortAsc ? '▲' : '▼'}
                     </button>
-                    <span className="text-slate-500 ml-2 border-l border-slate-800 pl-2">Show:</span>
+                    <span className="text-slate-400 ml-1 border-l border-slate-200 pl-2 font-bold">Show:</span>
                     <select
                       value={leaderboardLimit}
                       onChange={e => setLeaderboardLimit(e.target.value)}
-                      className="bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-slate-300 focus:outline-none focus:border-cyan-500"
+                      className="bg-slate-50 border-2 border-slate-200 rounded-lg px-2 py-0.5 text-slate-800 focus:outline-none focus:border-blue-600 font-bold"
                     >
                       <option value="5">Top 5</option>
                       <option value="10">Top 10</option>
@@ -1712,80 +1756,119 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                         y: sortedParticipationData.map(d => leaderboardSortBy === 'budget' ? (Number(d.budget_allotted) || 0) : (Number(d.attendees) || 0)),
                         text: sortedParticipationData.map(d => `<b>${d.title}</b><br>Date: ${d.date ? new Date(d.date).toLocaleDateString() : 'N/A'}<br>Attendees: ${d.attendees || 0}<br>Budget: ₱${(Number(d.budget_allotted) || 0).toLocaleString()}`),
                         hoverinfo: 'text',
-                        marker: { color: '#06b6d4', opacity: 0.85, line: { color: '#0891b2', width: 1 } }
+                        marker: { color: '#2563eb', opacity: 0.9, line: { color: '#1d4ed8', width: 1.5 } }
                       }]}
                       layout={{
                         autosize: true,
-                        margin: { l: 40, r: 10, t: 10, b: 60 },
+                        margin: { l: 45, r: 10, t: 10, b: 60 },
                         paper_bgcolor: 'rgba(0,0,0,0)',
                         plot_bgcolor: 'rgba(0,0,0,0)',
-                        font: { color: '#94a3b8', family: 'Inter, sans-serif', size: 10 },
+                        font: { color: '#64748b', family: 'Inter, sans-serif', size: 10 },
                         xaxis: { tickangle: -30, fixedrange: true },
-                        yaxis: { gridcolor: '#1e293b', fixedrange: true }
+                        yaxis: { gridcolor: '#e2e8f0', fixedrange: true }
                       }}
                       config={{ displayModeBar: false, responsive: true }}
                       style={{ width: '100%', height: '100%' }}
                       useResizeHandler
                     />
                   ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-xs font-mono text-slate-600">No attendance data collected</div>
+                    <div className="absolute inset-0 flex items-center justify-center text-xs font-mono text-slate-400">No attendance data collected</div>
                   )}
                 </div>
               </div>
 
-              {/* Budget Donut Chart */}
-              <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex flex-col h-[360px]">
-                <h3 className="text-xs font-mono text-slate-400 uppercase tracking-wider mb-2 font-bold flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" /> Budget Allocation by Category
-                </h3>
-                <div className="flex-1 w-full relative">
-                  {budgetData.length > 0 ? (
-                    <Plot
-                      data={[{
-                        type: 'pie',
-                        hole: 0.55,
-                        labels: budgetData.map(d => (d.category || 'general').toUpperCase()),
-                        values: budgetData.map(d => d.total_budget),
-                        marker: { colors: ['#10b981', '#06b6d4', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'] },
-                        textinfo: 'label+percent'
-                      }]}
-                      layout={{
-                        autosize: true,
-                        margin: { l: 10, r: 10, t: 10, b: 10 },
-                        paper_bgcolor: 'rgba(0,0,0,0)',
-                        plot_bgcolor: 'rgba(0,0,0,0)',
-                        font: { color: '#94a3b8', family: 'Inter, sans-serif', size: 10 },
-                        showlegend: true,
-                        legend: { orientation: 'h', y: -0.1 }
-                      }}
-                      config={{ displayModeBar: false, responsive: true }}
-                      style={{ width: '100%', height: '100%' }}
-                      useResizeHandler
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-xs font-mono text-slate-600">No budget allotments recorded</div>
-                  )}
-                </div>
-              </div>
+              {/* Budget Donut Chart — Overlap-free design with filtered zero slices & clean breakdown grid */}
+              {(() => {
+                const activeBudgetData = budgetData.filter(d => Number(d.total_budget) > 0);
+                const totalBudgetValue = activeBudgetData.reduce((sum, d) => sum + (Number(d.total_budget) || 0), 0);
+                const budgetPalette = ['#2563eb', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#f97316', '#6366f1', '#14b8a6'];
+
+                return (
+                  <div className="bg-white border-2 border-slate-200 rounded-2xl p-5 flex flex-col h-[400px] shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-xs font-display text-slate-800 uppercase tracking-wider font-bold flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" /> Budget Allocation by Category
+                      </h3>
+                      <span className="text-[11px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">
+                        Total: ₱{totalBudgetValue.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="flex-1 w-full relative min-h-[170px]">
+                      {activeBudgetData.length > 0 ? (
+                        <Plot
+                          data={[{
+                            type: 'pie',
+                            hole: 0.6,
+                            labels: activeBudgetData.map(d => (d.category || 'general').toUpperCase()),
+                            values: activeBudgetData.map(d => Number(d.total_budget)),
+                            marker: { colors: budgetPalette },
+                            textposition: 'inside',
+                            textinfo: 'percent',
+                            insidetextorientation: 'radial',
+                            hoverinfo: 'label+value+percent',
+                            hovertemplate: '<b>%{label}</b><br>Budget: ₱%{value:,.2f}<br>Share: %{percent}<extra></extra>'
+                          }]}
+                          layout={{
+                            autosize: true,
+                            margin: { l: 5, r: 5, t: 5, b: 5 },
+                            paper_bgcolor: 'rgba(0,0,0,0)',
+                            plot_bgcolor: 'rgba(0,0,0,0)',
+                            font: { color: '#ffffff', family: 'Inter, sans-serif', size: 10, weight: 700 },
+                            showlegend: false
+                          }}
+                          config={{ displayModeBar: false, responsive: true }}
+                          style={{ width: '100%', height: '100%' }}
+                          useResizeHandler
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-xs font-mono text-slate-400">No budget allotments recorded</div>
+                      )}
+                    </div>
+
+                    {/* Clean, Non-Overlapping Structured Category Legend & Share Table */}
+                    {activeBudgetData.length > 0 && (
+                      <div className="mt-2 max-h-32 overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 gap-1.5 font-mono text-[11px] scrollbar-thin">
+                        {activeBudgetData.map((item, idx) => {
+                          const pct = totalBudgetValue > 0 ? ((Number(item.total_budget) / totalBudgetValue) * 100).toFixed(1) : '0';
+                          const color = budgetPalette[idx % budgetPalette.length];
+                          return (
+                            <div key={item.category || idx} className="flex items-center justify-between p-1.5 rounded-xl bg-slate-50 border border-slate-200">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: color }} />
+                                <span className="font-bold text-slate-800 uppercase truncate text-[10px]">{item.category || 'General'}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="font-semibold text-slate-600 text-[10px]">₱{Number(item.total_budget).toLocaleString()}</span>
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200">{pct}%</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Recent Activity Feed */}
-            <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-4">
-              <h3 className="text-xs font-mono text-slate-400 uppercase tracking-wider mb-3 font-bold">Recent System Trajectory (Admin Log Preview)</h3>
+            <div className="bg-white border-2 border-slate-200 rounded-2xl p-5 shadow-sm">
+              <h3 className="text-xs font-display text-slate-800 uppercase tracking-wider mb-3 font-bold">Recent System Trajectory (Admin Log Preview)</h3>
               <div className="space-y-2">
                 {logs.slice(0, 8).map((lg, i) => (
-                  <div key={i} className="flex items-center gap-3 text-xs font-mono py-1.5 px-3 bg-slate-950/40 rounded-lg border border-slate-900 hover:border-slate-800">
-                    <span className="text-[10px] text-cyan-500/80 shrink-0 tracking-wide">{formatSGT(lg.created_at)}</span>
-                    <span className="px-1.5 py-0.5 bg-slate-800 text-cyan-400 rounded text-[10px] font-bold uppercase">{lg.role}</span>
-                    <span className="text-slate-300 truncate max-w-[150px] font-semibold">{lg.actor}</span>
+                  <div key={i} className="flex items-center gap-3 text-xs font-mono py-2 px-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/30 transition-colors">
+                    <span className="text-[10px] text-blue-600 shrink-0 font-bold tracking-wide">{formatSGT(lg.created_at)}</span>
+                    <span className="px-2 py-0.5 bg-slate-200 text-slate-800 rounded-lg text-[9px] font-bold uppercase">{lg.role}</span>
+                    <span className="text-slate-900 truncate max-w-[150px] font-bold">{lg.actor}</span>
                     <span className="text-slate-400 shrink-0">→</span>
-                    <span className="text-cyan-300 font-bold">{lg.action}</span>
+                    <span className="text-blue-700 font-bold">{lg.action}</span>
                     {lg.target && <span className="text-slate-500 truncate max-w-[180px]">({lg.target})</span>}
-                    <span className="ml-auto text-slate-600 truncate text-[11px] max-w-[250px] hidden sm:inline">{lg.details}</span>
+                    <span className="ml-auto text-slate-500 truncate text-[11px] max-w-[250px] hidden sm:inline">{lg.details}</span>
                   </div>
                 ))}
                 {logs.length === 0 && (
-                  <p className="text-xs font-mono text-slate-600 py-4 text-center">No logs generated yet. Perform actions to populate trajectory.</p>
+                  <p className="text-xs font-mono text-slate-400 py-4 text-center">No logs generated yet. Perform actions to populate trajectory.</p>
                 )}
               </div>
             </div>
@@ -1794,15 +1877,15 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
 
         {/* --- USERS TAB --- */}
         {activeTab === 'users' && (
-          <div className="bg-slate-900/30 border border-slate-800 rounded-xl overflow-hidden flex flex-col">
-            <div className="p-4 bg-slate-900/60 border-b border-slate-800 flex items-center justify-between flex-wrap gap-2">
-              <span className="text-xs font-mono text-slate-400 uppercase tracking-wider font-bold">
+          <div className="bg-white border-2 border-slate-200 rounded-2xl overflow-hidden flex flex-col shadow-sm">
+            <div className="p-4 bg-slate-50 border-b-2 border-slate-200 flex items-center justify-between flex-wrap gap-2">
+              <span className="text-xs font-display text-slate-700 uppercase tracking-wider font-bold">
                 Registered Operators ({users.filter(u => u.role !== 'youth').length})
               </span>
               {effectiveRole === 'admin' && (
                 <button
                   onClick={() => setShowAddUser(true)}
-                  className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-mono font-bold uppercase transition-all tracking-wider flex items-center gap-1 shadow-sm cursor-pointer"
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-xl text-xs font-display font-bold uppercase transition-all tracking-wider flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
                 >
                   <span>+</span> Authorize Account
                 </button>
@@ -1811,7 +1894,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs font-mono">
-                <thead className="bg-slate-950/80 text-slate-500 uppercase tracking-wider border-b border-slate-800">
+                <thead className="bg-slate-100 text-slate-600 uppercase tracking-wider border-b-2 border-slate-200">
                   <tr>
                     <th className="p-3">Username</th>
                     <th className="p-3">Identity / Alias</th>
@@ -1821,24 +1904,24 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     {effectiveRole === 'admin' && <th className="p-3 text-right">Privilege Controls</th>}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
+                <tbody className="divide-y divide-slate-100">
                   {users.filter(u => u.role !== 'youth').map(usr => (
-                    <tr key={usr.id} className="hover:bg-slate-900/40 transition-colors">
-                      <td className="p-3 font-bold text-cyan-400">{usr.username}</td>
-                      <td className="p-3 text-white">{usr.full_name}</td>
+                    <tr key={usr.id} className="hover:bg-blue-50/30 transition-colors">
+                      <td className="p-3 font-bold text-blue-700">{usr.username}</td>
+                      <td className="p-3 text-slate-900 font-semibold">{usr.full_name}</td>
                       <td className="p-3">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${
-                          usr.role === 'admin' ? 'bg-red-950 text-red-400 border border-red-800' :
-                          usr.role === 'chairman' ? 'bg-blue-950 text-blue-400 border border-blue-800' :
-                          usr.role === 'officer' ? 'bg-cyan-950 text-cyan-400 border border-cyan-800' :
-                          'bg-slate-900 text-slate-400'
+                          usr.role === 'admin' ? 'bg-red-100 text-red-800 border border-red-200' :
+                          usr.role === 'chairman' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                          usr.role === 'officer' ? 'bg-cyan-100 text-cyan-800 border border-cyan-200' :
+                          'bg-slate-100 text-slate-700'
                         }`}>
                           {usr.role}
                         </span>
                       </td>
                       <td className="p-3">
-                        <span className={`flex items-center gap-1.5 font-bold ${usr.status === 'active' ? 'text-emerald-400' : 'text-slate-600'}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${usr.status === 'active' ? 'bg-emerald-500' : 'bg-slate-600'}`} />
+                        <span className={`flex items-center gap-1.5 font-bold ${usr.status === 'active' ? 'text-emerald-700' : 'text-slate-400'}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${usr.status === 'active' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                           {usr.status.toUpperCase()}
                         </span>
                       </td>
@@ -1848,13 +1931,13 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                           <div className="flex items-center justify-end gap-2 flex-wrap">
                             {/* Lockout badge + lift button — admin-only, only when locked */}
                             {usr.locked && (
-                              <div className="flex items-center gap-1.5 bg-red-950/60 border border-red-800/40 rounded px-2 py-0.5">
-                                <span className="text-[9px] font-mono text-red-400 tabular-nums">
+                              <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-xl px-2 py-0.5">
+                                <span className="text-[9px] font-mono text-red-700 tabular-nums">
                                   🔒 {Math.ceil(usr.lockedRemainingSec / 60)}m locked
                                 </span>
                                 <button
                                   onClick={() => handleLiftLockout(usr.username)}
-                                  className="text-[9px] font-mono font-bold text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
+                                  className="text-[9px] font-mono font-bold text-amber-700 hover:text-amber-800 underline underline-offset-2 transition-colors cursor-pointer"
                                 >
                                   Lift
                                 </button>
@@ -1862,14 +1945,14 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                             )}
                             <button
                               onClick={() => { setEditUser(usr); setEditUserConfirmPw(''); setEditUserToken(''); }}
-                              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] font-bold uppercase transition-colors"
+                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold uppercase transition-colors border border-slate-200 cursor-pointer"
                             >
                               Edit
                             </button>
                             {usr.username !== 'admin' && (
                               <button
                                 onClick={() => handleDeactivateUser(usr)}
-                                className="px-2 py-1 bg-red-950/60 hover:bg-red-900 text-red-400 rounded text-[10px] font-bold uppercase transition-colors"
+                                className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-[10px] font-bold uppercase transition-colors border border-red-200 cursor-pointer"
                               >
                                 Deactivate
                               </button>
@@ -1881,7 +1964,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   ))}
                   {users.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="p-6 text-center text-slate-600 font-mono">No accounts retrieved</td>
+                      <td colSpan={6} className="p-6 text-center text-slate-400 font-mono">No accounts retrieved</td>
                     </tr>
                   )}
                 </tbody>
@@ -1892,28 +1975,28 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
 
         {/* --- SYSTEM LOGS TAB (Admin Only) --- */}
         {activeTab === 'logs' && effectiveRole === 'admin' && (
-          <div className="bg-slate-900/30 border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+          <div className="bg-white border-2 border-slate-200 rounded-2xl overflow-hidden flex flex-col shadow-sm">
             {/* Filter controls row */}
-            <div className="p-4 bg-slate-900/60 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <div className="p-4 bg-slate-50 border-b-2 border-slate-200 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <input
                   type="text"
                   placeholder="Filter Actor…"
                   value={logActorFilter}
                   onChange={e => { setLogActorFilter(e.target.value); setLogsPage(1); }}
-                  className="bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500 placeholder-slate-600"
+                  className="bg-white border-2 border-slate-200 rounded-xl px-3 py-1.5 text-xs font-mono text-slate-800 focus:outline-none focus:border-blue-600 placeholder-slate-400 shadow-sm"
                 />
                 <input
                   type="text"
                   placeholder="Filter Action…"
                   value={logActionFilter}
                   onChange={e => { setLogActionFilter(e.target.value); setLogsPage(1); }}
-                  className="bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500 placeholder-slate-600"
+                  className="bg-white border-2 border-slate-200 rounded-xl px-3 py-1.5 text-xs font-mono text-slate-800 focus:outline-none focus:border-blue-600 placeholder-slate-400 shadow-sm"
                 />
                 {(logActorFilter || logActionFilter) && (
                   <button
                     onClick={() => { setLogActorFilter(''); setLogActionFilter(''); }}
-                    className="text-[10px] font-mono text-amber-500 hover:text-amber-400 underline"
+                    className="text-[10px] font-mono text-blue-600 hover:text-blue-700 underline font-bold cursor-pointer"
                   >
                     Reset Filters
                   </button>
@@ -1922,7 +2005,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
 
               <button
                 onClick={handleExportLogs}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-mono font-bold uppercase transition-colors flex items-center gap-1.5 ml-auto cursor-pointer"
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-display font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 ml-auto cursor-pointer shadow-sm active:scale-95"
               >
                 <span>📥</span> Export Logs (CSV)
               </button>
@@ -1931,7 +2014,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             {/* Logs Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs font-mono whitespace-nowrap">
-                <thead className="bg-slate-950/80 text-slate-500 uppercase tracking-wider border-b border-slate-800">
+                <thead className="bg-slate-100 text-slate-600 uppercase tracking-wider border-b-2 border-slate-200">
                   <tr>
                     <th className="p-3">Timestamp</th>
                     <th className="p-3">Actor Entity</th>
@@ -1942,23 +2025,23 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     <th className="p-3">IP Source</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
+                <tbody className="divide-y divide-slate-100">
                   {logs.map(lg => (
-                    <tr key={lg.id} className="hover:bg-slate-900/40 transition-colors">
-                      <td className="p-3 text-cyan-400/80 tracking-wide">{formatSGT(lg.created_at)}</td>
-                      <td className="p-3 font-bold text-white">{lg.actor}</td>
+                    <tr key={lg.id} className="hover:bg-blue-50/30 transition-colors">
+                      <td className="p-3 text-blue-700 font-bold tracking-wide">{formatSGT(lg.created_at)}</td>
+                      <td className="p-3 font-bold text-slate-900">{lg.actor}</td>
                       <td className="p-3">
-                        <span className="px-1.5 py-0.5 bg-slate-800 text-cyan-400 rounded text-[10px] font-bold uppercase">{lg.role}</span>
+                        <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 rounded text-[10px] font-bold uppercase">{lg.role}</span>
                       </td>
-                      <td className="p-3 font-bold text-cyan-400">{lg.action}</td>
-                      <td className="p-3 text-slate-400 max-w-[150px] truncate">{lg.target || '—'}</td>
-                      <td className="p-3 text-slate-300 whitespace-normal min-w-[200px]">{lg.details || '—'}</td>
-                      <td className="p-3 text-slate-600 font-mono text-[11px]">{lg.ip_address || 'local'}</td>
+                      <td className="p-3 font-bold text-blue-700">{lg.action}</td>
+                      <td className="p-3 text-slate-600 max-w-[150px] truncate">{lg.target || '—'}</td>
+                      <td className="p-3 text-slate-800 whitespace-normal min-w-[200px]">{lg.details || '—'}</td>
+                      <td className="p-3 text-slate-400 font-mono text-[11px]">{lg.ip_address || 'local'}</td>
                     </tr>
                   ))}
                   {logs.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="p-6 text-center text-slate-600 font-mono">No telemetry events map matching filters</td>
+                      <td colSpan={7} className="p-6 text-center text-slate-400 font-mono">No telemetry events map matching filters</td>
                     </tr>
                   )}
                 </tbody>
@@ -1967,20 +2050,20 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
 
             {/* Pagination controls */}
             {logsTotalPages > 1 && (
-              <div className="p-3 bg-slate-950/40 border-t border-slate-800 flex items-center justify-between text-xs font-mono text-slate-500">
+              <div className="p-3 bg-slate-50 border-t-2 border-slate-200 flex items-center justify-between text-xs font-mono text-slate-600">
                 <span>Page {logsPage} of {logsTotalPages}</span>
-                <div className="flex gap-1">
+                <div className="flex gap-1.5">
                   <button
                     onClick={() => setLogsPage(p => Math.max(1, p - 1))}
                     disabled={logsPage === 1}
-                    className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 rounded border border-slate-800 text-slate-300 cursor-pointer"
+                    className="px-3 py-1 bg-white hover:bg-slate-100 disabled:opacity-40 rounded-xl border border-slate-200 text-slate-700 cursor-pointer shadow-sm font-bold"
                   >
                     ◀ Prev
                   </button>
                   <button
                     onClick={() => setLogsPage(p => Math.min(logsTotalPages, p + 1))}
                     disabled={logsPage === logsTotalPages}
-                    className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 rounded border border-slate-800 text-slate-300 cursor-pointer"
+                    className="px-3 py-1 bg-white hover:bg-slate-100 disabled:opacity-40 rounded-xl border border-slate-200 text-slate-700 cursor-pointer shadow-sm font-bold"
                   >
                     Next ▶
                   </button>
@@ -1999,85 +2082,85 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
       {/* --- ADD USER MODAL --- */}
       {showAddUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowAddUser(false)} />
-          <div className="relative bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md shadow-2xl space-y-4 z-10">
-            <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <span className="text-cyan-500">⚡</span> Authorize New Account
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAddUser(false)} />
+          <div className="relative bg-white border-2 border-slate-300 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4 z-10 text-slate-900">
+            <h3 className="text-sm font-display font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <span className="text-blue-600">⚡</span> Authorize New Account
             </h3>
             <form onSubmit={handleCreateUser} className="space-y-3 font-mono text-xs">
               <div>
-                <label className="text-slate-400 block mb-1">Account ID (Username)</label>
+                <label className="text-slate-700 block mb-1 font-bold">Account ID (Username)</label>
                 <input
                   type="text"
                   required
                   value={newUser.username}
                   onChange={e => setNewUser({ ...newUser, username: e.target.value })}
                   placeholder="e.g. jdelacruz"
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-600 shadow-sm"
                 />
               </div>
               <div>
-                <label className="text-slate-400 block mb-1">Full Legal Name</label>
+                <label className="text-slate-700 block mb-1 font-bold">Full Legal Name</label>
                 <input
                   type="text"
                   required
                   value={newUser.full_name}
                   onChange={e => setNewUser({ ...newUser, full_name: e.target.value })}
                   placeholder="e.g. Juan Dela Cruz"
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-600 shadow-sm"
                 />
               </div>
               <div>
-                <label className="text-slate-400 block mb-1">Privilege Tier</label>
+                <label className="text-slate-700 block mb-1 font-bold">Privilege Tier</label>
                 <select
                   value={newUser.role}
                   onChange={e => setNewUser({ ...newUser, role: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-600 shadow-sm"
                 >
                   <option value="admin">Admin</option>
-                  <option value="chairman" disabled={hasChairman} className={hasChairman ? 'text-slate-600' : ''}>
+                  <option value="chairman" disabled={hasChairman} className={hasChairman ? 'text-slate-400' : ''}>
                     Chairman{hasChairman ? ' (Already Assigned)' : ''}
                   </option>
                   <option value="officer">Officer</option>
                 </select>
                 {newUser.role === 'chairman' && hasChairman && (
-                  <p className="mt-1 text-amber-500 text-[10px]">⚠ A Chairman already exists. Only one Chairman is allowed.</p>
+                  <p className="mt-1 text-amber-600 text-[10px]">⚠ A Chairman already exists. Only one Chairman is allowed.</p>
                 )}
               </div>
               <div>
-                <label className="text-slate-400 block mb-1">Authentication Passkey</label>
+                <label className="text-slate-700 block mb-1 font-bold">Authentication Passkey</label>
                 <input
                   type="password"
                   required
                   value={newUser.password}
                   onChange={e => setNewUser({ ...newUser, password: e.target.value })}
                   placeholder="••••••••"
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-600 shadow-sm"
                 />
               </div>
-              {/* Token — now required for all account creations */}
-              <div className="border border-red-800/50 bg-red-950/20 rounded-lg p-3 space-y-2">
-                <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest">🔐 Authorization Required</p>
-                <p className="text-slate-500 text-[10px]">Creating an account requires a privileged authorization token.</p>
+              {/* Token — required for account creations */}
+              <div className="border-2 border-red-200 bg-red-50/50 rounded-xl p-3.5 space-y-2">
+                <p className="text-red-700 text-[10px] font-bold uppercase tracking-widest">🔐 Authorization Required</p>
+                <p className="text-slate-600 text-[10px]">Creating an account requires a privileged authorization token.</p>
                 <input
                     type="password"
                     value={newUserToken}
                     onChange={e => setNewUserToken(e.target.value)}
                     placeholder="Enter admin authorization token…"
-                    className="w-full bg-slate-950 border border-red-800/50 rounded px-3 py-2 text-white focus:outline-none focus:border-red-500 text-xs"
+                    className="w-full bg-white border-2 border-red-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-red-500 text-xs shadow-sm"
                   />
-                </div>
-              <div className="flex justify-end gap-2 pt-2">
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => { setShowAddUser(false); setNewUserToken(''); }}
-                  className="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white rounded transition-colors"
+                  className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors font-bold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded transition-colors shadow-sm cursor-pointer"
+                  className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-display font-bold rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
                 >
                   Commit User
                 </button>
@@ -2090,34 +2173,34 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
       {/* --- EDIT USER MODAL --- */}
       {editUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => { setEditUser(null); setEditUserConfirmPw(''); setEditUserToken(''); }} />
-          <div className="relative bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md shadow-2xl space-y-4 z-10 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <span className="text-cyan-500">🔧</span> Modify Account: {editUser.username}
+          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => { setEditUser(null); setEditUserConfirmPw(''); setEditUserToken(''); }} />
+          <div className="relative bg-white border-2 border-slate-300 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4 z-10 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-sm font-display font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <span className="text-blue-600">🔧</span> Modify Account: <span className="font-mono text-blue-600">{editUser.username}</span>
             </h3>
-            <form onSubmit={handleUpdateUser} className="space-y-3 font-mono text-xs">
+            <form onSubmit={handleUpdateUser} className="space-y-3 text-xs">
               <div>
-                <label className="text-slate-400 block mb-1">Full Legal Name</label>
+                <label className="text-slate-700 font-bold block mb-1">Full Legal Name</label>
                 <input
                   type="text"
                   required
                   value={editUser.full_name}
                   onChange={e => setEditUser({ ...editUser, full_name: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-500 font-mono"
                 />
               </div>
               <div>
-                <label className="text-slate-400 block mb-1">Privilege Tier</label>
+                <label className="text-slate-700 font-bold block mb-1">Privilege Tier</label>
                 <select
                   value={editUser.role}
                   onChange={e => setEditUser({ ...editUser, role: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-500 font-mono font-bold"
                 >
                   <option value="admin">Admin</option>
                   <option
                     value="chairman"
                     disabled={hasChairman && editUser.role !== 'chairman'}
-                    className={hasChairman && editUser.role !== 'chairman' ? 'text-slate-600' : ''}
+                    className={hasChairman && editUser.role !== 'chairman' ? 'text-slate-400' : ''}
                   >
                     Chairman{hasChairman && editUser.role !== 'chairman' ? ' (Already Assigned)' : ''}
                   </option>
@@ -2125,11 +2208,11 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                 </select>
               </div>
               <div>
-                <label className="text-slate-400 block mb-1">Status</label>
+                <label className="text-slate-700 font-bold block mb-1">Status</label>
                 <select
                   value={editUser.status}
                   onChange={e => setEditUser({ ...editUser, status: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-500 font-mono font-bold"
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
@@ -2137,55 +2220,55 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
               </div>
 
               {/* Password change section */}
-              <div className="border border-slate-700/50 bg-slate-950/40 rounded-lg p-3 space-y-2">
+              <div className="border-2 border-slate-200 bg-slate-50/70 rounded-xl p-3 space-y-2">
                 <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">Password Change (leave blank to keep current)</p>
                 <div>
-                  <label className="text-slate-400 block mb-1">New Password</label>
+                  <label className="text-slate-700 font-bold block mb-1">New Password</label>
                   <input
                     type="password"
                     value={editUser.password || ''}
                     onChange={e => setEditUser({ ...editUser, password: e.target.value })}
                     placeholder="••••••••"
-                    className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-500 font-mono"
                   />
                 </div>
                 {editUser.password && (
                   <div>
-                    <label className="text-slate-400 block mb-1">Confirm New Password</label>
+                    <label className="text-slate-700 font-bold block mb-1">Confirm New Password</label>
                     <input
                       type="password"
                       value={editUserConfirmPw}
                       onChange={e => setEditUserConfirmPw(e.target.value)}
                       placeholder="••••••••"
-                      className={`w-full bg-slate-950 border rounded px-3 py-2 text-white focus:outline-none ${
+                      className={`w-full bg-white border-2 rounded-xl px-3 py-2 text-slate-900 focus:outline-none font-mono ${
                         editUserConfirmPw && editUser.password !== editUserConfirmPw
-                          ? 'border-red-600 focus:border-red-500'
-                          : 'border-slate-700 focus:border-cyan-500'
+                          ? 'border-red-500 focus:border-red-500'
+                          : 'border-slate-200 focus:border-blue-500'
                       }`}
                     />
                     {editUserConfirmPw && editUser.password !== editUserConfirmPw && (
-                      <p className="mt-1 text-red-500 text-[10px]">Passwords do not match</p>
+                      <p className="mt-1 text-red-500 text-[10px] font-bold">Passwords do not match</p>
                     )}
                   </div>
                 )}
               </div>
 
               {/* Authorization token — ALWAYS required for any modification */}
-              <div className="border border-amber-800/50 bg-amber-950/20 rounded-lg p-3 space-y-1">
-                <p className="text-amber-400 text-[10px] font-bold uppercase tracking-widest">🔐 Authorization Token Required</p>
-                <p className="text-amber-700/80 text-[9px]">Required for all account modifications, including role changes and status updates.</p>
+              <div className="border-2 border-amber-300 bg-amber-50/80 rounded-xl p-3 space-y-1">
+                <p className="text-amber-800 text-[10px] font-bold uppercase tracking-widest">🔐 Authorization Token Required</p>
+                <p className="text-amber-700/80 text-[10px]">Required for all account modifications, including role changes and status updates.</p>
                 <input
                   type="password"
                   required
                   value={editUserToken}
                   onChange={e => setEditUserToken(e.target.value)}
                   placeholder="Enter admin authorization token…"
-                  className="w-full bg-slate-950 border border-amber-800/50 rounded px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-white border-2 border-amber-300 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500 font-mono"
                 />
               </div>
 
               {/* Modal footer: Delete on left, Cancel + Apply on right */}
-              <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/50 mt-2">
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 mt-2">
                 {/* Delete Account — 2-step, only from inside Edit modal, hidden for protected 'admin' */}
                 {editUser.username !== 'admin' ? (
                   <button
@@ -2194,7 +2277,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                       setEditUser(null); setEditUserConfirmPw(''); setEditUserToken('');
                       openDeleteFlow(editUser);
                     }}
-                    className="px-3 py-1.5 bg-red-950/60 hover:bg-red-900/80 text-red-400 hover:text-red-300 text-[10px] font-bold font-mono uppercase rounded border border-red-900/40 transition-colors"
+                    className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs font-bold uppercase rounded-xl border border-red-200 transition-colors"
                   >
                     🗑 Delete Account
                   </button>
@@ -2203,13 +2286,13 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   <button
                     type="button"
                     onClick={() => { setEditUser(null); setEditUserConfirmPw(''); setEditUserToken(''); }}
-                    className="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white rounded transition-colors"
+                    className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors font-bold text-xs cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded transition-colors shadow-sm cursor-pointer"
+                    className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-display font-bold rounded-xl transition-all shadow-md active:scale-95 text-xs cursor-pointer"
                   >
                     Apply Changes
                   </button>
@@ -2224,34 +2307,34 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
       {/* ── Two-step Account Deletion Modal (reachable only from Edit modal) ── */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={cancelDelete} />
-          <div className="relative bg-slate-900 border border-red-900/60 rounded-xl p-6 w-full max-w-sm shadow-2xl space-y-4 z-10">
+          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={cancelDelete} />
+          <div className="relative bg-white border-2 border-red-300 rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4 z-10">
             {deleteStep === 1 ? (
               <>
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🗑️</span>
-                  <h3 className="text-sm font-mono font-bold text-red-400 uppercase tracking-wider">Delete This Account?</h3>
+                  <h3 className="text-sm font-display font-bold text-red-600 uppercase tracking-wider">Delete This Account?</h3>
                 </div>
-                <p className="text-slate-300 text-xs font-mono leading-relaxed">
+                <p className="text-slate-700 text-xs leading-relaxed">
                   You are about to permanently delete the account{' '}
-                  <span className="text-cyan-400 font-bold">{deleteTarget.username}</span>{' '}
+                  <span className="text-blue-600 font-bold font-mono">{deleteTarget.username}</span>{' '}
                   ({deleteTarget.full_name}). Their access will be revoked immediately.
                 </p>
                 <p className="text-slate-500 text-[10px]">This is a destructive action. Proceed to the next step to confirm.</p>
                 <div className="flex justify-end gap-2 pt-1">
-                  <button onClick={cancelDelete} className="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white rounded text-xs font-mono transition-colors">Cancel</button>
-                  <button onClick={() => setDeleteStep(2)} className="px-4 py-1.5 bg-red-700 hover:bg-red-600 text-white font-bold rounded text-xs font-mono transition-colors">Proceed</button>
+                  <button onClick={cancelDelete} className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl text-xs font-bold transition-colors cursor-pointer">Cancel</button>
+                  <button onClick={() => setDeleteStep(2)} className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-colors shadow-md cursor-pointer">Proceed</button>
                 </div>
               </>
             ) : (
               <>
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">⚠️</span>
-                  <h3 className="text-sm font-mono font-bold text-red-400 uppercase tracking-wider">Confirm Deletion of Selected Account</h3>
+                  <h3 className="text-sm font-display font-bold text-red-600 uppercase tracking-wider">Confirm Deletion</h3>
                 </div>
-                <p className="text-slate-300 text-xs font-mono leading-relaxed">
+                <p className="text-slate-700 text-xs leading-relaxed">
                   To finish, type the username{' '}
-                  <span className="text-cyan-400 font-bold">{deleteTarget.username}</span>{' '}
+                  <span className="text-blue-600 font-bold font-mono">{deleteTarget.username}</span>{' '}
                   in the field below.
                 </p>
                 <input
@@ -2260,21 +2343,21 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   onChange={e => setDeleteConfirmInput(e.target.value)}
                   placeholder={`Type "${deleteTarget.username}" to confirm`}
                   autoFocus
-                  className={`w-full bg-slate-950 border rounded px-3 py-2 text-white text-xs font-mono focus:outline-none ${
+                  className={`w-full bg-slate-50 border-2 rounded-xl px-3 py-2 text-slate-900 text-xs font-mono focus:outline-none ${
                     deleteConfirmInput && deleteConfirmInput !== deleteTarget.username
-                      ? 'border-red-600 focus:border-red-500'
-                      : 'border-slate-700 focus:border-cyan-500'
+                      ? 'border-red-500 focus:border-red-500'
+                      : 'border-slate-200 focus:border-blue-500'
                   }`}
                 />
                 {deleteConfirmInput && deleteConfirmInput !== deleteTarget.username && (
-                  <p className="text-red-500 text-[10px] font-mono">Username does not match.</p>
+                  <p className="text-red-500 text-[10px] font-bold">Username does not match.</p>
                 )}
                 <div className="flex justify-end gap-2 pt-1">
-                  <button onClick={cancelDelete} className="px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white rounded text-xs font-mono transition-colors">Cancel</button>
+                  <button onClick={cancelDelete} className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl text-xs font-bold transition-colors cursor-pointer">Cancel</button>
                   <button
                     onClick={handleDeleteUser}
                     disabled={deleteConfirmInput !== deleteTarget.username}
-                    className="px-4 py-1.5 bg-red-700 hover:bg-red-600 disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed text-white font-bold rounded text-xs font-mono transition-colors"
+                    className="px-5 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs transition-colors shadow-md cursor-pointer"
                   >
                     Delete Account
                   </button>
@@ -2551,7 +2634,7 @@ function LoginPage({ apiBase, onLogin }) {
 // ---------------------------------------------------------------------------
 // SuggestionsModule — Phase Feedback & Suggestions
 // ---------------------------------------------------------------------------
-function SuggestionsModule({ authHeaders, authUser, onNavigate }) {
+function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onToggleSidebar }) {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -2620,28 +2703,41 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate }) {
     : suggestions;
 
   const STATUS_BTNS = [
-    { label: 'All', value: null, color: 'border-slate-600 text-slate-400 hover:border-slate-400 hover:text-white', active: 'bg-slate-700 border-slate-500 text-white' },
-    { label: 'Pending', value: 'pending', color: 'border-amber-800/50 text-amber-500 hover:border-amber-500', active: 'bg-amber-900/50 border-amber-600 text-amber-300' },
-    { label: 'Reviewed', value: 'reviewed', color: 'border-blue-800/50 text-blue-500 hover:border-blue-500', active: 'bg-blue-900/50 border-blue-600 text-blue-300' },
-    { label: 'Resolved', value: 'resolved', color: 'border-emerald-800/50 text-emerald-500 hover:border-emerald-500', active: 'bg-emerald-900/50 border-emerald-600 text-emerald-300' },
+    { label: 'All', value: null, color: 'bg-white border-2 border-slate-200 text-slate-600 hover:bg-slate-50', active: 'bg-slate-900 border-2 border-slate-900 text-white shadow-sm' },
+    { label: 'Pending', value: 'pending', color: 'bg-white border-2 border-amber-200 text-amber-700 hover:bg-amber-50', active: 'bg-amber-600 border-2 border-amber-600 text-white shadow-sm' },
+    { label: 'Reviewed', value: 'reviewed', color: 'bg-white border-2 border-blue-200 text-blue-700 hover:bg-blue-50', active: 'bg-blue-600 border-2 border-blue-600 text-white shadow-sm' },
+    { label: 'Resolved', value: 'resolved', color: 'bg-white border-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50', active: 'bg-emerald-600 border-2 border-emerald-600 text-white shadow-sm' },
   ];
 
   return (
-    <div className="flex flex-col h-full bg-slate-950 text-white overflow-auto relative">
-      <div className="h-16 shrink-0 border-b border-slate-800 bg-slate-900/95 backdrop-blur-xl flex items-center px-4 sm:px-6 justify-between sticky top-0 z-30">
-        <span className="text-lg font-bold tracking-wide">💡 Suggestions & Feedback</span>
+    <div className="flex flex-col h-full bg-transparent overflow-y-auto relative text-slate-900">
+      <div className="h-16 shrink-0 border-b border-slate-200/80 bg-white/70 backdrop-blur-md flex items-center px-4 sm:px-6 justify-between sticky top-0 z-30">
+        <div className="flex items-center gap-3 min-w-0">
+          {!sidebarOpen && (
+            <button
+              onClick={onToggleSidebar}
+              className="text-slate-500 hover:text-blue-600 transition-all p-1.5 hover:bg-slate-100 rounded-lg border border-slate-200/60 flex items-center justify-center cursor-pointer md:hidden"
+              title="Open Menu"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
+            </button>
+          )}
+          <span className="text-base sm:text-lg font-display font-black tracking-wider text-slate-900 truncate">💡 SUGGESTIONS &amp; FEEDBACK</span>
+        </div>
       </div>
 
       <div className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-6">
         {/* Youth Submit Form */}
         {isYouth && (
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 shadow-lg">
-            <h2 className="text-sm font-bold text-cyan-400 uppercase tracking-widest mb-3">Submit Feedback</h2>
+          <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm">
+            <h2 className="text-xs font-display font-bold text-blue-600 uppercase tracking-widest mb-3">Submit Feedback</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
               <select
                 value={form.category}
                 onChange={e => setForm({...form, category: e.target.value})}
-                className="w-full sm:w-auto bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
+                className="w-full sm:w-auto bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-blue-600 shadow-sm"
               >
                 <option value="general">General</option>
                 <option value="event">Event Idea</option>
@@ -2653,11 +2749,11 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate }) {
                 onChange={e => setForm({...form, content: e.target.value})}
                 rows={3}
                 placeholder="What's on your mind? (Any suggestions for SK?)"
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 resize-none"
+                className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 resize-none shadow-sm transition-all"
                 required
               />
               <div className="flex justify-end">
-                <button type="submit" disabled={submitting || !form.content.trim()} className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg text-sm disabled:opacity-50 transition-colors">
+                <button type="submit" disabled={submitting || !form.content.trim()} className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-display font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50 transition-all shadow-md active:scale-95 cursor-pointer">
                   {submitting ? 'Submitting...' : 'Submit Suggestion'}
                 </button>
               </div>
@@ -2673,13 +2769,13 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate }) {
               <button
                 key={String(btn.value)}
                 onClick={() => setStatusFilter(btn.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all cursor-pointer ${
                   statusFilter === btn.value ? btn.active : btn.color
                 }`}
               >
                 {btn.label}
                 {btn.value !== null && (
-                  <span className="ml-1.5 opacity-60">
+                  <span className="ml-1.5 opacity-70">
                     ({suggestions.filter(s => s.status === btn.value).length})
                   </span>
                 )}
@@ -2691,46 +2787,46 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate }) {
         {/* List of Suggestions */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest">
+            <h2 className="text-xs font-display font-bold text-slate-700 uppercase tracking-wider">
               {statusFilter ? `${statusFilter} Suggestions` : 'All Suggestions'}
-              <span className="ml-2 text-slate-600">({filteredSuggestions.length})</span>
+              <span className="ml-2 font-mono text-slate-400">({filteredSuggestions.length})</span>
             </h2>
           </div>
           {loading ? (
-            <p className="text-slate-500 text-sm">Loading suggestions...</p>
+            <p className="text-slate-500 font-mono text-sm">Loading suggestions...</p>
           ) : filteredSuggestions.length === 0 ? (
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8 text-center">
-              <p className="text-slate-500">No {statusFilter || ''} suggestions found.</p>
+            <div className="bg-white border-2 border-slate-200 rounded-2xl p-8 text-center shadow-sm">
+              <p className="text-slate-500 font-mono text-sm">No {statusFilter || ''} suggestions found.</p>
             </div>
           ) : (
             <div className="space-y-4">
               {filteredSuggestions.map(s => (
-                <div key={s.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm hover:border-slate-700 transition-colors">
+                <div key={s.id} className="bg-white border-2 border-slate-200 hover:border-slate-300 rounded-2xl p-5 shadow-sm transition-all">
                   <div className="flex justify-between items-start gap-4 mb-2">
                     <div>
-                      <span className="text-[10px] uppercase tracking-widest font-bold bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full mr-2">{s.category}</span>
-                      <span className="text-xs text-slate-500">{new Date(s.created_at.replace(' ', 'T') + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Singapore' })}</span>
+                      <span className="text-[10px] uppercase tracking-widest font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full mr-2">{s.category}</span>
+                      <span className="text-xs font-mono text-slate-400">{new Date(s.created_at.replace(' ', 'T') + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Singapore' })}</span>
                     </div>
-                    <span className={`text-[10px] uppercase font-bold tracking-widest px-2 py-1 rounded-full ${
-                      s.status === 'pending' ? 'bg-amber-900/50 text-amber-400 border border-amber-800/50' :
-                      s.status === 'reviewed' ? 'bg-blue-900/50 text-blue-400 border border-blue-800/50' :
-                      'bg-emerald-900/50 text-emerald-400 border border-emerald-800/50'
+                    <span className={`text-[10px] uppercase font-bold tracking-widest px-2.5 py-0.5 rounded-full ${
+                      s.status === 'pending' ? 'bg-amber-50 text-amber-800 border border-amber-300' :
+                      s.status === 'reviewed' ? 'bg-blue-50 text-blue-800 border border-blue-300' :
+                      'bg-emerald-50 text-emerald-800 border border-emerald-300'
                     }`}>
                       {s.status}
                     </span>
                   </div>
-                  <p className="text-slate-200 text-sm mb-3 leading-relaxed">{s.content}</p>
-                  <p className="text-xs text-slate-500 mb-3">— {s.submitter_name} ({s.submitter_role})</p>
+                  <p className="text-slate-900 text-sm font-medium mb-3 leading-relaxed">{s.content}</p>
+                  <p className="text-xs font-mono text-slate-500 mb-2">— {s.submitter_name} ({s.submitter_role})</p>
 
                   {s.admin_response && (
-                    <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 mt-3">
-                      <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest mb-1">SK Response ({s.responded_by})</p>
-                      <p className="text-slate-300 text-xs">{s.admin_response}</p>
+                    <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3.5 mt-3">
+                      <p className="text-[10px] font-mono font-bold text-blue-800 uppercase tracking-widest mb-1">SK Response ({s.responded_by})</p>
+                      <p className="text-slate-800 text-xs leading-relaxed">{s.admin_response}</p>
                     </div>
                   )}
 
                   {isAdmin && (
-                    <div className="mt-4 pt-4 border-t border-slate-800">
+                    <div className="mt-4 pt-4 border-t border-slate-100">
                       {editingId === s.id ? (
                         <div className="space-y-2">
                           <textarea
@@ -2738,16 +2834,16 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate }) {
                             onChange={e => setAdminResponse(e.target.value)}
                             rows={2}
                             placeholder="Type response to youth..."
-                            className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 resize-none"
+                            className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-600 resize-none"
                           />
                           <div className="flex gap-2">
-                            <button onClick={() => setEditingId(null)} className="px-3 py-1.5 bg-slate-700 text-slate-300 rounded text-xs font-bold hover:bg-slate-600">Cancel</button>
-                            <button onClick={() => handleUpdateStatus(s.id, 'reviewed', adminResponse)} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-500">Mark Reviewed</button>
-                            <button onClick={() => handleUpdateStatus(s.id, 'resolved', adminResponse)} className="px-3 py-1.5 bg-emerald-600 text-white rounded text-xs font-bold hover:bg-emerald-500">Mark Resolved</button>
+                            <button onClick={() => setEditingId(null)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer">Cancel</button>
+                            <button onClick={() => handleUpdateStatus(s.id, 'reviewed', adminResponse)} className="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-500 transition-colors cursor-pointer shadow-sm">Mark Reviewed</button>
+                            <button onClick={() => handleUpdateStatus(s.id, 'resolved', adminResponse)} className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-500 transition-colors cursor-pointer shadow-sm">Mark Resolved</button>
                           </div>
                         </div>
                       ) : (
-                        <button onClick={() => { setEditingId(s.id); setAdminResponse(s.admin_response || ''); }} className="text-xs font-bold text-cyan-500 hover:text-cyan-400 uppercase tracking-widest">
+                        <button onClick={() => { setEditingId(s.id); setAdminResponse(s.admin_response || ''); }} className="text-xs font-display font-bold text-blue-600 hover:text-blue-700 uppercase tracking-wider cursor-pointer">
                           {s.admin_response ? 'Edit Response' : 'Respond to Feedback'}
                         </button>
                       )}
@@ -3610,7 +3706,7 @@ function App() {
         {currentView === 'reports' && <ReportsModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />}
         {currentView === 'admin' && <AdminDashboardModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />}
         {currentView === 'scan' && <ScanAttendance authUser={authUser} />}
-        {currentView === 'suggestions' && <SuggestionsModule authHeaders={authHeaders} authUser={authUser} onNavigate={setCurrentView} />}
+        {currentView === 'suggestions' && <SuggestionsModule authHeaders={authHeaders} authUser={authUser} onNavigate={setCurrentView} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />}
         {currentView === 'chat' && (<>
            
            {/* Top Info Header */}

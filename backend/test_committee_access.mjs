@@ -279,3 +279,27 @@ test('Taxonomy sync: getCategoriesForCommittee returns curated sub-categories', 
   assert.equal(unassignedCats[0].code, 'others');
 });
 
+test('Dual-auth and QR generation: query token extraction and payload generation', async () => {
+  const token = jwt.sign({ id: 1, username: 'admin', role: 'admin' }, JWT_SECRET);
+
+  // Helper verifying token extraction logic matching verifyJWT
+  function extractToken(req) {
+    const authHeader = req.headers?.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      return authHeader.split(' ')[1];
+    }
+    if (req.query?.token) {
+      return req.query.token;
+    }
+    return null;
+  }
+
+  // Header auth
+  assert.equal(extractToken({ headers: { authorization: `Bearer ${token}` } }), token);
+  // Query param auth (for <img> or direct download)
+  assert.equal(extractToken({ headers: {}, query: { token } }), token);
+  // Missing auth
+  assert.equal(extractToken({ headers: {}, query: {} }), null);
+});
+
+

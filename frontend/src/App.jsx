@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import Plot from 'react-plotly.js'
 
 import EventLogModal from './components/EventLogModal'
+import EventQrModal from './components/EventQrModal'
 import ScanAttendance from './pages/ScanAttendance'
 import CommitteeSelect, { getCategoriesForCommittee, COMMITTEE_EVENT_CATEGORIES } from './components/CommitteeSelect'
 import CommitteeBadge, { getCommitteeLabel } from './components/CommitteeBadge'
@@ -1248,29 +1249,17 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
         </div>
       )}
 
-      {/* QR Modal */}
-      {qrEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4" onClick={() => setQrEvent(null)}>
-          <div className="bg-white border-2 border-slate-300 rounded-2xl p-8 max-w-sm flex flex-col items-center shadow-2xl text-slate-900" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-display font-bold text-slate-900 mb-2 text-center">{qrEvent.title}</h3>
-            <p className="text-sm text-slate-500 mb-6 text-center font-mono">Youth can scan this QR code to mark their attendance.</p>
-
-            <div className="bg-white p-4 rounded-2xl mb-6 border-2 border-slate-200 shadow-lg">
-              <img src={`${API_BASE}/api/events/${qrEvent.id}/qr?h=${qrRefreshHash}`} alt="Event QR Code" className="w-48 h-48" />
-            </div>
-
-            {authUser?.role === 'admin' && (
-              <button onClick={() => handleRefreshQR(qrEvent.id)} className="w-full mb-3 px-4 py-2.5 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 transition-colors shadow-sm cursor-pointer font-mono text-xs uppercase tracking-wider">
-                Refresh QR (Admin Only)
-              </button>
-            )}
-
-            <button onClick={() => setQrEvent(null)} className="w-full px-4 py-2.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors shadow-sm cursor-pointer font-mono text-xs uppercase tracking-wider">
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Event QR Modal */}
+      <EventQrModal
+        open={!!qrEvent}
+        onClose={() => setQrEvent(null)}
+        event={qrEvent}
+        authHeaders={authHeaders}
+        isAdmin={authUser?.role === 'admin'}
+        onRefreshQR={handleRefreshQR}
+        qrRefreshHash={qrRefreshHash}
+        apiBase={API_BASE}
+      />
 
       {/* Event Logs Modal */}
       {logEvent && (

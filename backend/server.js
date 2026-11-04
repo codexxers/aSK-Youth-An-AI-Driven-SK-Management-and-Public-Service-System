@@ -1142,11 +1142,18 @@ const JWT_SECRET = process.env.JWT_SECRET || 'askyouth_super_secret_jwt_key_2026
 // ---------------------------------------------------------------------------
 function verifyJWT(req, res, next) {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    let token = null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+    } else if (req.query && req.query.token) {
+        token = req.query.token;
+    }
+
+    if (!token) {
         return res.status(401).json({ error: 'Authentication required.' });
     }
     try {
-        const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+        const decoded = jwt.verify(token, JWT_SECRET);
         if (decoded.isGuest) {
             req.authUser = { id: null, username: 'youth_member', role: 'youth', full_name: 'Youth Member', isGuest: true };
             return next();
@@ -1969,8 +1976,10 @@ app.get('/api/events/:id/qr', verifyElevated, async (req, res) => {
         const qrBuffer = await QRCode.toBuffer(payload, { width: 400, margin: 2, color: { dark: '#111827', light: '#FFFFFF' } });
         
         res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.send(qrBuffer);
     } catch (err) {
+        console.error('[QR Generation Error]', err);
         res.status(500).json({ error: 'Failed to generate QR code' });
     }
 });

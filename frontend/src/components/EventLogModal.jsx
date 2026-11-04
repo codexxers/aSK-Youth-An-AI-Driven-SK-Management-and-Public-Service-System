@@ -118,7 +118,7 @@ export default function EventLogModal({ open, onClose, event: ev, token, authUse
             <div className="mb-6 flex flex-col items-center p-6 bg-slate-50 rounded-2xl border-2 border-slate-200 shadow-sm max-w-sm mx-auto transition-all">
               <div className="bg-white p-3 rounded-xl mb-4 border-2 border-slate-200 shadow-md">
                 <img 
-                  src={`${API_URL}/api/events/${ev.id}/qr?h=${qrRefreshHash}`} 
+                  src={`${API_URL}/api/events/${ev.id}/qr?token=${encodeURIComponent(token || '')}&h=${qrRefreshHash}`} 
                   alt="Event QR Code" 
                   className="w-48 h-48 sm:w-56 sm:h-56 object-contain"
                 />

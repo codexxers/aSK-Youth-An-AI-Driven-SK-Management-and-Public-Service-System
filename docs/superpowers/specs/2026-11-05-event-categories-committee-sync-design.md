@@ -217,3 +217,4 @@ CREATE TABLE events_new (
   - Chairman and Admin can see and delegate `unassigned` events.
   - SQLite CHECK constraint validates committee codes.
   - Frontend production build verification with `npm --prefix frontend run build`.
+

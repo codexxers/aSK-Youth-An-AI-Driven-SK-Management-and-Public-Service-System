@@ -4,7 +4,7 @@ import Plot from 'react-plotly.js'
 
 import EventLogModal from './components/EventLogModal'
 import ScanAttendance from './pages/ScanAttendance'
-import CommitteeSelect from './components/CommitteeSelect'
+import CommitteeSelect, { getCategoriesForCommittee, COMMITTEE_EVENT_CATEGORIES } from './components/CommitteeSelect'
 import CommitteeBadge, { getCommitteeLabel } from './components/CommitteeBadge'
 
 const DEFAULT_PROD_API = 'https://askyouth-backend.onrender.com';
@@ -154,11 +154,14 @@ function EventFormModal({ event, onClose, onSaved, authHeaders, authUser }) {
     ...EMPTY_EVENT_FORM,
     ...event,
     committee: event.committee || defaultCommittee,
+    category: event.category || 'general',
+    category_other_label: event.category_other_label || '',
     staff_count: event.staff_count ?? '',
     budget_allotted: event.budget_allotted ?? ''
   } : {
     ...EMPTY_EVENT_FORM,
-    committee: defaultCommittee
+    committee: defaultCommittee,
+    category: (getCategoriesForCommittee(defaultCommittee)[0]?.code) || 'general'
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -196,6 +199,8 @@ function EventFormModal({ event, onClose, onSaved, authHeaders, authUser }) {
       const body = {
         ...form,
         committee: assignedCommittee,
+        category: form.category || 'general',
+        category_other_label: form.category === 'others' ? (form.category_other_label || '') : null,
         attendees: parseInt(form.attendees) || 0,
         male_count: parseInt(form.male_count) || 0,
         female_count: parseInt(form.female_count) || 0,
@@ -262,17 +267,66 @@ function EventFormModal({ event, onClose, onSaved, authHeaders, authUser }) {
               <CommitteeSelect
                 apiBase={API_BASE}
                 includeGeneral={true}
+                includeUnassigned={true}
                 value={form.committee || 'general'}
-                onChange={e => set('committee', e.target.value)}
+                onChange={e => {
+                  const newComm = e.target.value;
+                  set('committee', newComm);
+                  const cats = getCategoriesForCommittee(newComm);
+                  if (cats.length > 0 && !cats.some(c => c.code === form.category)) {
+                    set('category', cats[0].code);
+                  }
+                }}
                 required
               />
             </div>
           )}
 
-          <div><label className={labelCls}>Category</label><select value={form.category} onChange={e => set('category', e.target.value)} className={inputCls}>{EVENT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-          <div><label className={labelCls}>Status</label><select value={form.status} onChange={e => set('status', e.target.value)} className={inputCls}><option value="upcoming">Upcoming</option><option value="completed">Completed</option></select></div>
+          {/* Dynamic Category Dropdown */}
+          {(() => {
+            const currentComm = isCommitteeUser ? authUser?.committee : (form.committee || 'general');
+            const availableCategories = getCategoriesForCommittee(currentComm);
+            const hasCurrent = availableCategories.some(c => c.code === form.category);
+            const optionsToRender = hasCurrent
+              ? availableCategories
+              : (form.category ? [{ code: form.category, label: form.category.charAt(0).toUpperCase() + form.category.slice(1).replace(/_/g, ' ') }, ...availableCategories] : availableCategories);
+
+            return (
+              <div>
+                <label className={labelCls}>Category</label>
+                <select
+                  value={form.category}
+                  onChange={e => set('category', e.target.value)}
+                  className={inputCls}
+                >
+                  {optionsToRender.map(c => (
+                    <option key={c.code} value={c.code}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+            );
+          })()}
+
+          <div>
+            <label className={labelCls}>Status</label>
+            <select value={form.status} onChange={e => set('status', e.target.value)} className={inputCls}>
+              <option value="upcoming">Upcoming</option>
+              <option value="active">Active</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+
           {form.category === 'others' && (
-            <div className="col-span-1 sm:col-span-2"><label className={labelCls}>Specify Category</label><input value={form.category_other_label || ''} onChange={e => set('category_other_label', e.target.value)} placeholder="e.g. Blood Donation" className={inputCls} /></div>
+            <div className="col-span-1 sm:col-span-2">
+              <label className={labelCls}>Specify Custom Event Category</label>
+              <input
+                value={form.category_other_label || ''}
+                onChange={e => set('category_other_label', e.target.value)}
+                placeholder="e.g. Free Blood Pressure Check & Medical Consultation"
+                className={inputCls}
+                required
+              />
+            </div>
           )}
           <div><label className={labelCls}>Date</label><input type="date" value={form.date} onChange={e => set('date', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Time</label><input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} /></div>
@@ -1129,9 +1183,19 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                       {(() => {
                         const canMutate = ['admin', 'chairman'].includes(authUser?.role) ||
                           (authUser?.role === 'committee' && authUser?.committee && ev.committee === authUser?.committee);
+                        const canAssign = ['admin', 'chairman'].includes(authUser?.role) && ev.committee === 'unassigned';
                         return (
                           <div className="flex flex-col items-end gap-1">
-                            <div className="flex gap-1.5 justify-end">
+                            <div className="flex gap-1.5 justify-end flex-wrap">
+                              {canAssign && (
+                                <button
+                                  onClick={() => setModalEvent(ev)}
+                                  className="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 text-white text-[10px] uppercase font-bold rounded-lg shadow-xs cursor-pointer transition-all"
+                                  title="Assign this event to a committee"
+                                >
+                                  Assign Committee
+                                </button>
+                              )}
                               {canMutate && (
                                 <button onClick={() => setModalEvent(ev)} className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] uppercase font-bold rounded-lg border border-slate-200 cursor-pointer transition-colors">Edit</button>
                               )}

@@ -77,11 +77,18 @@ export const COMMITTEE_METADATA = {
     text: 'text-slate-800',
     border: 'border-slate-300',
     dot: 'bg-slate-500'
+  },
+  unassigned: {
+    label: 'Unassigned (Pending Delegation)',
+    bg: 'bg-amber-50',
+    text: 'text-amber-800',
+    border: 'border-amber-300',
+    dot: 'bg-amber-500'
   }
 };
 
 export function getCommitteeLabel(code) {
-  if (!code) return 'Unassigned Committee';
+  if (!code || code === 'unassigned') return 'Unassigned (Pending Delegation)';
   if (code === 'general') return 'General (Barangay-Wide)';
   return COMMITTEE_METADATA[code]?.label || `${code.charAt(0).toUpperCase() + code.slice(1)} Committee`;
 }
@@ -105,7 +112,7 @@ export default function CommitteeBadge({ committee, className = '', showDot = tr
   };
 
   const label = compact
-    ? meta.label.replace(' Committee', '').replace(' (Barangay-Wide)', '')
+    ? meta.label.replace(' Committee', '').replace(' (Barangay-Wide)', '').replace(' (Pending Delegation)', '')
     : meta.label;
 
   return (

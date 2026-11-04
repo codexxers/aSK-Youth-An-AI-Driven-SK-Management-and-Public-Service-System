@@ -19,11 +19,12 @@ import QRCode from 'qrcode';
 import os from 'os';
 import { generateResponse } from './llm_engine.js';
 import {
-  COMMITTEES, COMMITTEE_CODES, VALID_EVENT_COMMITTEES, CATEGORY_TO_COMMITTEE, committeeLabel
+  COMMITTEES, COMMITTEE_CODES, VALID_EVENT_COMMITTEES, CATEGORY_TO_COMMITTEE, committeeLabel,
+  COMMITTEE_EVENT_CATEGORIES, getCategoriesForCommittee
 } from './committees.js';
 import {
   isAdmin, isChairman, isCommittee, isYouth, isElevated,
-  canViewEventDetails, canMutateEvent, eventScopeSql, eventNotice,
+  canViewEventDetails, canMutateEvent, canAssignCommittee, eventScopeSql, eventNotice,
   validateUserCommittee, validateEventCommittee,
 } from './authz.js';
 
@@ -938,20 +939,65 @@ function runCommitteeBootMigration() {
             console.log('[Migration] users table rebuilt successfully.');
         }
 
-        // 2. Add events.committee column if missing
-        const eventsCols = db.pragma('table_info(events)').map(c => c.name);
-        if (!eventsCols.includes('committee')) {
-            db.exec("ALTER TABLE events ADD COLUMN committee TEXT DEFAULT 'general'");
-            console.log('[Migration] events.committee column added.');
+        // 2. Add events.committee column if missing, and rebuild events if CHECK constraint on committee is missing
+        const eventsCreate = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='events'").get();
+        const needsEventsRebuild = !eventsCreate || !eventsCreate.sql.includes("'unassigned'");
+
+        if (needsEventsRebuild) {
+            console.log('[Migration] Rebuilding events table to apply CHECK constraint on committee (including "unassigned")...');
+            db.exec(`
+                CREATE TABLE events_new (
+                    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title                TEXT NOT NULL,
+                    description          TEXT,
+                    category             TEXT,
+                    category_other_label TEXT,
+                    date                 TEXT,
+                    location             TEXT,
+                    organizer            TEXT,
+                    status               TEXT DEFAULT 'upcoming',
+                    requirements         TEXT,
+                    contact              TEXT,
+                    time                 TEXT DEFAULT '',
+                    attendees            INTEGER DEFAULT 0,
+                    male_count           INTEGER DEFAULT 0,
+                    female_count         INTEGER DEFAULT 0,
+                    staff_count          INTEGER,
+                    budget_allotted      REAL DEFAULT 0,
+                    qr_token             TEXT,
+                    qr_rotated_at        TEXT,
+                    committee            TEXT NOT NULL DEFAULT 'general' CHECK(committee IN ('health','education','economic','social','peacebuilding','governance','citizenship','environment','global','agriculture','general','unassigned')),
+                    needs_review         INTEGER DEFAULT 0
+                );
+            `);
+
+            const existingCols = db.pragma('table_info(events)').map(c => c.name);
+            const otherLabelExpr = existingCols.includes('category_other_label') ? 'category_other_label' : 'NULL';
+            const committeeExpr = existingCols.includes('committee') ? "COALESCE(NULLIF(committee, ''), 'general')" : "'general'";
+            const needsReviewExpr = existingCols.includes('needs_review') ? 'COALESCE(needs_review, 0)' : '0';
+            const qrTokenExpr = existingCols.includes('qr_token') ? 'qr_token' : 'NULL';
+            const qrRotExpr = existingCols.includes('qr_rotated_at') ? 'qr_rotated_at' : 'NULL';
+
+            db.exec(`
+                INSERT INTO events_new (
+                    id, title, description, category, category_other_label, date, location, organizer, status,
+                    requirements, contact, time, attendees, male_count, female_count, staff_count, budget_allotted,
+                    qr_token, qr_rotated_at, committee, needs_review
+                )
+                SELECT
+                    id, title, description, category, ${otherLabelExpr}, date, location, organizer, status,
+                    requirements, contact, time, attendees, male_count, female_count, staff_count, budget_allotted,
+                    ${qrTokenExpr}, ${qrRotExpr}, ${committeeExpr}, ${needsReviewExpr}
+                FROM events;
+            `);
+
+            db.exec(`DROP TABLE events;`);
+            db.exec(`ALTER TABLE events_new RENAME TO events;`);
+            writeLog('System', 'migration', 'rebuild_events', 'events', 'Rebuilt events table with committee CHECK constraint (including unassigned)', null);
+            console.log('[Migration] events table rebuilt successfully with committee CHECK constraint.');
         }
 
-        // 3. Add events.needs_review column if missing
-        if (!eventsCols.includes('needs_review')) {
-            db.exec("ALTER TABLE events ADD COLUMN needs_review INTEGER DEFAULT 0");
-            console.log('[Migration] events.needs_review column added.');
-        }
-
-        // 4. Migrate old category → committee for existing events
+        // 3. Migrate old category → committee for existing events
         const categoryMap = {
             health:      'health',
             seminar:     'education',
@@ -1137,8 +1183,18 @@ function verifyElevated(req, res, next) {
 // GET /api/committees — Single source of truth for 10 Centers of Participation
 // Public endpoint for frontend selectors (no duplicated lists).
 // ---------------------------------------------------------------------------
-app.get('/api/committees', (_req, res) => {
+app.get('/api/committees', (req, res) => {
+    if (req.query.categories === 'true' || req.query.detailed === 'true') {
+        return res.json({
+            committees: COMMITTEES,
+            categories: COMMITTEE_EVENT_CATEGORIES
+        });
+    }
     res.json(COMMITTEES);
+});
+
+app.get('/api/committees/categories', (_req, res) => {
+    res.json(COMMITTEE_EVENT_CATEGORIES);
 });
 
 // ---------------------------------------------------------------------------
@@ -1777,7 +1833,7 @@ app.get('/api/events/:id', verifyJWT, (req, res) => {
 
 // API to create a new event
 app.post('/api/events', verifyElevated, (req, res) => {
-    const { title, description, category, date, time, location, organizer, status, requirements, contact, attendees, male_count, female_count, staff_count, budget_allotted, committee } = req.body;
+    const { title, description, category, category_other_label, date, time, location, organizer, status, requirements, contact, attendees, male_count, female_count, staff_count, budget_allotted, committee } = req.body;
     if (!title || !date) return res.status(400).json({ error: 'title and date are required' });
 
     let eventCommittee = 'general';
@@ -1796,9 +1852,9 @@ app.post('/api/events', verifyElevated, (req, res) => {
         }
     }
 
-    const stmt = db.prepare('INSERT INTO events (title, description, category, committee, date, time, location, organizer, status, requirements, contact, attendees, male_count, female_count, staff_count, budget_allotted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const stmt = db.prepare('INSERT INTO events (title, description, category, category_other_label, committee, date, time, location, organizer, status, requirements, contact, attendees, male_count, female_count, staff_count, budget_allotted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const result = stmt.run(
-        title, description || '', category || 'general', eventCommittee, date, time || '',
+        title, description || '', category || 'general', category_other_label || null, eventCommittee, date, time || '',
         location || '', organizer || '', status || 'upcoming', requirements || '', contact || '',
         parseInt(attendees) || 0, parseInt(male_count) || 0, parseInt(female_count) || 0,
         staff_count != null && staff_count !== '' ? parseInt(staff_count) : null,
@@ -1822,7 +1878,7 @@ app.patch('/api/events/:id', verifyElevated, (req, res) => {
     }
 
     const fields = req.body;
-    const allowed = ['title','description','category','date','time','location','organizer','status','requirements','contact','attendees','male_count','female_count','staff_count','budget_allotted'];
+    const allowed = ['title','description','category','category_other_label','date','time','location','organizer','status','requirements','contact','attendees','male_count','female_count','staff_count','budget_allotted'];
     if (isAdmin(req.authUser) || isChairman(req.authUser)) {
         allowed.push('committee');
         if (fields.committee) {
@@ -1842,6 +1898,35 @@ app.patch('/api/events/:id', verifyElevated, (req, res) => {
     const role  = req.authUser.role || 'admin';
     writeLog(actor, role, 'update_event', `Event ID ${id}`, `Updated fields: ${updates.join(', ')}`, req.ip);
     res.json({ success: true });
+    scheduleSnapshot();
+});
+
+// API to assign / delegate an event to a committee (Chairman & Admin only)
+app.patch('/api/events/:id/assign-committee', verifyElevated, (req, res) => {
+    if (!canAssignCommittee(req.authUser)) {
+        return res.status(403).json({ error: 'Forbidden: Only the Chairman or Administrator can delegate events to a committee.' });
+    }
+    const { id } = req.params;
+    const { committee } = req.body;
+    if (!committee) {
+        return res.status(400).json({ error: 'Target committee is required.' });
+    }
+    try {
+        validateEventCommittee(committee);
+    } catch (valErr) {
+        return res.status(400).json({ error: valErr.message });
+    }
+    if (committee === 'unassigned') {
+        return res.status(400).json({ error: 'Cannot delegate an event to "unassigned". Choose a specific committee or General.' });
+    }
+    const targetEvent = db.prepare('SELECT id, title, committee FROM events WHERE id = ?').get(id);
+    if (!targetEvent) return res.status(404).json({ error: 'Event not found.' });
+
+    db.prepare('UPDATE events SET committee = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(committee, id);
+    const actor = req.authUser.full_name || 'Admin';
+    const role  = req.authUser.role || 'admin';
+    writeLog(actor, role, 'assign_event_committee', `Event ID ${id}`, `Delegated from ${targetEvent.committee} to ${committeeLabel(committee)}`, req.ip);
+    res.json({ success: true, committee, message: `Event delegated to ${committeeLabel(committee)}.` });
     scheduleSnapshot();
 });
 

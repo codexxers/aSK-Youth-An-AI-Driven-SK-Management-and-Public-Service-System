@@ -41,7 +41,8 @@ export function canViewEventDetails(user, event) {
   if (!user) return false;
   if (isAdmin(user) || isChairman(user)) return true;
   if (isCommittee(user)) {
-    if (!user.committee) return false; // unassigned
+    if (!user.committee) return false; // unassigned user
+    if (event.committee === 'unassigned') return false; // unassigned event hidden from committee
     return event.committee === 'general' || event.committee === user.committee;
   }
   return false; // youth/guest
@@ -57,9 +58,18 @@ export function canMutateEvent(user, event) {
   if (isAdmin(user) || isChairman(user)) return true;
   if (isCommittee(user)) {
     if (!user.committee) return false;
+    if (event.committee === 'unassigned') return false; // committee cannot touch unassigned
     return event.committee === user.committee; // committee users cannot touch 'general' events
   }
   return false;
+}
+
+/**
+ * Can the user assign or delegate an event to a committee?
+ * Strictly restricted to Chairman and Admin.
+ */
+export function canAssignCommittee(user) {
+  return isAdmin(user) || isChairman(user);
 }
 
 /**
@@ -84,6 +94,7 @@ export function eventScopeSql(user) {
  * Never includes budget, attendance, or staff counts.
  */
 export function eventNotice(event) {
+  if (!event || event.committee === 'unassigned') return null; // unassigned events are hidden from public notices
   return {
     date: event.date,
     time: event.time || null,

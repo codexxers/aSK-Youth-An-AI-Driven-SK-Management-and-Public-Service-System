@@ -7,11 +7,12 @@ import assert from 'node:assert/strict';
 import Database from 'better-sqlite3';
 import jwt from 'jsonwebtoken';
 import {
-  COMMITTEES, COMMITTEE_CODES, VALID_EVENT_COMMITTEES, CATEGORY_TO_COMMITTEE, committeeLabel
+  COMMITTEES, COMMITTEE_CODES, VALID_EVENT_COMMITTEES, CATEGORY_TO_COMMITTEE, committeeLabel,
+  COMMITTEE_EVENT_CATEGORIES, getCategoriesForCommittee
 } from './committees.js';
 import {
   isAdmin, isChairman, isCommittee, isYouth, isElevated,
-  canViewEventDetails, canMutateEvent, eventScopeSql, eventNotice,
+  canViewEventDetails, canMutateEvent, canAssignCommittee, eventScopeSql, eventNotice,
   validateUserCommittee, validateEventCommittee
 } from './authz.js';
 
@@ -237,5 +238,44 @@ test('Header spoofing defense: X-Role does not override DB-derived role/committe
   assert.equal(canViewEventDetails(user, { committee: 'health' }), false);
 
   db.close();
+});
+
+test('Unassigned "Others" events: strictly visible to Chairman and Admin, hidden from Committee and Youth', () => {
+  const unassignedEvent = { id: 99, title: 'Mystery Community Project', committee: 'unassigned', category: 'others' };
+
+  const adminUser = { id: 1, role: 'admin' };
+  const chairmanUser = { id: 2, role: 'chairman' };
+  const healthUser = { id: 3, role: 'committee', committee: 'health' };
+  const youthUser = { id: 4, role: 'youth' };
+
+  // Visibility checks
+  assert.equal(canViewEventDetails(adminUser, unassignedEvent), true, 'Admin can view unassigned event');
+  assert.equal(canViewEventDetails(chairmanUser, unassignedEvent), true, 'Chairman can view unassigned event');
+  assert.equal(canViewEventDetails(healthUser, unassignedEvent), false, 'Committee officer CANNOT view unassigned event');
+  assert.equal(canViewEventDetails(youthUser, unassignedEvent), false, 'Youth CANNOT view unassigned event');
+
+  // Mutation / Assignment checks
+  assert.equal(canMutateEvent(healthUser, unassignedEvent), false, 'Committee officer cannot mutate unassigned event');
+  assert.equal(canAssignCommittee(adminUser), true, 'Admin can delegate event to a committee');
+  assert.equal(canAssignCommittee(chairmanUser), true, 'Chairman can delegate event to a committee');
+  assert.equal(canAssignCommittee(healthUser), false, 'Committee officer cannot delegate event');
+  assert.equal(canAssignCommittee(youthUser), false, 'Youth cannot delegate event');
+
+  // Public notice check
+  assert.equal(eventNotice(unassignedEvent), null, 'Unassigned event produces null public notice');
+});
+
+test('Taxonomy sync: getCategoriesForCommittee returns curated sub-categories', () => {
+  const healthCats = getCategoriesForCommittee('health');
+  assert.ok(healthCats.some(c => c.code === 'medical_dental_mission'));
+  assert.ok(healthCats.some(c => c.code === 'blood_donation'));
+  assert.ok(healthCats.some(c => c.code === 'others'));
+
+  const eduCats = getCategoriesForCommittee('education');
+  assert.ok(eduCats.some(c => c.code === 'scholarship_grants'));
+  assert.ok(eduCats.some(c => c.code === 'school_supplies_assistance'));
+
+  const unassignedCats = getCategoriesForCommittee('unassigned');
+  assert.equal(unassignedCats[0].code, 'others');
 });
 

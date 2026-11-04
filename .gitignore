@@ -59,3 +59,6 @@ generated_docs/
 backend/data/hnsw.index
 backend/data/hnsw-meta.json
 *.log
+scratch/
+*.docx
+*.pdf

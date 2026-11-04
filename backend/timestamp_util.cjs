@@ -105,7 +105,7 @@ function formatForPrompt() {
  * Builds the complete runtime injection block to prepend to the system prompt.
  * Call this once per request, right before sending to the LLM.
  *
- * @param {string} activeRole  - "system_admin" | "chairman" | "officer" | "youth"
+ * @param {string} activeRole  - "system_admin" | "chairman" | "committee" | "youth"
  * @param {boolean} pythonTools - whether Python tool services are running
  * @returns {string}
  */
@@ -132,5 +132,5 @@ if (require.main === module) {
   console.log('=== Prompt injection line ===');
   console.log(formatForPrompt());
   console.log('=== Full runtime injection block ===');
-  console.log(buildRuntimeInjection('officer', true));
+  console.log(buildRuntimeInjection('committee', true));
 }

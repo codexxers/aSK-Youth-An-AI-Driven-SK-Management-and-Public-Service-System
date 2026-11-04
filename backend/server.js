@@ -18,6 +18,14 @@ import jwt from 'jsonwebtoken';
 import QRCode from 'qrcode';
 import os from 'os';
 import { generateResponse } from './llm_engine.js';
+import {
+  COMMITTEES, COMMITTEE_CODES, VALID_EVENT_COMMITTEES, CATEGORY_TO_COMMITTEE, committeeLabel
+} from './committees.js';
+import {
+  isAdmin, isChairman, isCommittee, isYouth, isElevated,
+  canViewEventDetails, canMutateEvent, eventScopeSql, eventNotice,
+  validateUserCommittee, validateEventCommittee,
+} from './authz.js';
 
 const require     = createRequire(import.meta.url);
 const { buildRuntimeInjection } = require('./timestamp_util.cjs');
@@ -793,10 +801,12 @@ db.exec(`
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     username      TEXT UNIQUE NOT NULL,
     full_name     TEXT NOT NULL,
-    role          TEXT NOT NULL CHECK(role IN ('admin','chairman','officer','youth')),
+    role          TEXT NOT NULL CHECK(role IN ('admin','chairman','committee','officer','youth')),
+    committee     TEXT DEFAULT NULL CHECK(committee IS NULL OR committee IN ('health','education','economic','social','peacebuilding','governance','citizenship','environment','global','agriculture')),
     password_hash TEXT NOT NULL,
     status        TEXT DEFAULT 'active' CHECK(status IN ('active','inactive')),
-    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
 
@@ -871,16 +881,140 @@ try {
     console.warn('[aSK Youth] category_other_label migration skipped:', e.message);
 }
 
+// ===========================================================================
+// ── Committee Access Control Boot Migration (Idempotent, Single Transaction)
+// ── Rebuilds: users table to update CHECK constraint to include 'committee'
+// ── Adds: users.committee column, events.committee column, events.needs_review
+// ── Migrates: 'officer' role rows → 'committee' (committee = NULL), categories → committees
+// ── Safe to re-run: detects already-migrated table via sqlite_master
+// ===========================================================================
+function runCommitteeBootMigration() {
+    const usersCreate = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get();
+    const needsUserRebuild = !usersCreate || !usersCreate.sql.includes("'committee'");
+
+    db.pragma('foreign_keys = OFF');
+
+    const migrateTx = db.transaction(() => {
+        // 1. Rebuild users table if CHECK constraint doesn't have 'committee' yet
+        if (needsUserRebuild) {
+            console.log('[Migration] Rebuilding users table to permit "committee" role...');
+            const oldCols = db.pragma('table_info(users)').map(c => c.name);
+            const createdExpr = oldCols.includes('created_at') ? 'created_at' : 'CURRENT_TIMESTAMP';
+            const updatedExpr = oldCols.includes('updated_at') ? 'updated_at' : 'CURRENT_TIMESTAMP';
+
+            db.exec(`
+                CREATE TABLE users_new (
+                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username      TEXT NOT NULL UNIQUE,
+                    password_hash TEXT NOT NULL,
+                    role          TEXT NOT NULL CHECK(role IN ('admin','chairman','committee','officer','youth')),
+                    committee     TEXT DEFAULT NULL CHECK(committee IS NULL OR committee IN ('health','education','economic','social','peacebuilding','governance','citizenship','environment','global','agriculture')),
+                    full_name     TEXT NOT NULL,
+                    status        TEXT DEFAULT 'active' CHECK(status IN ('active','inactive')),
+                    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+
+            // Copy rows, migrating any legacy 'officer' to 'committee' with committee = NULL
+            db.exec(`
+                INSERT INTO users_new (id, username, password_hash, role, committee, full_name, status, created_at, updated_at)
+                SELECT
+                    id,
+                    username,
+                    password_hash,
+                    CASE WHEN role = 'officer' THEN 'committee' ELSE role END,
+                    NULL,
+                    full_name,
+                    CASE WHEN status = 0 OR status = '0' OR status = 'inactive' THEN 'inactive' ELSE 'active' END,
+                    ${createdExpr},
+                    ${updatedExpr}
+                FROM users;
+            `);
+
+            db.exec(`DROP TABLE users;`);
+            db.exec(`ALTER TABLE users_new RENAME TO users;`);
+            writeLog('System', 'migration', 'rebuild_users', 'users', 'Rebuilt users table with committee role and CHECK constraint', null);
+            console.log('[Migration] users table rebuilt successfully.');
+        }
+
+        // 2. Add events.committee column if missing
+        const eventsCols = db.pragma('table_info(events)').map(c => c.name);
+        if (!eventsCols.includes('committee')) {
+            db.exec("ALTER TABLE events ADD COLUMN committee TEXT DEFAULT 'general'");
+            console.log('[Migration] events.committee column added.');
+        }
+
+        // 3. Add events.needs_review column if missing
+        if (!eventsCols.includes('needs_review')) {
+            db.exec("ALTER TABLE events ADD COLUMN needs_review INTEGER DEFAULT 0");
+            console.log('[Migration] events.needs_review column added.');
+        }
+
+        // 4. Migrate old category → committee for existing events
+        const categoryMap = {
+            health:      'health',
+            seminar:     'education',
+            scholarship: 'education',
+            education:   'education',
+            livelihood:  'economic',
+            economic:    'economic',
+            social:      'social',
+            governance:  'governance',
+            ordinance:   'governance',
+            community:   'environment',
+            environment: 'environment',
+            sports:      'general',
+            general:     'general',
+            cultural:    'general',
+        };
+        const knownCategoryCodes = new Set(Object.keys(categoryMap));
+        const unmappedEvents = db.prepare("SELECT id, category FROM events WHERE committee IS NULL OR committee = ''").all();
+        let mapped = 0, flagged = 0;
+        for (const ev of unmappedEvents) {
+            const cat = (ev.category || '').toLowerCase().trim();
+            if (knownCategoryCodes.has(cat)) {
+                db.prepare('UPDATE events SET committee = ?, needs_review = 0 WHERE id = ?')
+                  .run(categoryMap[cat], ev.id);
+                mapped++;
+            } else {
+                db.prepare("UPDATE events SET committee = 'general', needs_review = 1 WHERE id = ?")
+                  .run(ev.id);
+                flagged++;
+            }
+        }
+        if (mapped > 0 || flagged > 0) {
+            console.log(`[Migration] Events: ${mapped} mapped, ${flagged} flagged needs_review (→ general).`);
+        }
+    });
+
+    migrateTx();
+    db.pragma('foreign_keys = ON');
+
+    const fkErrors = db.pragma('foreign_key_check');
+    if (fkErrors.length > 0) {
+        throw new Error('[Migration] PRAGMA foreign_key_check failed: ' + JSON.stringify(fkErrors));
+    }
+    console.log('[Migration] PRAGMA foreign_key_check passed.');
+}
+
+try {
+    runCommitteeBootMigration();
+    console.log('[aSK Youth] Committee access control migration complete.');
+} catch (migErr) {
+    console.error('[aSK Youth] CRITICAL: Committee migration failed:', migErr.message);
+}
+
 // Seed default users if empty
 const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get();
 if (userCount.c === 0) {
     const salt = bcrypt.genSaltSync(10);
-    const insertUser = db.prepare('INSERT INTO users (username, full_name, role, password_hash, status) VALUES (?, ?, ?, ?, ?)');
-    insertUser.run('admin', 'System Administrator', 'admin', bcrypt.hashSync('admin2025', salt), 'active');
-    insertUser.run('chairman', 'SK Chairperson', 'chairman', bcrypt.hashSync('chairman2025', salt), 'active');
-    insertUser.run('officer', 'SK Officer', 'officer', bcrypt.hashSync('officer2025', salt), 'active');
-    insertUser.run('youth', 'Juan Dela Cruz', 'youth', bcrypt.hashSync('youth2025', salt), 'active');
-    console.log('[aSK Youth] Default users seeded.');
+    const insertUser = db.prepare('INSERT INTO users (username, full_name, role, committee, password_hash, status) VALUES (?, ?, ?, ?, ?, ?)');
+    insertUser.run('admin', 'System Administrator', 'admin', null, bcrypt.hashSync('admin2025', salt), 'active');
+    insertUser.run('chairman', 'SK Chairperson', 'chairman', null, bcrypt.hashSync('chairman2025', salt), 'active');
+    insertUser.run('committee_user', 'SK Committee Member', 'committee', null, bcrypt.hashSync('committee2025', salt), 'active');
+    insertUser.run('youth', 'Juan Dela Cruz', 'youth', null, bcrypt.hashSync('youth2025', salt), 'active');
+    console.log('[aSK Youth] Default users seeded (committee role, no officer).');
 }
 
 // Seed default suggestions if empty or sparse
@@ -902,9 +1036,9 @@ if (logCount.c < 5) {
     const stmt = db.prepare('INSERT INTO system_logs (actor, role, action, target, details, ip_address) VALUES (?, ?, ?, ?, ?, ?)');
     stmt.run('System Administrator', 'admin', 'login_success', 'admin', 'Login via dashboard', '127.0.0.1');
     stmt.run('SK Chairperson', 'chairman', 'login_success', 'chairman', 'Login via mobile', '192.168.1.15');
-    stmt.run('SK Officer', 'officer', 'login_success', 'officer', 'Login via web', '192.168.1.20');
+    stmt.run('SK Committee Member', 'committee', 'login_success', 'committee_user', 'Login via web', '192.168.1.20');
     stmt.run('Juan Dela Cruz', 'youth', 'login_success', 'youth', 'Login via web', '192.168.1.25');
-    stmt.run('System Administrator', 'admin', 'update_user', 'officer', 'Changed role to officer', '127.0.0.1');
+    stmt.run('System Administrator', 'admin', 'update_user', 'committee_user', 'Assigned committee: health', '127.0.0.1');
     stmt.run('SK Chairperson', 'chairman', 'view_reports', 'reports', 'Generated Q4 financial report', '192.168.1.15');
     console.log('[aSK Youth] Sparse logs detected. Seeded with realistic data.');
 }
@@ -917,10 +1051,10 @@ if (faqCount.c === 0) {
         faqInsert.run('What is aSK//YOUTH AI?', 'aSK//YOUTH AI is an AI-powered platform built for the Sangguniang Kabataan (SK) of Barangay Concepcion Dos, Marikina City. It helps SK officials manage events, track attendance, generate official documents, and allows youth constituents to query SK programs and submit suggestions — all in one unified system.', 'general', 1, 'published');
         faqInsert.run('How do I view upcoming SK events?', 'Navigate to the "Event Management" module from the sidebar, or ask the AI Assistant: "What are the upcoming SK events?" It will display real-time event information from the database.', 'events', 2, 'published');
         faqInsert.run('How does QR attendance scanning work?', 'Each SK event has a unique QR code. Scan it with your phone camera or the in-app QR Scanner. Registered members are automatically logged; guests enter their name and details on the scan screen. Attendance is recorded instantly.', 'attendance', 3, 'published');
-        faqInsert.run("What should I do if the QR code won't scan?", 'Ensure your camera is focused and there is good lighting. If the issue persists, ask an SK officer to refresh the QR code for that event, or approach the officer on duty to have your attendance manually recorded.', 'attendance', 4, 'published');
-        faqInsert.run('How do I submit a suggestion or feedback to the SK?', 'Go to the "Suggestions" module in the sidebar, type your suggestion, choose a category, and submit. SK officers and the Chairperson can review and respond. Submissions can be kept anonymous.', 'participation', 5, 'published');
+        faqInsert.run("What should I do if the QR code won't scan?", 'Ensure your camera is focused and there is good lighting. If the issue persists, ask an SK committee member to refresh the QR code for that event, or approach the committee member on duty to have your attendance manually recorded.', 'attendance', 4, 'published');
+        faqInsert.run('How do I submit a suggestion or feedback to the SK?', 'Go to the "Suggestions" module in the sidebar, type your suggestion, choose a category, and submit. SK committee members and the Chairperson can review and respond. Submissions can be kept anonymous.', 'participation', 5, 'published');
         faqInsert.run('What is the ABYIP?', 'ABYIP stands for Annual Barangay Youth Investment Program — the official budget and project plan for SK-funded youth programs for the year. It outlines planned projects, objectives, target beneficiaries, and allocated budgets. You can ask the AI Assistant about specific ABYIP projects.', 'general', 6, 'published');
-        faqInsert.run('Can I ask the AI about past SK programs and budgets?', 'Yes! The AI Assistant is knowledgeable about general SK programs and services. Specific historical budget details may be available to SK officers. Feel free to ask — the assistant will share what it is authorized to provide based on your role.', 'general', 7, 'published');
+        faqInsert.run('Can I ask the AI about past SK programs and budgets?', 'Yes! The AI Assistant is knowledgeable about general SK programs and services. Specific historical budget details may be available to SK committee members. Feel free to ask — the assistant will share what it is authorized to provide based on your role.', 'general', 7, 'published');
         faqInsert.run('Where do I find events happening near me?', 'All SK events are held within Barangay Concepcion Dos, Marikina City, unless stated otherwise. Check the "Event Management" module or ask the AI: "Are there any events this month?"', 'events', 8, 'published');
     });
     seedFaqs();
@@ -949,6 +1083,63 @@ function writeLog(actor, role, action, target, details, ip) {
 
 // --- Authentication & Session Routes ---
 const JWT_SECRET = process.env.JWT_SECRET || 'askyouth_super_secret_jwt_key_2026';
+
+// ---------------------------------------------------------------------------
+// JWT Middleware — verifyJWT(req, res, next)
+// Validates Bearer token and attaches a fresh DB-derived user to req.authUser.
+// Rejects inactive users. Committee is always read from DB, never from JWT.
+// ---------------------------------------------------------------------------
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Authentication required.' });
+    }
+    try {
+        const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+        if (decoded.isGuest) {
+            req.authUser = { id: null, username: 'youth_member', role: 'youth', full_name: 'Youth Member', isGuest: true };
+            return next();
+        }
+        // Always derive user fresh from DB so committee changes take effect immediately
+        const user = db.prepare(
+            'SELECT id, username, full_name, role, committee, status FROM users WHERE id = ?'
+        ).get(decoded.id);
+        if (!user) return res.status(401).json({ error: 'User not found.' });
+        if (user.status !== 'active') return res.status(403).json({ error: 'Account is inactive.' });
+        req.authUser = user;
+        next();
+    } catch (err) {
+        return res.status(401).json({ error: 'Invalid or expired token.' });
+    }
+}
+
+// verifyAdmin — requires admin or chairman role (for user CRUD and audit routes)
+function verifyAdmin(req, res, next) {
+    verifyJWT(req, res, () => {
+        if (!isAdmin(req.authUser) && !isChairman(req.authUser)) {
+            return res.status(403).json({ error: 'Forbidden: admin or chairman access required.' });
+        }
+        next();
+    });
+}
+
+// verifyElevated — requires admin, chairman, or committee role
+function verifyElevated(req, res, next) {
+    verifyJWT(req, res, () => {
+        if (!isElevated(req.authUser)) {
+            return res.status(403).json({ error: 'Forbidden: elevated access required.' });
+        }
+        next();
+    });
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/committees — Single source of truth for 10 Centers of Participation
+// Public endpoint for frontend selectors (no duplicated lists).
+// ---------------------------------------------------------------------------
+app.get('/api/committees', (_req, res) => {
+    res.json(COMMITTEES);
+});
 
 // ---------------------------------------------------------------------------
 // Login lockout — in-memory per-username tracking.
@@ -1049,7 +1240,7 @@ app.get('/api/auth/me', (req, res) => {
         if (decoded.isGuest) {
             return res.json({ user: { role: 'youth', isGuest: true, full_name: 'Guest Youth', username: 'guest' } });
         }
-        const user = db.prepare('SELECT id, username, full_name, role, status, created_at FROM users WHERE id = ?').get(decoded.id);
+        const user = db.prepare('SELECT id, username, full_name, role, committee, status, created_at FROM users WHERE id = ?').get(decoded.id);
         if (!user || user.status === 'inactive') return res.status(401).json({ error: 'User invalid or inactive' });
         res.json({ user });
     } catch (err) {
@@ -1270,13 +1461,13 @@ app.get('/api/admin/ai-logs', (req, res) => {
 });
 
 // --- User Management API Routes ---
-app.get('/api/users', (req, res) => {
+app.get('/api/users', verifyAdmin, (req, res) => {
     try {
-        const actor = req.headers['x-actor'] || 'Admin';
-        const role  = req.headers['x-role'] || 'admin';
+        const actor = req.authUser.full_name || 'Admin';
+        const role  = req.authUser.role || 'admin';
         writeLog(actor, role, 'view_user_list', 'users', 'Accessed user management roster', req.ip);
 
-        const users = db.prepare('SELECT id, username, full_name, role, status, created_at FROM users ORDER BY created_at DESC').all();
+        const users = db.prepare('SELECT id, username, full_name, role, committee, status, created_at FROM users ORDER BY created_at DESC').all();
 
         // Enrich each user with live lockout info from in-memory map
         const now = Date.now();
@@ -1293,14 +1484,20 @@ app.get('/api/users', (req, res) => {
     }
 });
 
-app.post('/api/users', (req, res) => {
-    const { username, full_name, role, password, status, admin_token } = req.body;
-    const actor = req.headers['x-actor'] || 'Admin';
-    const actorRole = req.headers['x-role'] || 'admin';
+app.post('/api/users', verifyAdmin, (req, res) => {
+    const { username, full_name, role, committee, password, status, admin_token } = req.body;
+    const actor = req.authUser.full_name || 'Admin';
+    const actorRole = req.authUser.role || 'admin';
     const ip = req.ip || req.socket.remoteAddress;
 
     if (!username || !full_name || !role || !password) {
         return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    try {
+        validateUserCommittee(role, committee || null);
+    } catch (valErr) {
+        return res.status(400).json({ error: valErr.message });
     }
 
     if (role === 'admin') {
@@ -1313,9 +1510,9 @@ app.post('/api/users', (req, res) => {
     try {
         const salt = bcrypt.genSaltSync(10);
         const hash = bcrypt.hashSync(password, salt);
-        const stmt = db.prepare('INSERT INTO users (username, full_name, role, password_hash, status) VALUES (?, ?, ?, ?, ?)');
-        const result = stmt.run(username.trim(), full_name.trim(), role, hash, status || 'active');
-        writeLog(actor, actorRole, 'create_user', username, `Created account for ${full_name} (${role})`, ip);
+        const stmt = db.prepare('INSERT INTO users (username, full_name, role, committee, password_hash, status) VALUES (?, ?, ?, ?, ?, ?)');
+        const result = stmt.run(username.trim(), full_name.trim(), role, committee || null, hash, status || 'active');
+        writeLog(actor, actorRole, 'create_user', username, `Created account for ${full_name} (${role}${committee ? ` - ${committee}` : ''})`, ip);
         res.json({ id: result.lastInsertRowid, message: 'User created successfully' });
         scheduleSnapshot();
     } catch (err) {
@@ -1324,15 +1521,15 @@ app.post('/api/users', (req, res) => {
     }
 });
 
-app.patch('/api/users/:id', (req, res) => {
+app.patch('/api/users/:id', verifyAdmin, (req, res) => {
     const { id } = req.params;
-    const { full_name, role, status, password, admin_token } = req.body;
-    const actor = req.headers['x-actor'] || 'Admin';
-    const actorRole = req.headers['x-role'] || 'admin';
+    const { full_name, role, committee, status, password, admin_token } = req.body;
+    const actor = req.authUser.full_name || 'Admin';
+    const actorRole = req.authUser.role || 'admin';
     const ip = req.ip || req.socket.remoteAddress;
 
     try {
-        const targetUser = db.prepare('SELECT username FROM users WHERE id = ?').get(id);
+        const targetUser = db.prepare('SELECT username, role, committee FROM users WHERE id = ?').get(id);
         if (!targetUser) return res.status(404).json({ error: 'User not found' });
 
         // Authorization token required for ALL modifications (not just password changes)
@@ -1341,9 +1538,16 @@ app.patch('/api/users/:id', (req, res) => {
             return res.status(401).json({ error: 'Invalid or missing admin authorization token. All account modifications require the admin token.' });
         }
 
+        const effectiveRole = role !== undefined ? role : targetUser.role;
+        const effectiveCommittee = committee !== undefined ? (committee || null) : (role !== undefined && role !== 'committee' ? null : targetUser.committee);
+
+        try {
+            validateUserCommittee(effectiveRole, effectiveCommittee);
+        } catch (valErr) {
+            return res.status(400).json({ error: valErr.message });
+        }
+
         if (password) {
-            // Additional password-change validation: confirm match is done on client side,
-            // but we also enforce minimum length server-side.
             if (password.length < 6) {
                 return res.status(400).json({ error: 'New password must be at least 6 characters.' });
             }
@@ -1353,6 +1557,10 @@ app.patch('/api/users/:id', (req, res) => {
         const params = [];
         if (full_name) { updates.push('full_name = ?'); params.push(full_name.trim()); }
         if (role) { updates.push('role = ?'); params.push(role); }
+        if (committee !== undefined || (role !== undefined && role !== 'committee')) {
+            updates.push('committee = ?');
+            params.push(effectiveCommittee);
+        }
         if (status) { updates.push('status = ?'); params.push(status); }
         if (password) {
             updates.push('password_hash = ?');
@@ -1370,10 +1578,10 @@ app.patch('/api/users/:id', (req, res) => {
     }
 });
 
-app.delete('/api/users/:id', (req, res) => {
+app.delete('/api/users/:id', verifyAdmin, (req, res) => {
     const { id } = req.params;
-    const actor = req.headers['x-actor'] || 'Admin';
-    const actorRole = req.headers['x-role'] || 'admin';
+    const actor = req.authUser.full_name || 'Admin';
+    const actorRole = req.authUser.role || 'admin';
     const ip = req.ip || req.socket.remoteAddress;
 
     try {
@@ -1489,6 +1697,36 @@ function fetchNonCompletedEvents() {
     return db.prepare("SELECT * FROM events WHERE status NOT IN ('completed', 'Archived') ORDER BY date ASC").all();
 }
 
+// Helper: fetch scoped events according to user role
+function fetchScopedEvents(user, nonCompletedOnly = false) {
+    let frag = '1=1';
+    let params = [];
+    if (user && user.role === 'committee') {
+        if (!user.committee) return []; // unassigned
+        frag = "(committee = ? OR committee = 'general')";
+        params = [user.committee];
+    }
+    let query = `SELECT * FROM events WHERE ${frag}`;
+    if (nonCompletedOnly) {
+        query += " AND status NOT IN ('completed', 'Archived')";
+    }
+    query += " ORDER BY date ASC";
+    return db.prepare(query).all(...params);
+}
+
+// Helper: format a single event row according to viewer role
+function formatEventForRole(e, user) {
+    const isPublicUser = !user || user.role === 'youth' || user.isGuest;
+    if (isPublicUser) {
+        return `- ${e.title} (${e.status.toUpperCase()})\n  Date: ${e.date}${e.time ? ' at ' + e.time : ''}\n  Kind: ${committeeLabel(e.committee)}\n  Location: ${e.location || 'Barangay Concepcion Dos'}\n  Description: ${e.description || 'SK Event'}`;
+    }
+    let entry = `- ${e.title} (${e.status.toUpperCase()})\n  Date: ${e.date}${e.time ? ' at ' + e.time : ''}\n  Committee: ${committeeLabel(e.committee)}\n  Category: ${e.category || 'general'}\n  Location: ${e.location || 'TBD'}\n  Description: ${e.description || ''}`.trim();
+    if (e.attendees > 0) entry += `\n  Attendees: ${e.attendees}`;
+    if (e.budget_allotted > 0) entry += `\n  Budget Allotted: PHP ${Number(e.budget_allotted).toLocaleString()}`;
+    entry += `\n  Requirements: ${e.requirements || 'None'}\n  Contact: ${e.contact || 'SK Secretariat'}`;
+    return entry;
+}
+
 // Helper: format a single event row into a short summary string
 function formatEventShort(e) {
     let entry = `- ${e.title} (${e.status.toUpperCase()})\n  Date: ${e.date}${e.time ? ' at ' + e.time : ''}\n  Category: ${e.category}\n  Location: ${e.location || 'TBD'}\n  Description: ${e.description || ''}`.trim();
@@ -1497,63 +1735,130 @@ function formatEventShort(e) {
     return entry;
 }
 
-// API to list events (for future admin panel)
-app.get('/api/events', (req, res) => {
-    const { status, category } = req.query;
+// API to list events (Admin, Chairman, Committee)
+app.get('/api/events', verifyJWT, (req, res) => {
+    // Youth/Guest: Never event details on any endpoint
+    if (isYouth(req.authUser)) {
+        return res.status(404).json({ error: 'Event details not accessible' });
+    }
+
+    if (isCommittee(req.authUser) && !req.authUser.committee) {
+        res.set('X-Committee-Warning', 'unassigned');
+        return res.json([]);
+    }
+
+    const { status, category, committee, needs_review } = req.query;
+    const scope = eventScopeSql(req.authUser);
     let query = 'SELECT * FROM events';
-    const params = [];
-    const conditions = [];
+    const params = [...scope.params];
+    const conditions = [scope.frag];
+
     if (status) { conditions.push('status = ?'); params.push(status); }
     if (category) { conditions.push('category = ?'); params.push(category); }
-    if (conditions.length) query += ' WHERE ' + conditions.join(' AND ');
-    query += ' ORDER BY date ASC';
+    if (committee) { conditions.push('committee = ?'); params.push(committee); }
+    if (needs_review !== undefined) { conditions.push('needs_review = ?'); params.push(parseInt(needs_review)); }
+
+    query += ' WHERE ' + conditions.join(' AND ') + ' ORDER BY date ASC';
     res.json(db.prepare(query).all(...params));
 });
 
+// API to get single event details
+app.get('/api/events/:id', verifyJWT, (req, res) => {
+    if (isYouth(req.authUser)) {
+        return res.status(404).json({ error: 'Event details not accessible' });
+    }
+    const { id } = req.params;
+    const event = db.prepare('SELECT * FROM events WHERE id = ?').get(id);
+    if (!event || !canViewEventDetails(req.authUser, event)) {
+        return res.status(404).json({ error: 'Event not found' });
+    }
+    res.json(event);
+});
+
 // API to create a new event
-app.post('/api/events', (req, res) => {
-    const { title, description, category, date, time, location, organizer, status, requirements, contact, attendees, male_count, female_count, staff_count, budget_allotted } = req.body;
+app.post('/api/events', verifyElevated, (req, res) => {
+    const { title, description, category, date, time, location, organizer, status, requirements, contact, attendees, male_count, female_count, staff_count, budget_allotted, committee } = req.body;
     if (!title || !date) return res.status(400).json({ error: 'title and date are required' });
-    const stmt = db.prepare('INSERT INTO events (title, description, category, date, time, location, organizer, status, requirements, contact, attendees, male_count, female_count, staff_count, budget_allotted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+
+    let eventCommittee = 'general';
+    if (isCommittee(req.authUser)) {
+        if (!req.authUser.committee) {
+            return res.status(403).json({ error: 'Cannot create events: Committee not assigned. Contact administrator.' });
+        }
+        eventCommittee = req.authUser.committee; // Auto-tagged with own committee
+    } else {
+        // Admin or Chairman
+        eventCommittee = committee || 'general';
+        try {
+            validateEventCommittee(eventCommittee);
+        } catch (valErr) {
+            return res.status(400).json({ error: valErr.message });
+        }
+    }
+
+    const stmt = db.prepare('INSERT INTO events (title, description, category, committee, date, time, location, organizer, status, requirements, contact, attendees, male_count, female_count, staff_count, budget_allotted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const result = stmt.run(
-        title, description || '', category || 'general', date, time || '',
+        title, description || '', category || 'general', eventCommittee, date, time || '',
         location || '', organizer || '', status || 'upcoming', requirements || '', contact || '',
         parseInt(attendees) || 0, parseInt(male_count) || 0, parseInt(female_count) || 0,
         staff_count != null && staff_count !== '' ? parseInt(staff_count) : null,
         parseFloat(budget_allotted) || 0
     );
-    const actor = req.headers['x-actor'] || 'Admin';
-    const role  = req.headers['x-role'] || 'admin';
-    writeLog(actor, role, 'create_event', title, `Created event ID ${result.lastInsertRowid}`, req.ip);
-    res.json({ id: result.lastInsertRowid, message: 'Event created.' });
+    const actor = req.authUser.full_name || 'Admin';
+    const role  = req.authUser.role || 'admin';
+    writeLog(actor, role, 'create_event', title, `Created event ID ${result.lastInsertRowid} (Committee: ${eventCommittee})`, req.ip);
+    res.json({ id: result.lastInsertRowid, message: 'Event created.', committee: eventCommittee });
     scheduleSnapshot();
 });
 
 // API to update an event
-app.patch('/api/events/:id', (req, res) => {
+app.patch('/api/events/:id', verifyElevated, (req, res) => {
     const { id } = req.params;
+    const targetEvent = db.prepare('SELECT * FROM events WHERE id = ?').get(id);
+    if (!targetEvent) return res.status(404).json({ error: 'Event not found' });
+
+    if (!canMutateEvent(req.authUser, targetEvent)) {
+        return res.status(403).json({ error: 'Forbidden: Cannot edit events outside your committee.' });
+    }
+
     const fields = req.body;
     const allowed = ['title','description','category','date','time','location','organizer','status','requirements','contact','attendees','male_count','female_count','staff_count','budget_allotted'];
+    if (isAdmin(req.authUser) || isChairman(req.authUser)) {
+        allowed.push('committee');
+        if (fields.committee) {
+            try {
+                validateEventCommittee(fields.committee);
+            } catch (valErr) {
+                return res.status(400).json({ error: valErr.message });
+            }
+        }
+    }
     const updates = Object.keys(fields).filter(k => allowed.includes(k));
     if (updates.length === 0) return res.status(400).json({ error: 'No valid fields to update' });
     const set = updates.map(k => `${k} = ?`).join(', ');
     const vals = updates.map(k => fields[k]);
     db.prepare(`UPDATE events SET ${set} WHERE id = ?`).run(...vals, id);
-    const actor = req.headers['x-actor'] || 'Admin';
-    const role  = req.headers['x-role'] || 'admin';
+    const actor = req.authUser.full_name || 'Admin';
+    const role  = req.authUser.role || 'admin';
     writeLog(actor, role, 'update_event', `Event ID ${id}`, `Updated fields: ${updates.join(', ')}`, req.ip);
     res.json({ success: true });
     scheduleSnapshot();
 });
 
 // API to delete an event
-app.delete('/api/events/:id', (req, res) => {
+app.delete('/api/events/:id', verifyElevated, (req, res) => {
     const { id } = req.params;
-    const event = db.prepare('SELECT title FROM events WHERE id = ?').get(id);
+    const targetEvent = db.prepare('SELECT * FROM events WHERE id = ?').get(id);
+    if (!targetEvent) return res.status(404).json({ error: 'Event not found' });
+
+    if (!canMutateEvent(req.authUser, targetEvent)) {
+        return res.status(403).json({ error: 'Forbidden: Cannot delete events outside your committee.' });
+    }
+
     db.prepare('DELETE FROM events WHERE id = ?').run(id);
-    const actor = req.headers['x-actor'] || 'Admin';
-    const role  = req.headers['x-role'] || 'admin';
-    writeLog(actor, role, 'delete_event', event?.title || `ID ${id}`, 'Deleted event record', req.ip);
+    const actor = req.authUser.full_name || 'Admin';
+    const role  = req.authUser.role || 'admin';
+    writeLog(actor, role, 'delete_event', targetEvent.title || `ID ${id}`, 'Deleted event record', req.ip);
     res.json({ success: true });
     scheduleSnapshot();
 });
@@ -1561,11 +1866,13 @@ app.delete('/api/events/:id', (req, res) => {
 // --- QR Attendance API Routes ---
 
 // Generate QR Code for an Event
-app.get('/api/events/:id/qr', async (req, res) => {
+app.get('/api/events/:id/qr', verifyElevated, async (req, res) => {
     const { id } = req.params;
     try {
-        const event = db.prepare('SELECT id, title, qr_token FROM events WHERE id = ?').get(id);
-        if (!event) return res.status(404).json({ error: 'Event not found' });
+        const event = db.prepare('SELECT id, title, committee, qr_token FROM events WHERE id = ?').get(id);
+        if (!event || !canViewEventDetails(req.authUser, event)) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
         
         // Deep link payload
         const payload = `https://askyouth.online/?scan=${event.id}${event.qr_token ? `&t=${event.qr_token}` : ''}`;
@@ -1641,17 +1948,26 @@ app.post('/api/events/scan', (req, res) => {
         // Update attendees count
         db.prepare('UPDATE events SET attendees = attendees + 1 WHERE id = ?').run(eventId);
 
-        res.json({ status: 'success', message: 'Attendance recorded successfully!' });
+        res.json({
+            status: 'success',
+            message: 'Attendance recorded successfully!',
+            notice: eventNotice(event)
+        });
         scheduleSnapshot();
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Get Event Logs (Admin/Officer only)
-app.get('/api/events/:id/logs', (req, res) => {
+// Get Event Logs (Admin/Chairman/Committee)
+app.get('/api/events/:id/logs', verifyElevated, (req, res) => {
     const { id } = req.params;
     try {
+        const event = db.prepare('SELECT id, committee FROM events WHERE id = ?').get(id);
+        if (!event || !canViewEventDetails(req.authUser, event)) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
         const logs = db.prepare(`
             SELECT el.id, el.timestamp, el.status, 
                    COALESCE(u.full_name, el.first_name || ' ' || COALESCE(el.mi || ' ', '') || el.last_name || COALESCE(' ' || el.suffix, '')) as userName,
@@ -1669,7 +1985,7 @@ app.get('/api/events/:id/logs', (req, res) => {
 });
 
 // Refresh QR Code
-app.post('/api/events/:id/refresh-qr', (req, res) => {
+app.post('/api/events/:id/refresh-qr', verifyElevated, (req, res) => {
     const { id } = req.params;
     const { admin_token } = req.body;
 
@@ -1678,8 +1994,12 @@ app.post('/api/events/:id/refresh-qr', (req, res) => {
     }
 
     try {
-        const event = db.prepare('SELECT qr_rotated_at FROM events WHERE id = ?').get(id);
+        const event = db.prepare('SELECT id, committee, qr_rotated_at FROM events WHERE id = ?').get(id);
         if (!event) return res.status(404).json({ error: 'Event not found' });
+
+        if (!canMutateEvent(req.authUser, event)) {
+            return res.status(403).json({ error: 'Forbidden: Cannot refresh QR for events outside your committee.' });
+        }
 
         // Get current date in SGT
         const sgtFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Singapore', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -1983,17 +2303,17 @@ function isCasualQuery(query) {
 }
 
 // GLOBAL_SCOPES: defines which conversationId scopes bypass thread isolation and who can see them.
-// global_admin  — admin-tier institutional knowledge (ABYIP, SK procedures), officer+ only
+// global_admin  — admin-tier institutional knowledge (ABYIP, SK procedures), committee+ only
 // global_public — public FAQ content, all roles including youth/guest
 const GLOBAL_SCOPES = {
-    global_admin: { allowedRoles: ['officer', 'chairman', 'system_admin'] },
+    global_admin: { allowedRoles: ['committee', 'chairman', 'system_admin'] },
     global_public: { allowedRoles: null } // null = all roles
 };
 
 // Track seen conversation IDs for the one-time notification nudge (Task 4.3)
 const _seenConversations = new Set();
 
-async function buildRagContext(currentQuery, documentsData, conversationId = null, activeRole = 'youth', sendEvent = null, clientDateString = null) {
+async function buildRagContext(currentQuery, documentsData, conversationId = null, activeRole = 'youth', sendEvent = null, clientDateString = null, user = null) {
     let retrievedChunks  = [];
     let finalUserPrompt  = currentQuery;
 
@@ -2154,12 +2474,11 @@ ${c.text}
         const yearMatch = currentQuery.match(/\b(202\d)\b/);
         const requestedYear = yearMatch ? parseInt(yearMatch[1]) : null;
 
-        // Core fix: always fetch all non-completed, non-archived events so 'active' events are never missed.
-        // This replaces the old WHERE status = 'upcoming' pattern that silently excluded active events.
-        const allNonCompleted = fetchNonCompletedEvents();
+        // Core fix: fetch events scoped to user permissions
+        const allNonCompleted = fetchScopedEvents(user, true);
 
         let dbData = null;
-        // Note: eventContext is declared at outer scope (line 1772) — do not re-declare here.
+        const isPublicUser = isYouth(user);
 
         // Filter returned rows by month/year if user specified one
         if (requestedMonth) {
@@ -2175,7 +2494,7 @@ ${c.text}
             const yearLabel  = requestedYear ? ` ${requestedYear}` : '';
 
             if (monthRows.length > 0) {
-                const formatted = monthRows.map(e => formatEventShort(e)).join('\n\n');
+                const formatted = monthRows.map(e => formatEventForRole(e, user)).join('\n\n');
                 dbData = `SK Events Database — ${monthLabel}${yearLabel} (Barangay Concepcion Dos):\n\n${formatted}\n\nIMPORTANT: The above is ALL events for ${monthLabel}${yearLabel}. Do NOT add, invent, or mention any event not listed above.`;
             } else {
                 // Month has zero matching events — compute nearest non-completed event as explicit fallback.
@@ -2198,7 +2517,7 @@ ${c.text}
                     })[0] || null;
 
                 const nearestSummary = nearestEvent
-                    ? `Closest non-completed event: "${nearestEvent.title}" on ${nearestEvent.date}${nearestEvent.time ? ' at ' + nearestEvent.time : ''} at ${nearestEvent.location || 'TBD'} — status: ${nearestEvent.status}.\n\n[NOTE FOR TEAM: "Defense Event" (ID 18) is marked "upcoming" but dated 2026-05-25, which is chronologically past. This may be a stale test row; confirm if it should be updated or removed.]`
+                    ? `Closest non-completed event: "${nearestEvent.title}" on ${nearestEvent.date}${nearestEvent.time ? ' at ' + nearestEvent.time : ''} at ${nearestEvent.location || 'TBD'} — status: ${nearestEvent.status}.`
                     : 'No upcoming events found in the database.';
 
                 // Also include the full non-completed list so the model can answer the second part of the query
@@ -2211,21 +2530,25 @@ ${c.text}
             }
         } else if (isAskingFuture) {
             // No specific month — show all non-completed events
-            const formatted = allNonCompleted.map(e => formatEventShort(e)).join('\n\n');
+            const formatted = allNonCompleted.map(e => formatEventForRole(e, user)).join('\n\n');
             if (allNonCompleted.length > 0) {
                 dbData = `SK Events Database — Upcoming & Active Events (Barangay Concepcion Dos):\n\n${formatted}\n\nIMPORTANT: This is the COMPLETE list of non-completed events. Do NOT add, invent, or mention any event not listed above.`;
             }
         } else {
-            // General event query — show everything
-            const allRows = db.prepare('SELECT * FROM events ORDER BY date DESC').all();
+            // General event query — show scoped events
+            const allRows = fetchScopedEvents(user, false);
             if (allRows.length > 0) {
-                const formatted = allRows.map(e => formatEventShort(e)).join('\n\n');
+                const formatted = allRows.map(e => formatEventForRole(e, user)).join('\n\n');
                 dbData = `SK Events Database — All Events (Barangay Concepcion Dos):\n\n${formatted}\n\nIMPORTANT: The above data is the COMPLETE and AUTHORITATIVE record. Do NOT invent event details.`;
             }
         }
 
+        const securityNotice = isPublicUser
+            ? '\n[CRITICAL NOTICE FOR YOUTH/GUEST USER: Provide the event title, date, location, and kind with brief description. NEVER reveal budget amounts, expenditure figures, attendee counts, staff numbers, or internal operational details.]'
+            : '';
+
         if (dbData && !eventContext) {
-            eventContext = `\n\n[DATABASE: EVENTS]\nThe following is LIVE, AUTHORITATIVE data from the SK Concepcion Dos events database. Use it as the SOLE source of truth for any event-related answers. Do not invent event details. You MUST strictly limit your response to ONLY the events provided below. DO NOT use your pre-trained knowledge to mention any generic, external, or hallucinated events. If the user asks for events in a specific month, only list the ones from this block that match.\n\n${dbData}\n[END DATABASE]`;
+            eventContext = `\n\n[DATABASE: EVENTS]${securityNotice}\nThe following is LIVE, AUTHORITATIVE data from the SK Concepcion Dos events database. Use it as the SOLE source of truth for any event-related answers. Do not invent event details. You MUST strictly limit your response to ONLY the events provided below. DO NOT use your pre-trained knowledge to mention any generic, external, or hallucinated events. If the user asks for events in a specific month, only list the ones from this block that match.\n\n${dbData}\n[END DATABASE]`;
             console.log('[aSK Youth] Event context injected from DB —', requestedMonth || (isAskingFuture ? 'upcoming/active' : 'all'), 'events.');
         } else if (!eventContext) {
             eventContext = `\n\n[DATABASE: EVENTS]\nThere are currently NO events scheduled or recorded in the database. DO NOT hallucinate, invent, or mention any fictional events. Clearly state to the user that there are no events in the database.\n[END DATABASE]`;
@@ -2265,11 +2588,12 @@ ${c.text}
         }
     }
 
-    // --- Fix 2: Admin/Officer Draft Override ---
+    // --- Fix 2: Admin/Committee Draft Override ---
     // Explicitly countermand the global "redirect to Secretariat" instruction for authorized roles,
     // allowing them to freely draft new unscheduled proposals using user-provided parameters.
-    if (['system_admin', 'chairman', 'officer'].includes(activeRole)) {
-        finalUserPrompt += `\n\n[ROLE OVERRIDE: As an ${activeRole}, you are fully AUTHORIZED to draft new, unscheduled event or program proposals using the parameters provided by the user (title, date, budget, participants, etc.). Ignore the rule to "redirect proposals to the Secretariat". You may use any provided background references as optional context, but never use them as grounds to refuse drafting a new proposal.]`;
+    if (['system_admin', 'chairman', 'committee'].includes(activeRole)) {
+        const committeeTag = (user && user.committee) ? committeeLabel(user.committee) : (activeRole === 'chairman' ? 'SK Chairperson' : (activeRole === 'system_admin' ? 'System Administrator' : 'SK Official'));
+        finalUserPrompt += `\n\n[ROLE OVERRIDE: As representative of ${committeeTag} (${activeRole}), you are fully AUTHORIZED to draft new, unscheduled event or program proposals using the parameters provided by the user (title, date, budget, participants, etc.). Ignore the rule to "redirect proposals to the Secretariat". You may use any provided background references as optional context, but never use them as grounds to refuse drafting a new proposal.]`;
     }
 
     // Task 4.3 — One-time chat nudge for upcoming events on first message of a new conversation
@@ -2346,11 +2670,26 @@ app.post('/api/chat', upload.array('files', MAX_FILES), async (req, res) => {
             return { type: 'user', text: msg.content };
         });
 
+        // Resolve authenticated user for scoped retrieval
+        let chatUser = null;
+        const authHeader = req.headers.authorization;
+        if (authHeader?.startsWith('Bearer ')) {
+            try {
+                const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+                if (decoded?.id) {
+                    chatUser = db.prepare('SELECT id, username, full_name, role, committee, status FROM users WHERE id = ?').get(decoded.id);
+                }
+            } catch (_) {}
+        }
+        if (!chatUser) {
+            chatUser = { role: activeRole === 'system_admin' ? 'admin' : activeRole, isGuest: true, full_name: 'Youth Member' };
+        }
+
         // Fused retrieval: persistent HNSW vector search + SQL events query
         const conversationId = req.body.conversationId || null;
         const clientDateString = req.body.clientDateString || null;
         const { finalUserPrompt, eventContext, retrievedChunks } =
-            await buildRagContext(currentQuery, documentsData, conversationId, activeRole, null, clientDateString);
+            await buildRagContext(currentQuery, documentsData, conversationId, activeRole, null, clientDateString, chatUser);
 
         const fullSystemPrompt = buildFullSystemPrompt(eventContext, activeRole, clientDateString);
         console.log("Final Prompt sent to LLM:", finalUserPrompt.substring(0, 200) + "...");
@@ -2901,7 +3240,7 @@ app.delete('/conversations/:id', (req, res) => {
 app.get('/api/faq', (req, res) => {
     try {
         const role = resolveActiveRole(req);
-        const elevatedRoles = ['admin', 'system_admin', 'chairman', 'officer'];
+        const elevatedRoles = ['admin', 'system_admin', 'chairman', 'committee'];
         let rows;
         if (elevatedRoles.includes(role)) {
             // Elevated roles see all entries (public and restricted)

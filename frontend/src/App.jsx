@@ -4,6 +4,8 @@ import Plot from 'react-plotly.js'
 
 import EventLogModal from './components/EventLogModal'
 import ScanAttendance from './pages/ScanAttendance'
+import CommitteeSelect from './components/CommitteeSelect'
+import CommitteeBadge, { getCommitteeLabel } from './components/CommitteeBadge'
 
 const DEFAULT_PROD_API = 'https://askyouth-backend.onrender.com';
 const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -47,7 +49,7 @@ function ExportResponseButton({ messageContent, hasOfficialDocument, officialDoc
     if (!showPopup) return;
     const handleClickOutside = (e) => {
       if (popupRef.current && !popupRef.current.contains(e.target) &&
-          buttonRef.current && !buttonRef.current.contains(e.target)) {
+        buttonRef.current && !buttonRef.current.contains(e.target)) {
         setShowPopup(false);
       }
     };
@@ -141,12 +143,23 @@ function ExportResponseButton({ messageContent, hasOfficialDocument, officialDoc
 // ---------------------------------------------------------------------------
 // EventsAnalyticsModule — Phase C: Full CRUD + Analytics + Document Import
 // ---------------------------------------------------------------------------
-const EVENT_CATEGORIES = ['sports','seminar','scholarship','assembly','community','livelihood','general','cultural','health','others'];
-const EMPTY_EVENT_FORM = { title:'', description:'', category:'general', category_other_label:'', date:'', time:'', location:'', organizer:'', status:'upcoming', requirements:'', contact:'', attendees:0, male_count:0, female_count:0, staff_count:'', budget_allotted:'' };
+const EVENT_CATEGORIES = ['sports', 'seminar', 'scholarship', 'assembly', 'community', 'livelihood', 'general', 'cultural', 'health', 'others'];
+const EMPTY_EVENT_FORM = { title: '', description: '', committee: 'general', category: 'general', category_other_label: '', date: '', time: '', location: '', organizer: '', status: 'upcoming', requirements: '', contact: '', attendees: 0, male_count: 0, female_count: 0, staff_count: '', budget_allotted: '' };
 
-function EventFormModal({ event, onClose, onSaved, authHeaders }) {
+function EventFormModal({ event, onClose, onSaved, authHeaders, authUser }) {
   const isEdit = !!event;
-  const [form, setForm] = useState(isEdit ? { ...EMPTY_EVENT_FORM, ...event, staff_count: event.staff_count ?? '', budget_allotted: event.budget_allotted ?? '' } : { ...EMPTY_EVENT_FORM });
+  const isCommitteeUser = authUser?.role === 'committee';
+  const defaultCommittee = isCommitteeUser ? (authUser?.committee || '') : (event?.committee || 'general');
+  const [form, setForm] = useState(isEdit ? {
+    ...EMPTY_EVENT_FORM,
+    ...event,
+    committee: event.committee || defaultCommittee,
+    staff_count: event.staff_count ?? '',
+    budget_allotted: event.budget_allotted ?? ''
+  } : {
+    ...EMPTY_EVENT_FORM,
+    committee: defaultCommittee
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   // Document import state
@@ -179,11 +192,23 @@ function EventFormModal({ event, onClose, onSaved, authHeaders }) {
   const handleSave = async () => {
     setSaving(true); setError(null);
     try {
-      const body = { ...form, attendees: parseInt(form.attendees)||0, male_count: parseInt(form.male_count)||0, female_count: parseInt(form.female_count)||0, staff_count: form.staff_count === '' ? null : parseInt(form.staff_count)||0, budget_allotted: form.budget_allotted === '' ? null : parseFloat(form.budget_allotted)||0 };
+      const assignedCommittee = isCommitteeUser ? authUser?.committee : (form.committee || 'general');
+      const body = {
+        ...form,
+        committee: assignedCommittee,
+        attendees: parseInt(form.attendees) || 0,
+        male_count: parseInt(form.male_count) || 0,
+        female_count: parseInt(form.female_count) || 0,
+        staff_count: form.staff_count === '' ? null : parseInt(form.staff_count) || 0,
+        budget_allotted: form.budget_allotted === '' ? null : parseFloat(form.budget_allotted) || 0
+      };
       const url = isEdit ? `${API_BASE}/api/events/${event.id}` : `${API_BASE}/api/events`;
       const method = isEdit ? 'PATCH' : 'POST';
       const res = await fetch(url, { method, headers: authHeaders ? authHeaders({ 'Content-Type': 'application/json' }) : { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      if (!res.ok) throw new Error('Save failed.');
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Save failed.');
+      }
       onSaved();
     } catch (e) { setError(e.message); }
     finally { setSaving(false); }
@@ -217,12 +242,38 @@ function EventFormModal({ event, onClose, onSaved, authHeaders }) {
 
         {/* Form grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-          <div className="col-span-1 sm:col-span-2"><label className={labelCls}>Title</label><input value={form.title} onChange={e => set('title', e.target.value)} className={inputCls} /></div>
+          <div className="col-span-1 sm:col-span-2">
+            <label className={labelCls}>Title</label>
+            <input value={form.title} onChange={e => set('title', e.target.value)} className={inputCls} />
+          </div>
+
+          {/* Committee Access Scope */}
+          {isCommitteeUser ? (
+            <div className="col-span-1 sm:col-span-2 bg-blue-50/70 border-2 border-blue-200 rounded-xl p-3 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-blue-700 block">Assigned Committee Scope</span>
+                <span className="text-xs font-bold text-blue-950">{getCommitteeLabel(authUser?.committee)}</span>
+              </div>
+              <span className="text-[10px] font-mono text-slate-500 bg-white px-2.5 py-1 rounded-md border border-slate-200 font-semibold">Auto-tagged</span>
+            </div>
+          ) : (
+            <div className="col-span-1 sm:col-span-2">
+              <label className={labelCls}>Committee Scope</label>
+              <CommitteeSelect
+                apiBase={API_BASE}
+                includeGeneral={true}
+                value={form.committee || 'general'}
+                onChange={e => set('committee', e.target.value)}
+                required
+              />
+            </div>
+          )}
+
           <div><label className={labelCls}>Category</label><select value={form.category} onChange={e => set('category', e.target.value)} className={inputCls}>{EVENT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          <div><label className={labelCls}>Status</label><select value={form.status} onChange={e => set('status', e.target.value)} className={inputCls}><option value="upcoming">Upcoming</option><option value="completed">Completed</option></select></div>
           {form.category === 'others' && (
             <div className="col-span-1 sm:col-span-2"><label className={labelCls}>Specify Category</label><input value={form.category_other_label || ''} onChange={e => set('category_other_label', e.target.value)} placeholder="e.g. Blood Donation" className={inputCls} /></div>
           )}
-          <div><label className={labelCls}>Status</label><select value={form.status} onChange={e => set('status', e.target.value)} className={inputCls}><option value="upcoming">Upcoming</option><option value="completed">Completed</option></select></div>
           <div><label className={labelCls}>Date</label><input type="date" value={form.date} onChange={e => set('date', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Time</label><input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Location</label><input value={form.location} onChange={e => set('location', e.target.value)} className={inputCls} /></div>
@@ -263,7 +314,7 @@ function NotificationBell({ authHeaders, setCurrentView }) {
       try {
         const res = await fetch(`${API_BASE}/api/notifications/upcoming`, { headers: authHeaders() });
         if (res.ok) setData(await res.json());
-      } catch (e) {}
+      } catch (e) { }
     };
     fetchNotifs();
     const interval = setInterval(fetchNotifs, 300000); // 5 mins
@@ -336,7 +387,7 @@ function FaqModule({ authHeaders, authUser }) {
     try {
       await fetch(`${API_BASE}/api/faq/${id}`, { method: 'DELETE', headers: authHeaders() });
       fetchFaqs();
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const filtered = faqs.filter(f => (f.question + ' ' + f.answer).toLowerCase().includes(search.toLowerCase()));
@@ -351,7 +402,7 @@ function FaqModule({ authHeaders, authUser }) {
           </h1>
           {canEdit && (
             <button
-              onClick={() => { setEditFaq({ question:'', answer:'', category:'general', display_order:0, status:'published', visibility:'public' }); setIsEditing(true); }}
+              onClick={() => { setEditFaq({ question: '', answer: '', category: 'general', display_order: 0, status: 'published', visibility: 'public' }); setIsEditing(true); }}
               className="shrink-0 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition-all text-sm min-h-[40px]"
             >
               + New FAQ
@@ -361,7 +412,7 @@ function FaqModule({ authHeaders, authUser }) {
 
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search FAQs..." className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all mb-6 shadow-sm" />
 
-        {loading ? <div className="animate-pulse flex flex-col gap-4">{[1,2,3].map(i => <div key={i} className="h-16 bg-slate-200 rounded-xl w-full" />)}</div> : (
+        {loading ? <div className="animate-pulse flex flex-col gap-4">{[1, 2, 3].map(i => <div key={i} className="h-16 bg-slate-200 rounded-xl w-full" />)}</div> : (
           <div className="space-y-3">
             {filtered.map(faq => (
               <div key={faq.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
@@ -404,13 +455,13 @@ function FaqModule({ authHeaders, authUser }) {
           <form onSubmit={handleSave} className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-slate-800 mb-4">{editFaq.id ? 'Edit FAQ' : 'Add FAQ'}</h3>
             <div className="space-y-3">
-              <div><label className="text-xs font-bold text-slate-500">Question</label><input required value={editFaq.question} onChange={e => setEditFaq(p => ({...p, question: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
-              <div><label className="text-xs font-bold text-slate-500">Answer</label><textarea required rows={4} value={editFaq.answer} onChange={e => setEditFaq(p => ({...p, answer: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
+              <div><label className="text-xs font-bold text-slate-500">Question</label><input required value={editFaq.question} onChange={e => setEditFaq(p => ({ ...p, question: e.target.value }))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
+              <div><label className="text-xs font-bold text-slate-500">Answer</label><textarea required rows={4} value={editFaq.answer} onChange={e => setEditFaq(p => ({ ...p, answer: e.target.value }))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div><label className="text-xs font-bold text-slate-500">Category</label><input value={editFaq.category} onChange={e => setEditFaq(p => ({...p, category: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
-                <div><label className="text-xs font-bold text-slate-500">Order</label><input type="number" value={editFaq.display_order} onChange={e => setEditFaq(p => ({...p, display_order: parseInt(e.target.value)||0}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
-                <div><label className="text-xs font-bold text-slate-500">Status</label><select value={editFaq.status} onChange={e => setEditFaq(p => ({...p, status: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none"><option>published</option><option>draft</option><option>archived</option></select></div>
-                <div><label className="text-xs font-bold text-slate-500">Visibility</label><select value={editFaq.visibility} onChange={e => setEditFaq(p => ({...p, visibility: e.target.value}))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none"><option>public</option><option>restricted</option></select></div>
+                <div><label className="text-xs font-bold text-slate-500">Category</label><input value={editFaq.category} onChange={e => setEditFaq(p => ({ ...p, category: e.target.value }))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
+                <div><label className="text-xs font-bold text-slate-500">Order</label><input type="number" value={editFaq.display_order} onChange={e => setEditFaq(p => ({ ...p, display_order: parseInt(e.target.value) || 0 }))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
+                <div><label className="text-xs font-bold text-slate-500">Status</label><select value={editFaq.status} onChange={e => setEditFaq(p => ({ ...p, status: e.target.value }))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none"><option>published</option><option>draft</option><option>archived</option></select></div>
+                <div><label className="text-xs font-bold text-slate-500">Visibility</label><select value={editFaq.visibility} onChange={e => setEditFaq(p => ({ ...p, visibility: e.target.value }))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none"><option>public</option><option>restricted</option></select></div>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
@@ -451,29 +502,29 @@ function SystemHealthTab({ authHeaders }) {
     try {
       const res = await fetch(`${API_BASE}/api/admin/system-health`, { headers: authHeaders() });
       if (res.ok) setHealth(await res.json());
-    } catch (e) {} finally { setLoading(false); }
+    } catch (e) { } finally { setLoading(false); }
   };
   useEffect(() => { fetchHealth(); const int = setInterval(fetchHealth, 45000); return () => clearInterval(int); }, []);
 
   const handleAction = async (endpoint, payload = {}) => {
     if (!confirm('Proceed with this administrative action?')) return;
     try {
-      const res = await fetch(`${API_BASE}${endpoint}`, { method: 'POST', headers: authHeaders({'Content-Type':'application/json'}), body: JSON.stringify(payload) });
+      const res = await fetch(`${API_BASE}${endpoint}`, { method: 'POST', headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(payload) });
       const data = await res.json();
       if (res.ok) alert('Success: ' + JSON.stringify(data));
       else alert('Failed: ' + data.error);
-    } catch(e) { alert('Request failed.'); }
+    } catch (e) { alert('Request failed.'); }
   };
 
   const handleBackupNow = async () => {
     if (!confirm('Push a snapshot of the current database to Supabase Storage now?')) return;
     setBackupNowLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/admin/backup-db`, { method: 'POST', headers: authHeaders({'Content-Type':'application/json'}), body: JSON.stringify({}) });
+      const res = await fetch(`${API_BASE}/api/admin/backup-db`, { method: 'POST', headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({}) });
       const data = await res.json();
-      if (res.ok) alert(`✅ Backup pushed!\nFile: ${data.filename}\nSize: ${Math.round(data.bytes/1024)} KB`);
+      if (res.ok) alert(`✅ Backup pushed!\nFile: ${data.filename}\nSize: ${Math.round(data.bytes / 1024)} KB`);
       else alert('Backup failed: ' + data.error);
-    } catch(e) { alert('Request failed.'); }
+    } catch (e) { alert('Request failed.'); }
     finally { setBackupNowLoading(false); }
   };
 
@@ -488,7 +539,7 @@ function SystemHealthTab({ authHeaders }) {
       const data = await res.json();
       if (res.ok) setBackups(data.snapshots || []);
       else setBackupsError(data.error || 'Failed to load backups.');
-    } catch(e) { setBackupsError('Network error loading backups.'); }
+    } catch (e) { setBackupsError('Network error loading backups.'); }
     finally { setBackupsLoading(false); }
   };
 
@@ -502,7 +553,7 @@ function SystemHealthTab({ authHeaders }) {
     try {
       const res = await fetch(`${API_BASE}/api/admin/restore-backup`, {
         method: 'POST',
-        headers: authHeaders({'Content-Type':'application/json'}),
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ snapshotFilename: selectedBackup.filename })
       });
       // 202 Accepted is success — service will restart
@@ -512,7 +563,7 @@ function SystemHealthTab({ authHeaders }) {
         alert('Restore failed: ' + (data.error || res.statusText));
       }
       // On success stay in step 2 (restoring overlay) — user waits ~60s then refreshes
-    } catch(e) {
+    } catch (e) {
       setRestoreStep(1);
       alert('Network error — restore may not have started. Check Render logs.');
     }
@@ -612,11 +663,10 @@ function SystemHealthTab({ authHeaders }) {
                     <button
                       key={snap.filename}
                       onClick={() => handleSelectSnapshot(snap)}
-                      className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all cursor-pointer ${
-                        snap.isSafety
+                      className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all cursor-pointer ${snap.isSafety
                           ? 'bg-blue-50/60 border-blue-200 hover:bg-blue-100/50'
                           : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-blue-400'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
@@ -704,7 +754,7 @@ function SystemHealthTab({ authHeaders }) {
               className="bg-slate-50 border-2 border-slate-200 rounded-xl px-2.5 py-1 text-[11px] font-mono text-slate-800 focus:outline-none focus:border-blue-600"
             >
               <option value="">All sources</option>
-              {['SSE','Cache','RAG','Snapshot','VectorStore','Python AI'].map(s => (
+              {['SSE', 'Cache', 'RAG', 'Snapshot', 'VectorStore', 'Python AI'].map(s => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
@@ -713,7 +763,7 @@ function SystemHealthTab({ authHeaders }) {
               disabled={aiLogsLoading}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 text-[11px] font-bold font-mono rounded-xl transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
             >
-              <svg className={`w-3.5 h-3.5 ${aiLogsLoading ? 'animate-spin text-blue-600' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              <svg className={`w-3.5 h-3.5 ${aiLogsLoading ? 'animate-spin text-blue-600' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
               {aiLogsLoading ? 'Loading…' : 'Refresh'}
             </button>
           </div>
@@ -749,11 +799,10 @@ function SystemHealthTab({ authHeaders }) {
                     <tr key={i} className={`hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                       <td className="px-3 py-1.5 text-slate-500 whitespace-nowrap">{new Date(entry.ts).toLocaleTimeString()}</td>
                       <td className="px-3 py-1.5">
-                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
-                          entry.level === 'warn'  ? 'bg-amber-100 text-amber-800 border border-amber-300' :
-                          entry.level === 'error' ? 'bg-red-100 text-red-800 border border-red-300' :
-                                                    'bg-slate-100 text-slate-700 border border-slate-200'
-                        }`}>{entry.level}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${entry.level === 'warn' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+                            entry.level === 'error' ? 'bg-red-100 text-red-800 border border-red-300' :
+                              'bg-slate-100 text-slate-700 border border-slate-200'
+                          }`}>{entry.level}</span>
                       </td>
                       <td className="px-3 py-1.5 text-blue-700 font-bold whitespace-nowrap">{entry.source}</td>
                       <td className="px-3 py-1.5 text-slate-800 break-all">{entry.message}</td>
@@ -833,7 +882,7 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
       const res = await fetch(url, { headers: authHeaders ? authHeaders() : {} });
       const data = await res.json();
       setEvents(data);
-    } catch {} finally { setEventsLoading(false); }
+    } catch { } finally { setEventsLoading(false); }
   };
 
   useEffect(() => { fetchChart(chartType, showGender, showStaff); }, [chartType, showGender, showStaff]);
@@ -850,12 +899,12 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
       if (res.ok) {
         fetchEvents();
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const handleDelete = async (id) => {
     try { await fetch(`${API_BASE}/api/events/${id}`, { method: 'DELETE', headers: authHeaders ? authHeaders() : {} }); }
-    catch {} finally { setDeleteId(null); fetchEvents(); fetchChart(chartType, showGender, showStaff); }
+    catch { } finally { setDeleteId(null); fetchEvents(); fetchChart(chartType, showGender, showStaff); }
   };
 
   const chartTabs = [
@@ -865,7 +914,20 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
     { id: 'attendance', label: 'Attendance' },
   ];
 
-  const filteredEvents = events.filter(ev => !searchQ || ev.title.toLowerCase().includes(searchQ.toLowerCase()) || ev.category.toLowerCase().includes(searchQ.toLowerCase()));
+  const [filterNeedsReview, setFilterNeedsReview] = useState(false);
+  const needsReviewCount = events.filter(ev => ev.needs_review === 1).length;
+
+  const filteredEvents = events.filter(ev => {
+    if (searchQ) {
+      const q = searchQ.toLowerCase();
+      const matchTitle = (ev.title || '').toLowerCase().includes(q);
+      const matchCat = (ev.category || '').toLowerCase().includes(q);
+      const matchComm = (ev.committee || '').toLowerCase().includes(q);
+      if (!matchTitle && !matchCat && !matchComm) return false;
+    }
+    if (filterNeedsReview && ev.needs_review !== 1) return false;
+    return true;
+  });
 
   const fmtBudget = (v) => (v != null && v !== '') ? `₱${Number(v).toLocaleString()}` : '';
 
@@ -888,15 +950,14 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
           <span className="text-base sm:text-lg font-display font-black tracking-wider text-slate-900 truncate">📅 EVENTS &amp; ATTENDANCE</span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {['dashboard','events'].map(t => (
+          {['dashboard', 'events'].map(t => (
             <button
               key={t}
               onClick={() => setMainTab(t)}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-display font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                mainTab === t
+              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-display font-bold uppercase tracking-wider transition-all cursor-pointer ${mainTab === t
                   ? 'bg-slate-900 text-white shadow-md'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
-              }`}
+                }`}
             >
               {t === 'dashboard' ? '📊 Dashboard' : '📋 Events'}
             </button>
@@ -914,14 +975,14 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                 <h2 className="text-2xl sm:text-3xl font-display font-black text-slate-900">Dashboard</h2>
                 <p className="text-slate-500 font-mono text-xs sm:text-sm mt-1">Live attendance &amp; event monitoring overview</p>
               </div>
-              
+
               {activeEvent ? (
                 <>
                   <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 sm:p-8 flex flex-col justify-center items-center sm:items-start text-center sm:text-left shadow-sm">
                     <p className="text-xs font-mono font-bold text-slate-500 uppercase tracking-widest mb-2">Total Attendees</p>
                     <p className="text-6xl sm:text-7xl font-display font-black text-blue-600">{activeEvent.attendees || 0}</p>
                   </div>
-                  
+
                   <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm">
                     <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-2 mb-4">
                       <p className="text-xs font-mono font-bold text-slate-500 uppercase tracking-widest">Active events — attendance scanning</p>
@@ -946,6 +1007,29 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
 
         {/* ==================== MANAGE EVENTS TAB ==================== */}
         {mainTab === 'events' && (<>
+          {/* Scope Banner */}
+          {authUser?.role === 'committee' && (
+            !authUser?.committee ? (
+              <div className="p-3.5 mb-3 bg-amber-50 border-2 border-amber-300 rounded-xl flex items-center gap-2.5 text-xs font-bold text-amber-900 shadow-sm">
+                <span className="text-base">⚠️</span>
+                <div>
+                  <strong>Committee not assigned.</strong> Contact the administrator to assign your committee. You cannot view or create committee events until assigned.
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5 px-4 py-2 bg-blue-50 border-2 border-blue-200 rounded-xl text-xs font-mono font-semibold text-blue-900 mb-3 shadow-xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse shrink-0" />
+                <span>Scope: Showing <strong>{getCommitteeLabel(authUser.committee)}</strong> + General Events</span>
+              </div>
+            )
+          )}
+          {['admin', 'chairman'].includes(authUser?.role) && (
+            <div className="flex items-center gap-2.5 px-4 py-2 bg-slate-50 border-2 border-slate-200 rounded-xl text-xs font-mono font-semibold text-slate-800 mb-3 shadow-xs">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+              <span>Scope: Showing <strong>All Committees & General</strong> (System-wide)</span>
+            </div>
+          )}
+
           {/* Toolbar */}
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
             <div className="flex-1 flex gap-2 flex-wrap sm:flex-nowrap">
@@ -954,6 +1038,20 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                 <option value="">All Categories</option>
                 {EVENT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
+              {needsReviewCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setFilterNeedsReview(!filterNeedsReview)}
+                  className={`px-3 py-2 rounded-xl text-xs font-mono font-bold transition-all border-2 flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                    filterNeedsReview
+                      ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
+                      : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                  }`}
+                  title="Filter events migrated as general needing review"
+                >
+                  <span>⚠️</span> Needs Review ({needsReviewCount})
+                </button>
+              )}
             </div>
             <div className="flex gap-2">
               <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 focus:border-blue-600 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 focus:outline-none shadow-sm">
@@ -961,7 +1059,13 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                 <option value="upcoming">Upcoming</option>
                 <option value="completed">Completed</option>
               </select>
-              <button onClick={() => setModalEvent(null)} className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-display font-bold uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 cursor-pointer">+ Add Event</button>
+              <button
+                disabled={authUser?.role === 'committee' && !authUser?.committee}
+                onClick={() => setModalEvent(null)}
+                className="px-5 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:opacity-40 text-white text-xs font-display font-bold uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
+              >
+                + Add Event
+              </button>
             </div>
           </div>
 
@@ -979,6 +1083,7 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                   <th className="px-4 py-3">Event Name</th>
                   <th className="px-4 py-3">Date</th>
                   <th className="px-4 py-3">Location</th>
+                  <th className="px-4 py-3">Committee</th>
                   <th className="px-4 py-3">Category</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Attendees</th>
@@ -997,37 +1102,54 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                     </td>
                     <td className="px-4 py-3 text-slate-600">{ev.location || '—'}</td>
                     <td className="px-4 py-3">
+                      <div className="flex flex-col gap-1 items-start">
+                        <CommitteeBadge committee={ev.committee} compact={true} />
+                        {ev.needs_review === 1 && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                            Needs Review
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
                       <span className="text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full">
                         {ev.category === 'others' && ev.category_other_label ? `Others: ${ev.category_other_label}` : ev.category}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                        ev.status === 'completed' ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' : 
-                        ev.status === 'active' ? 'bg-emerald-600 text-white shadow-sm' : 
-                        'bg-amber-50 text-amber-800 border border-amber-300'
-                      }`}>
+                      <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${ev.status === 'completed' ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' :
+                          ev.status === 'active' ? 'bg-emerald-600 text-white shadow-sm' :
+                            'bg-amber-50 text-amber-800 border border-amber-300'
+                        }`}>
                         {ev.status === 'completed' ? 'Completed' : ev.status === 'active' ? 'Active' : 'Not Started'}
                       </span>
                     </td>
                     <td className="px-4 py-3 font-mono font-bold text-blue-700">{ev.attendees || 0}</td>
                     <td className="px-4 py-3 text-right">
-                      <div className="flex flex-col items-end gap-1">
-                        <div className="flex gap-1.5 justify-end">
-                          <button onClick={() => setModalEvent(ev)} className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] uppercase font-bold rounded-lg border border-slate-200 cursor-pointer transition-colors">Edit</button>
-                          {['admin', 'chairman', 'officer'].includes(authUser?.role) && (
-                            <button onClick={() => setLogEvent(ev)} className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] uppercase font-bold rounded-lg border border-blue-200 cursor-pointer transition-colors">Event log</button>
-                          )}
-                          {['admin', 'chairman'].includes(authUser?.role) && (
-                            <button onClick={() => setDeleteId(ev.id)} className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] uppercase font-bold rounded-lg border border-red-200 cursor-pointer transition-colors">Delete</button>
-                          )}
-                        </div>
-                        {ev.status === 'active' && (
-                          <button onClick={() => setQrEvent(ev)} className="mt-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] uppercase font-bold tracking-wider rounded-lg shadow-sm cursor-pointer transition-all">
-                            Show QR Code
-                          </button>
-                        )}
-                      </div>
+                      {(() => {
+                        const canMutate = ['admin', 'chairman'].includes(authUser?.role) ||
+                          (authUser?.role === 'committee' && authUser?.committee && ev.committee === authUser?.committee);
+                        return (
+                          <div className="flex flex-col items-end gap-1">
+                            <div className="flex gap-1.5 justify-end">
+                              {canMutate && (
+                                <button onClick={() => setModalEvent(ev)} className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] uppercase font-bold rounded-lg border border-slate-200 cursor-pointer transition-colors">Edit</button>
+                              )}
+                              {['admin', 'chairman', 'committee'].includes(authUser?.role) && (
+                                <button onClick={() => setLogEvent(ev)} className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] uppercase font-bold rounded-lg border border-blue-200 cursor-pointer transition-colors">Event log</button>
+                              )}
+                              {canMutate && (
+                                <button onClick={() => setDeleteId(ev.id)} className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] uppercase font-bold rounded-lg border border-red-200 cursor-pointer transition-colors">Delete</button>
+                              )}
+                            </div>
+                            {ev.status === 'active' && (
+                              <button onClick={() => setQrEvent(ev)} className="mt-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] uppercase font-bold tracking-wider rounded-lg shadow-sm cursor-pointer transition-all">
+                                Show QR Code
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))}
@@ -1044,6 +1166,7 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
           onClose={() => setModalEvent(undefined)}
           onSaved={() => { setModalEvent(undefined); fetchEvents(); fetchChart(chartType, showGender, showStaff); }}
           authHeaders={authHeaders}
+          authUser={authUser}
         />
       )}
 
@@ -1067,11 +1190,11 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
           <div className="bg-white border-2 border-slate-300 rounded-2xl p-8 max-w-sm flex flex-col items-center shadow-2xl text-slate-900" onClick={e => e.stopPropagation()}>
             <h3 className="text-xl font-display font-bold text-slate-900 mb-2 text-center">{qrEvent.title}</h3>
             <p className="text-sm text-slate-500 mb-6 text-center font-mono">Youth can scan this QR code to mark their attendance.</p>
-            
+
             <div className="bg-white p-4 rounded-2xl mb-6 border-2 border-slate-200 shadow-lg">
               <img src={`${API_BASE}/api/events/${qrEvent.id}/qr?h=${qrRefreshHash}`} alt="Event QR Code" className="w-48 h-48" />
             </div>
-            
+
             {authUser?.role === 'admin' && (
               <button onClick={() => handleRefreshQR(qrEvent.id)} className="w-full mb-3 px-4 py-2.5 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 transition-colors shadow-sm cursor-pointer font-mono text-xs uppercase tracking-wider">
                 Refresh QR (Admin Only)
@@ -1087,15 +1210,15 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
 
       {/* Event Logs Modal */}
       {logEvent && (
-        <EventLogModal 
-          open={!!logEvent} 
-          onClose={() => setLogEvent(null)} 
-          event={logEvent} 
-          token={authHeaders().Authorization?.split(' ')[1]} 
+        <EventLogModal
+          open={!!logEvent}
+          onClose={() => setLogEvent(null)}
+          event={logEvent}
+          token={authHeaders().Authorization?.split(' ')[1]}
           authUser={authUser}
           onToggleStatus={(ev) => {
             handleToggleStatus(ev);
-            setLogEvent({...ev, status: ev.status === 'upcoming' ? 'active' : 'completed'});
+            setLogEvent({ ...ev, status: ev.status === 'upcoming' ? 'active' : 'completed' });
           }}
           onShowQR={setQrEvent}
           qrRefreshHash={qrRefreshHash}
@@ -1159,16 +1282,16 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
       { key: 'barangay_captain', label: 'Barangay Captain Name', placeholder: 'Full name' },
     ],
     project_brief: [
-      { key: 'project_name',     label: 'Name of Project / Activity', placeholder: 'e.g. Gabi ng Kabataan 2025' },
-      { key: 'location',         label: 'Location', placeholder: 'e.g. Barangay Concepcion Dos Multi-Purpose Hall' },
-      { key: 'target_date',      label: 'Target Date of Implementation', placeholder: 'e.g. December 15, 2025' },
-      { key: 'background',       label: 'Background / Rationale', placeholder: 'Why is this project needed?', multiline: true },
-      { key: 'objective',        label: 'Objective', placeholder: 'What does this project aim to achieve?', multiline: true },
-      { key: 'physical_output',  label: 'Target Physical Output', placeholder: 'e.g. 200 youth attended, 50 kits distributed', multiline: true },
-      { key: 'beneficiaries',    label: 'Target Beneficiaries', placeholder: 'e.g. Youth aged 15–30 of Barangay Concepcion Dos' },
-      { key: 'budget',           label: 'Budget (Php)', placeholder: 'e.g. 50,000' },
+      { key: 'project_name', label: 'Name of Project / Activity', placeholder: 'e.g. Gabi ng Kabataan 2025' },
+      { key: 'location', label: 'Location', placeholder: 'e.g. Barangay Concepcion Dos Multi-Purpose Hall' },
+      { key: 'target_date', label: 'Target Date of Implementation', placeholder: 'e.g. December 15, 2025' },
+      { key: 'background', label: 'Background / Rationale', placeholder: 'Why is this project needed?', multiline: true },
+      { key: 'objective', label: 'Objective', placeholder: 'What does this project aim to achieve?', multiline: true },
+      { key: 'physical_output', label: 'Target Physical Output', placeholder: 'e.g. 200 youth attended, 50 kits distributed', multiline: true },
+      { key: 'beneficiaries', label: 'Target Beneficiaries', placeholder: 'e.g. Youth aged 15–30 of Barangay Concepcion Dos' },
+      { key: 'budget', label: 'Budget (Php)', placeholder: 'e.g. 50,000' },
       { key: 'prepared_by_name', label: 'Prepared By — Name', placeholder: 'Full name' },
-      { key: 'prepared_by_title',label: 'Prepared By — Title/Position', placeholder: 'e.g. SK Chairperson' },
+      { key: 'prepared_by_title', label: 'Prepared By — Title/Position', placeholder: 'e.g. SK Chairperson' },
     ],
   };
 
@@ -1217,10 +1340,10 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
   };
 
   const templates = [
-    { id: 'resolution',    label: 'SK Resolution',               emoji: '📜' },
-    { id: 'minutes',       label: 'Meeting Minutes',             emoji: '📝' },
-    { id: 'certificate',   label: 'Certificate of Recognition',  emoji: '🏆' },
-    { id: 'project_brief', label: 'Project Brief',               emoji: '📊' },
+    { id: 'resolution', label: 'SK Resolution', emoji: '📜' },
+    { id: 'minutes', label: 'Meeting Minutes', emoji: '📝' },
+    { id: 'certificate', label: 'Certificate of Recognition', emoji: '🏆' },
+    { id: 'project_brief', label: 'Project Brief', emoji: '📊' },
   ];
 
   return (
@@ -1252,11 +1375,10 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
               <button
                 key={t.id}
                 onClick={() => setTemplateId(t.id)}
-                className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 text-sm font-display font-bold transition-all cursor-pointer ${
-                  templateId === t.id
+                className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 text-sm font-display font-bold transition-all cursor-pointer ${templateId === t.id
                     ? 'bg-blue-50 border-blue-600 text-blue-900 shadow-md scale-[1.02]'
                     : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 shadow-sm'
-                }`}
+                  }`}
               >
                 <span className="text-2xl drop-shadow-sm">{t.emoji}</span>
                 <span className="text-center leading-tight tracking-wide text-xs">{t.label}</span>
@@ -1334,7 +1456,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   const effectiveRole = authUser?.role || 'admin';
   const [stats, setStats] = useState({ totalEvents: 0, totalAttendees: 0, totalBudget: 0, pendingSuggestions: 0, activeUsers: 0 });
   const [participationData, setParticipationData] = useState([]);
-  
+
   // Leaderboard states
   const [leaderboardSortBy, setLeaderboardSortBy] = useState('attendees'); // 'date' | 'attendees' | 'budget'
   const [leaderboardSortAsc, setLeaderboardSortAsc] = useState(false); // false = desc
@@ -1351,7 +1473,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
 
   // User CRUD states
   const [showAddUser, setShowAddUser] = useState(false);
-  const [newUser, setNewUser] = useState({ username: '', full_name: '', role: 'officer', password: '' });
+  const [newUser, setNewUser] = useState({ username: '', full_name: '', role: 'committee', committee: '', password: '' });
   const [newUserToken, setNewUserToken] = useState('');
   const [editUser, setEditUser] = useState(null);
   const [editUserConfirmPw, setEditUserConfirmPw] = useState('');
@@ -1382,11 +1504,11 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
         if (res.ok) {
           const d = await res.json();
           setStats({
-            totalEvents:        d.totalEvents        || 0,
-            totalAttendees:     d.totalAttendees     || 0,
-            totalBudget:        d.totalBudget        || 0,
+            totalEvents: d.totalEvents || 0,
+            totalAttendees: d.totalAttendees || 0,
+            totalBudget: d.totalBudget || 0,
             pendingSuggestions: d.pendingSuggestions || 0,
-            activeUsers:        d.activeUsers        || 0,
+            activeUsers: d.activeUsers || 0,
           });
         } else {
           console.error('[Admin Stats] HTTP', res.status, await res.text());
@@ -1445,6 +1567,10 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   // Handle Add User
   const handleCreateUser = async (e) => {
     e.preventDefault();
+    if (newUser.role === 'committee' && !newUser.committee) {
+      alert('Please select a Committee for this account.');
+      return;
+    }
     // Account creation requires token (as another safeguard for administrating accounts)
     if (!newUserToken.trim()) {
       alert('A privileged authorization token is required to create an account.');
@@ -1454,13 +1580,17 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
       const res = await fetch(`${API_BASE}/api/users`, {
         method: 'POST',
         headers: authHeaders({ 'Content-Type': 'application/json', 'X-Actor': authUser?.full_name || 'Admin', 'X-Role': effectiveRole }),
-        body: JSON.stringify({ ...newUser, admin_token: newUserToken || undefined })
+        body: JSON.stringify({
+          ...newUser,
+          committee: newUser.role === 'committee' ? newUser.committee : null,
+          admin_token: newUserToken || undefined
+        })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create user');
       alert('User created successfully!');
       setShowAddUser(false);
-      setNewUser({ username: '', full_name: '', role: 'officer', password: '' });
+      setNewUser({ username: '', full_name: '', role: 'committee', committee: '', password: '' });
       setNewUserToken('');
       fetchDashboardData();
     } catch (err) {
@@ -1472,6 +1602,10 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   const handleUpdateUser = async (e) => {
     e.preventDefault();
     if (!editUser) return;
+    if (editUser.role === 'committee' && !editUser.committee) {
+      alert('Please select a Committee for this account.');
+      return;
+    }
     // Token is ALWAYS required for any account modification
     if (!editUserToken.trim()) {
       alert('An authorization token is required to modify any account.');
@@ -1491,6 +1625,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
         body: JSON.stringify({
           full_name: editUser.full_name,
           role: editUser.role,
+          committee: editUser.role === 'committee' ? editUser.committee : null,
           status: editUser.status,
           admin_token: editUserToken,
           ...(editUser.password ? { password: editUser.password } : {})
@@ -1577,7 +1712,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `system_logs_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute('download', `system_logs_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -1588,7 +1723,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   sortedParticipationData.sort((a, b) => {
     let valA = 0;
     let valB = 0;
-    
+
     if (leaderboardSortBy === 'date') {
       valA = new Date(a.date || 0).getTime() || 0;
       valB = new Date(b.date || 0).getTime() || 0;
@@ -1657,11 +1792,10 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`shrink-0 flex items-center gap-2 px-3 sm:px-4 py-2 border-b-2 font-display text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
-                activeTab === tab.id
+              className={`shrink-0 flex items-center gap-2 px-3 sm:px-4 py-2 border-b-2 font-display text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${activeTab === tab.id
                   ? 'border-blue-600 text-blue-700 bg-blue-50/60 rounded-t-xl'
                   : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50/50 rounded-t-xl'
-              }`}
+                }`}
             >
               <span>{tab.icon}</span>
               {tab.label}
@@ -1673,7 +1807,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             className="ml-auto my-auto p-2 text-slate-400 hover:text-blue-600 transition-colors rounded-xl hover:bg-slate-100 shrink-0 cursor-pointer"
             title="Refresh Data"
           >
-            <svg className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <svg className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
           </button>
         </div>
       </div>
@@ -1692,10 +1826,10 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             {/* Stats Row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'TOTAL SK EVENTS',    val: stats.totalEvents,                                       color: 'border-blue-200 text-blue-600',       icon: '📅' },
-                { label: 'ACTIVE ATTENDEES',    val: (stats.totalAttendees ?? 0).toLocaleString(),            color: 'border-cyan-200 text-cyan-600',        icon: '🙋‍♂️' },
-                { label: 'BUDGET UTILIZED',     val: `₱${(stats.totalBudget ?? 0).toLocaleString()}`,         color: 'border-emerald-200 text-emerald-600',  icon: '💰' },
-                { label: 'PENDING SUGGESTIONS', val: stats.pendingSuggestions,                                color: 'border-amber-200 text-amber-600',      icon: '📬' },
+                { label: 'TOTAL SK EVENTS', val: stats.totalEvents, color: 'border-blue-200 text-blue-600', icon: '📅' },
+                { label: 'ACTIVE ATTENDEES', val: (stats.totalAttendees ?? 0).toLocaleString(), color: 'border-cyan-200 text-cyan-600', icon: '🙋‍♂️' },
+                { label: 'BUDGET UTILIZED', val: `₱${(stats.totalBudget ?? 0).toLocaleString()}`, color: 'border-emerald-200 text-emerald-600', icon: '💰' },
+                { label: 'PENDING SUGGESTIONS', val: stats.pendingSuggestions, color: 'border-amber-200 text-amber-600', icon: '📬' },
               ].map((st, i) => (
                 <div key={i} className={`bg-white border-2 ${st.color} rounded-2xl p-5 relative group hover:shadow-md transition-all overflow-hidden`}>
                   <div className="flex justify-between items-start">
@@ -1752,7 +1886,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     <Plot
                       data={[{
                         type: 'bar',
-                        x: sortedParticipationData.map(d => d.title.substring(0,15) + (d.title.length > 15 ? '…' : '')),
+                        x: sortedParticipationData.map(d => d.title.substring(0, 15) + (d.title.length > 15 ? '…' : '')),
                         y: sortedParticipationData.map(d => leaderboardSortBy === 'budget' ? (Number(d.budget_allotted) || 0) : (Number(d.attendees) || 0)),
                         text: sortedParticipationData.map(d => `<b>${d.title}</b><br>Date: ${d.date ? new Date(d.date).toLocaleDateString() : 'N/A'}<br>Attendees: ${d.attendees || 0}<br>Budget: ₱${(Number(d.budget_allotted) || 0).toLocaleString()}`),
                         hoverinfo: 'text',
@@ -1803,9 +1937,8 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                             labels: activeBudgetData.map(d => (d.category || 'general').toUpperCase()),
                             values: activeBudgetData.map(d => Number(d.total_budget)),
                             marker: { colors: budgetPalette },
-                            textposition: 'inside',
-                            textinfo: 'percent',
-                            insidetextorientation: 'radial',
+                            textposition: 'none',
+                            textinfo: 'none',
                             hoverinfo: 'label+value+percent',
                             hovertemplate: '<b>%{label}</b><br>Budget: ₱%{value:,.2f}<br>Share: %{percent}<extra></extra>'
                           }]}
@@ -1899,6 +2032,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     <th className="p-3">Username</th>
                     <th className="p-3">Identity / Alias</th>
                     <th className="p-3">Role Tier</th>
+                    <th className="p-3">Committee</th>
                     <th className="p-3">Status</th>
                     <th className="p-3">Created Link</th>
                     {effectiveRole === 'admin' && <th className="p-3 text-right">Privilege Controls</th>}
@@ -1908,16 +2042,29 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   {users.filter(u => u.role !== 'youth').map(usr => (
                     <tr key={usr.id} className="hover:bg-blue-50/30 transition-colors">
                       <td className="p-3 font-bold text-blue-700">{usr.username}</td>
-                      <td className="p-3 text-slate-900 font-semibold">{usr.full_name}</td>
+                      <td className="p-3 text-slate-900 font-semibold">
+                        <div>{usr.full_name}</div>
+                        {usr.role === 'committee' && (
+                          <div className="text-[10px] text-slate-500 font-normal">
+                            {getCommitteeLabel(usr.committee)}
+                          </div>
+                        )}
+                      </td>
                       <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${
-                          usr.role === 'admin' ? 'bg-red-100 text-red-800 border border-red-200' :
-                          usr.role === 'chairman' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                          usr.role === 'officer' ? 'bg-cyan-100 text-cyan-800 border border-cyan-200' :
-                          'bg-slate-100 text-slate-700'
-                        }`}>
-                          {usr.role}
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${usr.role === 'admin' ? 'bg-red-100 text-red-800 border border-red-200' :
+                            usr.role === 'chairman' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                              usr.role === 'committee' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                                'bg-slate-100 text-slate-700'
+                          }`}>
+                          {usr.role === 'committee' ? 'Committee' : usr.role}
                         </span>
+                      </td>
+                      <td className="p-3">
+                        {usr.role === 'committee' ? (
+                          <CommitteeBadge committee={usr.committee} compact={true} />
+                        ) : (
+                          <span className="text-slate-400 font-mono text-xs">—</span>
+                        )}
                       </td>
                       <td className="p-3">
                         <span className={`flex items-center gap-1.5 font-bold ${usr.status === 'active' ? 'text-emerald-700' : 'text-slate-400'}`}>
@@ -1925,7 +2072,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                           {usr.status.toUpperCase()}
                         </span>
                       </td>
-                      <td className="p-3 text-slate-500">{usr.created_at?.slice(0,10)}</td>
+                      <td className="p-3 text-slate-500">{usr.created_at?.slice(0, 10)}</td>
                       {effectiveRole === 'admin' && (
                         <td className="p-3 text-right">
                           <div className="flex items-center justify-end gap-2 flex-wrap">
@@ -1964,7 +2111,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   ))}
                   {users.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="p-6 text-center text-slate-400 font-mono">No accounts retrieved</td>
+                      <td colSpan={7} className="p-6 text-center text-slate-400 font-mono">No accounts retrieved</td>
                     </tr>
                   )}
                 </tbody>
@@ -2114,19 +2261,32 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                 <label className="text-slate-700 block mb-1 font-bold">Privilege Tier</label>
                 <select
                   value={newUser.role}
-                  onChange={e => setNewUser({ ...newUser, role: e.target.value })}
+                  onChange={e => setNewUser({ ...newUser, role: e.target.value, committee: e.target.value === 'committee' ? newUser.committee : '' })}
                   className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-600 shadow-sm"
                 >
                   <option value="admin">Admin</option>
                   <option value="chairman" disabled={hasChairman} className={hasChairman ? 'text-slate-400' : ''}>
                     Chairman{hasChairman ? ' (Already Assigned)' : ''}
                   </option>
-                  <option value="officer">Officer</option>
+                  <option value="committee">Committee</option>
                 </select>
                 {newUser.role === 'chairman' && hasChairman && (
-                  <p className="mt-1 text-amber-600 text-[10px]">⚠ A Chairman already exists. Only one Chairman is allowed.</p>
+                  <p className="mt-1 text-amber-600 text-[10px]">⚠️ A Chairman already exists. Only one Chairman is allowed.</p>
                 )}
               </div>
+              {newUser.role === 'committee' && (
+                <div>
+                  <label className="text-slate-700 block mb-1 font-bold">Committee of what? <span className="text-red-500">*</span></label>
+                  <CommitteeSelect
+                    apiBase={API_BASE}
+                    value={newUser.committee}
+                    onChange={e => setNewUser({ ...newUser, committee: e.target.value })}
+                    required
+                    placeholder="-- Select Committee (10 Centers) --"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">Select one of the 10 Centers of Participation.</p>
+                </div>
+              )}
               <div>
                 <label className="text-slate-700 block mb-1 font-bold">Authentication Passkey</label>
                 <input
@@ -2143,12 +2303,12 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                 <p className="text-red-700 text-[10px] font-bold uppercase tracking-widest">🔐 Authorization Required</p>
                 <p className="text-slate-600 text-[10px]">Creating an account requires a privileged authorization token.</p>
                 <input
-                    type="password"
-                    value={newUserToken}
-                    onChange={e => setNewUserToken(e.target.value)}
-                    placeholder="Enter admin authorization token…"
-                    className="w-full bg-white border-2 border-red-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-red-500 text-xs shadow-sm"
-                  />
+                  type="password"
+                  value={newUserToken}
+                  onChange={e => setNewUserToken(e.target.value)}
+                  placeholder="Enter admin authorization token…"
+                  className="w-full bg-white border-2 border-red-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-red-500 text-xs shadow-sm"
+                />
               </div>
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
@@ -2193,7 +2353,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                 <label className="text-slate-700 font-bold block mb-1">Privilege Tier</label>
                 <select
                   value={editUser.role}
-                  onChange={e => setEditUser({ ...editUser, role: e.target.value })}
+                  onChange={e => setEditUser({ ...editUser, role: e.target.value, committee: e.target.value === 'committee' ? editUser.committee : null })}
                   className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-500 font-mono font-bold"
                 >
                   <option value="admin">Admin</option>
@@ -2204,9 +2364,21 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   >
                     Chairman{hasChairman && editUser.role !== 'chairman' ? ' (Already Assigned)' : ''}
                   </option>
-                  <option value="officer">Officer</option>
+                  <option value="committee">Committee</option>
                 </select>
               </div>
+              {editUser.role === 'committee' && (
+                <div>
+                  <label className="text-slate-700 font-bold block mb-1">Committee of what? <span className="text-red-500">*</span></label>
+                  <CommitteeSelect
+                    apiBase={API_BASE}
+                    value={editUser.committee || ''}
+                    onChange={e => setEditUser({ ...editUser, committee: e.target.value })}
+                    required
+                    placeholder="-- Select Committee (10 Centers) --"
+                  />
+                </div>
+              )}
               <div>
                 <label className="text-slate-700 font-bold block mb-1">Status</label>
                 <select
@@ -2240,11 +2412,10 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                       value={editUserConfirmPw}
                       onChange={e => setEditUserConfirmPw(e.target.value)}
                       placeholder="••••••••"
-                      className={`w-full bg-white border-2 rounded-xl px-3 py-2 text-slate-900 focus:outline-none font-mono ${
-                        editUserConfirmPw && editUser.password !== editUserConfirmPw
+                      className={`w-full bg-white border-2 rounded-xl px-3 py-2 text-slate-900 focus:outline-none font-mono ${editUserConfirmPw && editUser.password !== editUserConfirmPw
                           ? 'border-red-500 focus:border-red-500'
                           : 'border-slate-200 focus:border-blue-500'
-                      }`}
+                        }`}
                     />
                     {editUserConfirmPw && editUser.password !== editUserConfirmPw && (
                       <p className="mt-1 text-red-500 text-[10px] font-bold">Passwords do not match</p>
@@ -2343,11 +2514,10 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   onChange={e => setDeleteConfirmInput(e.target.value)}
                   placeholder={`Type "${deleteTarget.username}" to confirm`}
                   autoFocus
-                  className={`w-full bg-slate-50 border-2 rounded-xl px-3 py-2 text-slate-900 text-xs font-mono focus:outline-none ${
-                    deleteConfirmInput && deleteConfirmInput !== deleteTarget.username
+                  className={`w-full bg-slate-50 border-2 rounded-xl px-3 py-2 text-slate-900 text-xs font-mono focus:outline-none ${deleteConfirmInput && deleteConfirmInput !== deleteTarget.username
                       ? 'border-red-500 focus:border-red-500'
                       : 'border-slate-200 focus:border-blue-500'
-                  }`}
+                    }`}
                 />
                 {deleteConfirmInput && deleteConfirmInput !== deleteTarget.username && (
                   <p className="text-red-500 text-[10px] font-bold">Username does not match.</p>
@@ -2454,7 +2624,7 @@ function LoginPage({ apiBase, onLogin }) {
     }
   };
 
-  const roleLabels = { admin: 'System Administrator', chairman: 'SK Chairperson', officer: 'SK Officer', youth: 'Youth Member' };
+  const roleLabels = { admin: 'System Administrator', chairman: 'SK Chairperson', committee: 'SK Committee', youth: 'Youth Member' };
 
   const lockMins = Math.floor(lockedSecs / 60);
   const lockSecsRem = lockedSecs % 60;
@@ -2586,11 +2756,10 @@ function LoginPage({ apiBase, onLogin }) {
           <button
             type="submit"
             disabled={loading || lockedSecs > 0 || !username.trim() || !password.trim()}
-            className={`w-full py-3.5 rounded-xl font-display font-bold text-sm tracking-widest uppercase transition-all duration-300 flex items-center justify-center gap-2 ${
-              loading || !username.trim() || !password.trim()
+            className={`w-full py-3.5 rounded-xl font-display font-bold text-sm tracking-widest uppercase transition-all duration-300 flex items-center justify-center gap-2 ${loading || !username.trim() || !password.trim()
                 ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/50'
                 : 'bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 text-white shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:shadow-[0_4px_30px_rgba(37,99,235,0.6)] hover:from-blue-500 hover:to-cyan-500 cursor-pointer active:scale-[0.98]'
-            }`}
+              }`}
           >
             {loading ? (
               <>
@@ -2695,7 +2864,7 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
     } catch (e) { alert(e.message); }
   };
 
-  const isAdmin = ['admin', 'chairman', 'officer'].includes(authUser?.role);
+  const isAdmin = ['admin', 'chairman', 'committee'].includes(authUser?.role);
   const isYouth = authUser?.role === 'youth';
 
   const filteredSuggestions = statusFilter
@@ -2736,7 +2905,7 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
             <form onSubmit={handleSubmit} className="space-y-3">
               <select
                 value={form.category}
-                onChange={e => setForm({...form, category: e.target.value})}
+                onChange={e => setForm({ ...form, category: e.target.value })}
                 className="w-full sm:w-auto bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-blue-600 shadow-sm"
               >
                 <option value="general">General</option>
@@ -2746,7 +2915,7 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
               </select>
               <textarea
                 value={form.content}
-                onChange={e => setForm({...form, content: e.target.value})}
+                onChange={e => setForm({ ...form, content: e.target.value })}
                 rows={3}
                 placeholder="What's on your mind? (Any suggestions for SK?)"
                 className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 resize-none shadow-sm transition-all"
@@ -2761,7 +2930,7 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
           </div>
         )}
 
-        {/* Status Filter Buttons — admin/chairman/officer only */}
+        {/* Status Filter Buttons — admin/chairman/committee only */}
         {isAdmin && (
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mr-1">Filter:</span>
@@ -2769,9 +2938,8 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
               <button
                 key={String(btn.value)}
                 onClick={() => setStatusFilter(btn.value)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all cursor-pointer ${
-                  statusFilter === btn.value ? btn.active : btn.color
-                }`}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all cursor-pointer ${statusFilter === btn.value ? btn.active : btn.color
+                  }`}
               >
                 {btn.label}
                 {btn.value !== null && (
@@ -2807,11 +2975,10 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
                       <span className="text-[10px] uppercase tracking-widest font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full mr-2">{s.category}</span>
                       <span className="text-xs font-mono text-slate-400">{new Date(s.created_at.replace(' ', 'T') + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Singapore' })}</span>
                     </div>
-                    <span className={`text-[10px] uppercase font-bold tracking-widest px-2.5 py-0.5 rounded-full ${
-                      s.status === 'pending' ? 'bg-amber-50 text-amber-800 border border-amber-300' :
-                      s.status === 'reviewed' ? 'bg-blue-50 text-blue-800 border border-blue-300' :
-                      'bg-emerald-50 text-emerald-800 border border-emerald-300'
-                    }`}>
+                    <span className={`text-[10px] uppercase font-bold tracking-widest px-2.5 py-0.5 rounded-full ${s.status === 'pending' ? 'bg-amber-50 text-amber-800 border border-amber-300' :
+                        s.status === 'reviewed' ? 'bg-blue-50 text-blue-800 border border-blue-300' :
+                          'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                      }`}>
                       {s.status}
                     </span>
                   </div>
@@ -2876,7 +3043,7 @@ const getDynamicGreeting = (user) => {
     } else {
       firstName = rawName.trim().split(' ')[0] || '';
     }
-  } catch(e) {}
+  } catch (e) { }
   const greetingName = firstName ? `${role} ${firstName}` : role;
   return `aSK//YOUTH.AI Initialized. Good ${timeOfDay}, ${greetingName}. How may I assist you today?`;
 };
@@ -2889,11 +3056,11 @@ function App() {
 
   // ─── Thread & Chat State ──────────────────────────────────────────
   const [lastModelUsed, setLastModelUsed] = useState(null);
-  const [threads, setThreads] = useState([{ 
-      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2), 
-      title: 'New Chat',
-      pinned: false,
-      messages: [{ role: "assistant", content: getDynamicGreeting(authUser) }] 
+  const [threads, setThreads] = useState([{
+    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+    title: 'New Chat',
+    pinned: false,
+    messages: [{ role: "assistant", content: getDynamicGreeting(authUser) }]
   }]);
   const [activeThreadId, setActiveThreadId] = useState(null);
 
@@ -2904,11 +3071,11 @@ function App() {
   // Load user-specific threads when authUser changes
   useEffect(() => {
     if (!authUser) {
-      setThreads([{ 
-        id: crypto.randomUUID(), 
+      setThreads([{
+        id: crypto.randomUUID(),
         title: 'New Chat',
         pinned: false,
-        messages: [{ role: "assistant", content: getDynamicGreeting(authUser) }] 
+        messages: [{ role: "assistant", content: getDynamicGreeting(authUser) }]
       }]);
       setActiveThreadId(null);
       return;
@@ -2924,13 +3091,13 @@ function App() {
           return;
         }
       }
-    } catch(e) { console.error(e); }
-    
-    const initial = [{ 
-      id: getUUID(), 
+    } catch (e) { console.error(e); }
+
+    const initial = [{
+      id: getUUID(),
       title: 'New Chat',
       pinned: false,
-      messages: [{ role: "assistant", content: getDynamicGreeting(authUser) }] 
+      messages: [{ role: "assistant", content: getDynamicGreeting(authUser) }]
     }];
     setThreads(initial);
     setActiveThreadId(initial[0].id);
@@ -3002,7 +3169,7 @@ function App() {
   useEffect(() => {
     const checkSession = async () => {
       let savedToken = sessionStorage.getItem('askyouth_token');
-      
+
       const urlParams = new URLSearchParams(window.location.search);
       const scanEventId = urlParams.get('scan');
 
@@ -3019,7 +3186,7 @@ function App() {
             sessionStorage.setItem('askyouth_token', savedToken);
             sessionStorage.setItem('askyouth_user', JSON.stringify(loginData.user));
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       if (!savedToken) { setAuthChecking(false); return; }
@@ -3078,19 +3245,19 @@ function App() {
   const getVisibleModules = () => {
     const role = authUser?.role || 'youth';
     const modules = [
-      { id: 'chat', label: 'AI Assistant', emoji: '💬', roles: ['admin','chairman','officer','youth'] },
+      { id: 'chat', label: 'AI Assistant', emoji: '💬', roles: ['admin', 'chairman', 'committee', 'youth'] },
       { id: 'scan', label: 'Scan Attendance', emoji: '📷', roles: ['youth'] },
-      { id: 'suggestions', label: 'Suggestions', emoji: '💡', roles: ['admin','chairman','officer','youth'] },
-      { id: 'events', label: 'Event Management', emoji: '📅', roles: ['admin','chairman','officer'] },
-      { id: 'reports', label: 'Official Reports', emoji: '🗂️', roles: ['admin','chairman','officer'] },
-      { id: 'faq', label: 'FAQ', emoji: '❓', roles: ['admin','chairman','officer','youth'] },
-      { id: 'admin', label: 'Admin Dashboard', emoji: '🛡️', roles: ['admin','chairman'] },
+      { id: 'suggestions', label: 'Suggestions', emoji: '💡', roles: ['admin', 'chairman', 'committee', 'youth'] },
+      { id: 'events', label: 'Event Management', emoji: '📅', roles: ['admin', 'chairman', 'committee'] },
+      { id: 'reports', label: 'Official Reports', emoji: '🗂️', roles: ['admin', 'chairman', 'committee'] },
+      { id: 'faq', label: 'FAQ', emoji: '❓', roles: ['admin', 'chairman', 'committee', 'youth'] },
+      { id: 'admin', label: 'Admin Dashboard', emoji: '🛡️', roles: ['admin', 'chairman'] },
     ];
     return modules.filter(m => m.roles.includes(role));
   };
 
-  const ROLE_COLORS = { admin: 'bg-red-500', chairman: 'bg-amber-500', officer: 'bg-blue-500', youth: 'bg-green-500' };
-  const ROLE_LABELS = { admin: 'Admin', chairman: 'SK Chairman', officer: 'SK Officer', youth: 'Youth' };
+  const ROLE_COLORS = { admin: 'bg-red-500', chairman: 'bg-amber-500', committee: 'bg-blue-500', youth: 'bg-green-500' };
+  const ROLE_LABELS = { admin: 'Admin', chairman: 'SK Chairman', committee: 'SK Committee', youth: 'Youth' };
 
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -3216,7 +3383,7 @@ function App() {
     setThreads([newThread, ...threads]);
     setActiveThreadId(newThread.id);
     setCurrentView('chat');
-    if(window.innerWidth < 768) setSidebarOpen(false);
+    if (window.innerWidth < 768) setSidebarOpen(false);
   };
 
   const handlePin = (id) => {
@@ -3282,7 +3449,7 @@ function App() {
           return;
         }
       }
-      
+
       const res = await fetch(`${API_BASE}/api/export/document`, {
         method: 'POST',
         headers: authHeaders({ 'Content-Type': 'application/json' }),
@@ -3382,18 +3549,18 @@ function App() {
           const errBody = await response.json();
           errorDetail = errBody.error || errBody.message || JSON.stringify(errBody);
         } catch (_) {
-          try { errorDetail = await response.text() || errorDetail; } catch (_) {}
+          try { errorDetail = await response.text() || errorDetail; } catch (_) { }
         }
         throw new Error(`HTTP ${response.status}: ${errorDetail}`);
       }
 
-      const reader  = response.body.getReader();
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
       let finalDocuments = null;
-      let finalReply     = '';
-      let finalChunks    = [];
-      let sseError        = null;
+      let finalReply = '';
+      let finalChunks = [];
+      let sseError = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -3415,9 +3582,9 @@ function App() {
               streamingTextRef.current += event.token;
               setStreamingContent(streamingTextRef.current);
             } else if (event.type === 'done') {
-              finalReply     = event.ai_data?.ai_message || streamingTextRef.current;
+              finalReply = event.ai_data?.ai_message || streamingTextRef.current;
               finalDocuments = event.documents || null;
-              finalChunks    = event.retrievedChunks?.length > 0 ? event.retrievedChunks : finalChunks;
+              finalChunks = event.retrievedChunks?.length > 0 ? event.retrievedChunks : finalChunks;
               if (event.modelUsed) setLastModelUsed({ model: event.modelUsed, tier: event.tier || 'gemini' });
             } else if (event.type === 'error') {
               sseError = event.message || 'Unknown server error.';
@@ -3434,14 +3601,14 @@ function App() {
           try {
             const event = JSON.parse(line.trim().slice(6));
             if (event.type === 'done') {
-              finalReply     = event.ai_data?.ai_message || streamingTextRef.current;
+              finalReply = event.ai_data?.ai_message || streamingTextRef.current;
               finalDocuments = event.documents || null;
-              finalChunks    = event.retrievedChunks?.length > 0 ? event.retrievedChunks : finalChunks;
+              finalChunks = event.retrievedChunks?.length > 0 ? event.retrievedChunks : finalChunks;
               if (event.modelUsed) setLastModelUsed({ model: event.modelUsed, tier: event.tier || 'gemini' });
             } else if (event.type === 'error') {
               sseError = event.message || 'Unknown server error.';
             }
-          } catch (_) {}
+          } catch (_) { }
         }
       }
 
@@ -3455,14 +3622,14 @@ function App() {
         if (t.id !== activeThreadId) return t;
         const updatedMsgs = finalDocuments
           ? t.messages.map((m, i) => {
-              if (i === newHistory.length - 1 && m.role === 'user') {
-                const patchedFiles = (m.attachedFiles || []).map((af, idx) => ({
-                  ...af, extractedText: finalDocuments[idx]?.extractedText || null
-                }));
-                return { ...m, attachedFiles: patchedFiles };
-              }
-              return m;
-            })
+            if (i === newHistory.length - 1 && m.role === 'user') {
+              const patchedFiles = (m.attachedFiles || []).map((af, idx) => ({
+                ...af, extractedText: finalDocuments[idx]?.extractedText || null
+              }));
+              return { ...m, attachedFiles: patchedFiles };
+            }
+            return m;
+          })
           : t.messages;
         return {
           ...t,
@@ -3512,7 +3679,7 @@ function App() {
   return (
     <div className="relative h-screen w-screen bg-white font-sans text-slate-900 overflow-hidden flex">
       <div className="absolute inset-0 bg-noise-dark z-0"></div>
-      
+
       {/* Light Theme Radial Glows */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-400/20 blur-[120px] rounded-full z-0 pointer-events-none"></div>
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-cyan-400/20 blur-[120px] rounded-full z-0 pointer-events-none"></div>
@@ -3521,169 +3688,173 @@ function App() {
       <div className="relative w-full h-full z-10 flex flex-col md:flex-row">
         {/* Mobile Sidebar Backdrop */}
         {sidebarOpen && (
-          <div 
+          <div
             className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[55] md:hidden transition-opacity duration-300"
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
         {/* --- LEFT SIDEBAR (Gemini-Style Chats Menu) --- */}
-        <div className={`transition-all duration-300 h-full flex-shrink-0 border-slate-300 bg-slate-50/50 backdrop-blur-3xl shadow-[5px_0_30px_rgba(0,0,0,0.05)] flex flex-col z-[60] fixed inset-y-0 left-0 md:relative ${
-          sidebarOpen 
-            ? 'w-[280px] md:w-[320px] translate-x-0 border-r opacity-100' 
+        <div className={`transition-all duration-300 h-full flex-shrink-0 border-slate-300 bg-slate-50/50 backdrop-blur-3xl shadow-[5px_0_30px_rgba(0,0,0,0.05)] flex flex-col z-[60] fixed inset-y-0 left-0 md:relative ${sidebarOpen
+            ? 'w-[280px] md:w-[320px] translate-x-0 border-r opacity-100'
             : 'w-[280px] md:w-0 -translate-x-full md:translate-x-0 border-r-0 opacity-0 overflow-hidden pointer-events-none'
-        }`}>
-           <div className="p-4 flex items-center justify-between border-b border-slate-200 shrink-0">
-             <div className="flex items-center gap-2.5">
-               <img src="/ASKYOUTH.LOGO.png" alt="aSKYOUTH" className="w-7 h-7 object-contain shrink-0" />
-               <span className="font-display font-black text-sm tracking-widest text-slate-800">aSKYOUTH</span>
-             </div>
-             <button
-               onClick={() => setSidebarOpen(false)}
-               className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-200/50 rounded-lg transition-colors cursor-pointer"
-               title="Collapse Sidebar"
-             >
-               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-             </button>
-           </div>
-           
-           <div className="p-3 border-b border-slate-200/80 shrink-0">
-             <button
-               onClick={createNewChat}
-               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-display font-bold tracking-widest uppercase rounded-xl shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-cyan-500/30 transition-all cursor-pointer active:scale-[0.98]"
-             >
-               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"></path></svg>
-               New Chat
-             </button>
-           </div>
-           
-           <div className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
-             {/* Invisible backdrop to close open menu on outside click */}
-             {openMenuId && (
-               <div className="fixed inset-0 z-30" onClick={() => setOpenMenuId(null)} />
-             )}
-             <h3 className="text-[10px] font-display font-black tracking-widest text-slate-400 uppercase mb-3 px-2">Recent Threads</h3>
-             {sortedThreads.map(t => (
-                 <div
-                   key={t.id}
-                   onClick={() => { setActiveThreadId(t.id); setCurrentView('chat'); if(window.innerWidth < 768) setSidebarOpen(false); }}
-                   className={`group relative flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
-                     activeThreadId === t.id
-                     ? 'bg-blue-100/50 border border-blue-200 text-blue-900 shadow-sm'
-                     : 'hover:bg-slate-200/50 border border-transparent text-slate-600 hover:text-slate-900'
-                   }`}
-                 >
-                   {/* Icon + title / rename input */}
-                   <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
-                     {t.pinned ? (
-                       <svg className="w-3.5 h-3.5 shrink-0 text-blue-500 rotate-45" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>
-                     ) : (
-                       <svg className={`w-4 h-4 shrink-0 ${activeThreadId === t.id ? 'text-blue-500' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                     )}
-                     {renamingId === t.id ? (
-                       <input
-                         autoFocus
-                         value={renameValue}
-                         onChange={e => setRenameValue(e.target.value)}
-                         onKeyDown={e => handleRenameKeyDown(e, t.id)}
-                         onBlur={() => handleRenameSubmit(t.id)}
-                         onClick={e => e.stopPropagation()}
-                         className="flex-1 min-w-0 text-sm font-medium bg-white border border-blue-400 rounded px-2 py-0.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                       />
-                     ) : (
-                       <span className="text-sm font-medium truncate">{t.title}</span>
-                     )}
-                   </div>
+          }`}>
+          <div className="p-4 flex items-center justify-between border-b border-slate-200 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <img src="/ASKYOUTH.LOGO.png" alt="aSKYOUTH" className="w-7 h-7 object-contain shrink-0" />
+              <span className="font-display font-black text-sm tracking-widest text-slate-800">aSKYOUTH</span>
+            </div>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-200/50 rounded-lg transition-colors cursor-pointer"
+              title="Collapse Sidebar"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+          </div>
 
-                   {/* Three-dot menu */}
-                   <div className="relative shrink-0 ml-1" onClick={e => e.stopPropagation()}>
-                     <button
-                       onClick={() => setOpenMenuId(openMenuId === t.id ? null : t.id)}
-                       className={`p-1.5 rounded-md transition-colors ${
-                         openMenuId === t.id
-                           ? 'opacity-100 bg-slate-200 text-slate-700'
-                           : 'opacity-0 group-hover:opacity-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
-                       }`}
-                       title="Options"
-                     >
-                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                         <circle cx="12" cy="5" r="1.5"/>
-                         <circle cx="12" cy="12" r="1.5"/>
-                         <circle cx="12" cy="19" r="1.5"/>
-                       </svg>
-                     </button>
+          <div className="p-3 border-b border-slate-200/80 shrink-0">
+            <button
+              onClick={createNewChat}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-display font-bold tracking-widest uppercase rounded-xl shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-cyan-500/30 transition-all cursor-pointer active:scale-[0.98]"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"></path></svg>
+              New Chat
+            </button>
+          </div>
 
-                     {/* Dropdown */}
-                     {openMenuId === t.id && (
-                       <div className="absolute right-0 top-full mt-1 z-[100] w-44 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
-                         <button
-                           onClick={() => handlePin(t.id)}
-                           className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                         >
-                           <svg className="w-3.5 h-3.5 rotate-45 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>
-                           {t.pinned ? 'Unpin' : 'Pin'}
-                         </button>
-                         <button
-                           onClick={() => handleRenameStart(t.id, t.title)}
-                           className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                         >
-                           <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                           Rename
-                         </button>
-                         <div className="border-t border-slate-100" />
-                         <button
-                           onClick={() => confirmDelete(t.id)}
-                           className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
-                         >
-                           <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                           Delete
-                         </button>
-                       </div>
-                     )}
-                   </div>
-                 </div>
-             ))}
-           </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+            {/* Invisible backdrop to close open menu on outside click */}
+            {openMenuId && (
+              <div className="fixed inset-0 z-30" onClick={() => setOpenMenuId(null)} />
+            )}
+            <h3 className="text-[10px] font-display font-black tracking-widest text-slate-400 uppercase mb-3 px-2">Recent Threads</h3>
+            {sortedThreads.map(t => (
+              <div
+                key={t.id}
+                onClick={() => { setActiveThreadId(t.id); setCurrentView('chat'); if (window.innerWidth < 768) setSidebarOpen(false); }}
+                className={`group relative flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${activeThreadId === t.id
+                    ? 'bg-blue-100/50 border border-blue-200 text-blue-900 shadow-sm'
+                    : 'hover:bg-slate-200/50 border border-transparent text-slate-600 hover:text-slate-900'
+                  }`}
+              >
+                {/* Icon + title / rename input */}
+                <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
+                  {t.pinned ? (
+                    <svg className="w-3.5 h-3.5 shrink-0 text-blue-500 rotate-45" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" /></svg>
+                  ) : (
+                    <svg className={`w-4 h-4 shrink-0 ${activeThreadId === t.id ? 'text-blue-500' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                  )}
+                  {renamingId === t.id ? (
+                    <input
+                      autoFocus
+                      value={renameValue}
+                      onChange={e => setRenameValue(e.target.value)}
+                      onKeyDown={e => handleRenameKeyDown(e, t.id)}
+                      onBlur={() => handleRenameSubmit(t.id)}
+                      onClick={e => e.stopPropagation()}
+                      className="flex-1 min-w-0 text-sm font-medium bg-white border border-blue-400 rounded px-2 py-0.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  ) : (
+                    <span className="text-sm font-medium truncate">{t.title}</span>
+                  )}
+                </div>
 
-           {/* --- Bottom Navigation Bar (role-filtered) --- */}
-           <nav className="shrink-0 border-t border-slate-200 bg-slate-100/80 backdrop-blur p-3 flex flex-col gap-1">
-             <p className="text-[10px] font-display font-black tracking-widest text-slate-400 uppercase px-2 mb-1">Modules</p>
-             {getVisibleModules().map(({ id, label, emoji }) => (
-               <button
-                 key={id}
-                 onClick={() => setCurrentView(id)}
-                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                   currentView === id
-                     ? 'bg-blue-100 border border-blue-200 text-blue-800 shadow-sm'
-                     : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 border border-transparent'
-                 }`}
-               >
-                 <span className="text-base leading-none select-none">{emoji}</span>
-                 <span className="truncate font-display font-bold text-xs tracking-wider">{label}</span>
-                 {currentView === id && (
-                   <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
-                 )}
-               </button>
-             ))}
+                {/* Three-dot menu */}
+                <div className="relative shrink-0 ml-1" onClick={e => e.stopPropagation()}>
+                  <button
+                    onClick={() => setOpenMenuId(openMenuId === t.id ? null : t.id)}
+                    className={`p-1.5 rounded-md transition-colors ${openMenuId === t.id
+                        ? 'opacity-100 bg-slate-200 text-slate-700'
+                        : 'opacity-0 group-hover:opacity-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
+                      }`}
+                    title="Options"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <circle cx="12" cy="5" r="1.5" />
+                      <circle cx="12" cy="12" r="1.5" />
+                      <circle cx="12" cy="19" r="1.5" />
+                    </svg>
+                  </button>
 
-             {/* User info + Logout */}
-             <div className="mt-3 pt-3 border-t border-slate-200">
-               <div className="flex items-center gap-2 px-2 py-1.5 mb-2">
-                 <div className={`w-2 h-2 rounded-full shrink-0 ${ROLE_COLORS[authUser?.role] || 'bg-slate-400'}`} />
-                 <div className="flex-1 min-w-0">
-                   <p className="text-xs font-display font-bold text-slate-900 truncate">{authUser?.full_name}</p>
-                   <p className="text-[10px] text-blue-600 font-display font-bold tracking-wider">{ROLE_LABELS[authUser?.role] || authUser?.role}</p>
-                 </div>
-               </div>
-               <button
-                 onClick={handleLogout}
-                 className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 hover:text-red-700 transition-all border border-transparent hover:border-red-200"
-               >
-                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                 Sign Out
-               </button>
-             </div>
-           </nav>
+                  {/* Dropdown */}
+                  {openMenuId === t.id && (
+                    <div className="absolute right-0 top-full mt-1 z-[100] w-44 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+                      <button
+                        onClick={() => handlePin(t.id)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5 rotate-45 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" /></svg>
+                        {t.pinned ? 'Unpin' : 'Pin'}
+                      </button>
+                      <button
+                        onClick={() => handleRenameStart(t.id, t.title)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        Rename
+                      </button>
+                      <div className="border-t border-slate-100" />
+                      <button
+                        onClick={() => confirmDelete(t.id)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* --- Bottom Navigation Bar (role-filtered) --- */}
+          <nav className="shrink-0 border-t border-slate-200 bg-slate-100/80 backdrop-blur p-3 flex flex-col gap-1">
+            <p className="text-[10px] font-display font-black tracking-widest text-slate-400 uppercase px-2 mb-1">Modules</p>
+            {getVisibleModules().map(({ id, label, emoji }) => (
+              <button
+                key={id}
+                onClick={() => setCurrentView(id)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${currentView === id
+                    ? 'bg-blue-100 border border-blue-200 text-blue-800 shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 border border-transparent'
+                  }`}
+              >
+                <span className="text-base leading-none select-none">{emoji}</span>
+                <span className="truncate font-display font-bold text-xs tracking-wider">{label}</span>
+                {currentView === id && (
+                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                )}
+              </button>
+            ))}
+
+            {/* User info + Logout */}
+            <div className="mt-3 pt-3 border-t border-slate-200">
+              <div className="flex items-center gap-2 px-2 py-1.5 mb-2">
+                <div className={`w-2 h-2 rounded-full shrink-0 ${ROLE_COLORS[authUser?.role] || 'bg-slate-400'}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-display font-bold text-slate-900 truncate">
+                    {authUser?.role === 'committee'
+                      ? `${authUser?.full_name} / ${getCommitteeLabel(authUser?.committee)}`
+                      : authUser?.full_name}
+                  </p>
+                  <p className="text-[10px] text-blue-600 font-display font-bold tracking-wider">
+                    {authUser?.role === 'committee'
+                      ? getCommitteeLabel(authUser?.committee)
+                      : (ROLE_LABELS[authUser?.role] || authUser?.role)}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 hover:text-red-700 transition-all border border-transparent hover:border-red-200"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                Sign Out
+              </button>
+            </div>
+          </nav>
         </div>
 
         {/* --- MAIN CONTENT AREA (Right Side) --- */}
@@ -3701,384 +3872,380 @@ function App() {
             </button>
           )}
 
-        {currentView === 'events' && <EventsAnalyticsModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} setCurrentView={setCurrentView} />}
-        {currentView === 'faq' && <FaqModule authHeaders={authHeaders} authUser={authUser} />}
-        {currentView === 'reports' && <ReportsModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />}
-        {currentView === 'admin' && <AdminDashboardModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />}
-        {currentView === 'scan' && <ScanAttendance authUser={authUser} />}
-        {currentView === 'suggestions' && <SuggestionsModule authHeaders={authHeaders} authUser={authUser} onNavigate={setCurrentView} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />}
-        {currentView === 'chat' && (<>
-           
-           {/* Top Info Header */}
-           <div className="h-16 shrink-0 border-b border-slate-200/80 bg-white/70 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 gap-3">
-             <div className="flex items-center gap-3 min-w-0">
-               {!sidebarOpen && (
-                 <button
-                   onClick={() => setSidebarOpen(true)}
-                   className="text-slate-500 hover:text-blue-600 transition-all p-1.5 hover:bg-slate-100 rounded-lg border border-slate-200/60 flex items-center justify-center cursor-pointer md:hidden"
-                   title="Open Menu"
-                 >
-                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                   </svg>
-                 </button>
-               )}
-               <img src="/ASKYOUTH.LOGO.png" alt="Logo" className="w-8 h-8 object-contain shrink-0 drop-shadow-sm hidden sm:block" />
-               <button
+          {currentView === 'events' && <EventsAnalyticsModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} setCurrentView={setCurrentView} />}
+          {currentView === 'faq' && <FaqModule authHeaders={authHeaders} authUser={authUser} />}
+          {currentView === 'reports' && <ReportsModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />}
+          {currentView === 'admin' && <AdminDashboardModule authHeaders={authHeaders} authUser={authUser} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />}
+          {currentView === 'scan' && <ScanAttendance authUser={authUser} />}
+          {currentView === 'suggestions' && <SuggestionsModule authHeaders={authHeaders} authUser={authUser} onNavigate={setCurrentView} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />}
+          {currentView === 'chat' && (<>
+
+            {/* Top Info Header */}
+            <div className="h-16 shrink-0 border-b border-slate-200/80 bg-white/70 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                {!sidebarOpen && (
+                  <button
+                    onClick={() => setSidebarOpen(true)}
+                    className="text-slate-500 hover:text-blue-600 transition-all p-1.5 hover:bg-slate-100 rounded-lg border border-slate-200/60 flex items-center justify-center cursor-pointer md:hidden"
+                    title="Open Menu"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                  </button>
+                )}
+                <img src="/ASKYOUTH.LOGO.png" alt="Logo" className="w-8 h-8 object-contain shrink-0 drop-shadow-sm hidden sm:block" />
+                <button
                   onClick={() => window.location.reload()}
                   className="select-none text-base sm:text-2xl font-display font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-cyan-600 to-blue-800 drop-shadow-[0_2px_10px_rgba(0,100,255,0.15)] hover:from-cyan-500 hover:to-blue-500 transition-all duration-200 cursor-pointer whitespace-nowrap"
                 >
                   aSK//YOUTH.AI
-               </button>
-             </div>
-             
-             {/* Right side: Notification Bell + Status Badge */}
-             <div className="flex items-center gap-3 shrink-0">
-               <NotificationBell authHeaders={authHeaders} setCurrentView={setCurrentView} />
-               <div className="flex flex-col items-end shrink-0 max-w-[50%] sm:max-w-none">
-                 <div className="flex items-center gap-2 sm:gap-3">
-                   <span className={`text-xs font-mono font-bold tracking-wider ${loading ? 'text-cyan-500' : 'text-blue-700'} hidden xs:block sm:block`}>
+                </button>
+              </div>
+
+              {/* Right side: Notification Bell + Status Badge */}
+              <div className="flex items-center gap-3 shrink-0">
+                <NotificationBell authHeaders={authHeaders} setCurrentView={setCurrentView} />
+                <div className="flex flex-col items-end shrink-0 max-w-[50%] sm:max-w-none">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <span className={`text-xs font-mono font-bold tracking-wider ${loading ? 'text-cyan-500' : 'text-blue-700'} hidden xs:block sm:block`}>
                       {loading
-                        ? streamPhase === 'INDEXING_DOCUMENTS'  ? 'INDEXING...'
-                        : streamPhase === 'RETRIEVING_CONTEXT'  ? 'SEARCHING...'
-                        : 'GENERATING...'
+                        ? streamPhase === 'INDEXING_DOCUMENTS' ? 'INDEXING...'
+                          : streamPhase === 'RETRIEVING_CONTEXT' ? 'SEARCHING...'
+                            : 'GENERATING...'
                         : 'ONLINE'
                       }</span>
-                   <span className="relative flex h-3 w-3 shrink-0">
+                    <span className="relative flex h-3 w-3 shrink-0">
                       {loading ? (
-                          <>
+                        <>
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)]"></span>
-                          </>
+                        </>
                       ) : (
-                          <>
+                        <>
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.6)]"></span>
-                          </>
+                        </>
                       )}
-                   </span>
-                 </div>
-                 {/* Clock beside Llama model label */}
-                 <div className="flex items-center gap-2 mt-1 hidden sm:flex">
-                   <span className="font-mono text-[10px] font-normal tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-cyan-600 select-none tabular-nums">
-                     {formatClock(now)}
-                   </span>
-                   <span className={`text-[10px] font-mono uppercase tracking-widest ${
-                    !lastModelUsed                      ? 'text-slate-500' :
-                    lastModelUsed.tier === 'gemini'     ? 'text-cyan-500'   :
-                    lastModelUsed.tier === 'groq'       ? 'text-amber-400'  :
-                    'text-red-400'
-                  }`}>
-                    {lastModelUsed ? lastModelUsed.model.toUpperCase() + ' ACTIVE' : 'AI ENGINE STANDBY'}
-                  </span>
-                 </div>
-               </div>
-             </div>
-           </div>
-
-           {/* Inner Chat Pane */}
-           <div className="flex-1 flex flex-col p-2 sm:p-8 overflow-hidden relative">
-              <div className="w-full max-w-5xl mx-auto h-full bg-white border-2 border-slate-900 rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.12)] flex flex-col pointer-events-auto">
-                
-                <div className="h-11 bg-slate-50 border-b-2 border-slate-200 flex items-center px-4 justify-between flex-shrink-0">
-                   <span className="font-mono text-xs sm:text-sm text-black font-bold tracking-wider flex items-center gap-2">
-                     <svg className="w-4 h-4 text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-                     THREAD: {activeThread?.title || 'New Chat'}
-                   </span>
-                   <span className="font-mono text-xs text-blue-600 font-bold hidden sm:block">LOCAL: SECURE</span>
+                    </span>
+                  </div>
+                  {/* Clock beside Llama model label */}
+                  <div className="flex items-center gap-2 mt-1 hidden sm:flex">
+                    <span className="font-mono text-[10px] font-normal tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-cyan-600 select-none tabular-nums">
+                      {formatClock(now)}
+                    </span>
+                    <span className={`text-[10px] font-mono uppercase tracking-widest ${!lastModelUsed ? 'text-slate-500' :
+                        lastModelUsed.tier === 'gemini' ? 'text-cyan-500' :
+                          lastModelUsed.tier === 'groq' ? 'text-amber-400' :
+                            'text-red-400'
+                      }`}>
+                      {lastModelUsed ? lastModelUsed.model.toUpperCase() + ' ACTIVE' : 'AI ENGINE STANDBY'}
+                    </span>
+                  </div>
                 </div>
-                
+              </div>
+            </div>
+
+            {/* Inner Chat Pane */}
+            <div className="flex-1 flex flex-col p-2 sm:p-8 overflow-hidden relative">
+              <div className="w-full max-w-5xl mx-auto h-full bg-white border-2 border-slate-900 rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.12)] flex flex-col pointer-events-auto">
+
+                <div className="h-11 bg-slate-50 border-b-2 border-slate-200 flex items-center px-4 justify-between flex-shrink-0">
+                  <span className="font-mono text-xs sm:text-sm text-black font-bold tracking-wider flex items-center gap-2">
+                    <svg className="w-4 h-4 text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                    THREAD: {activeThread?.title || 'New Chat'}
+                  </span>
+                  <span className="font-mono text-xs text-blue-600 font-bold hidden sm:block">LOCAL: SECURE</span>
+                </div>
+
                 {/* Scrollable Messages Area */}
                 <div ref={scrollRef} className="flex-1 p-3 sm:p-8 overflow-y-auto overflow-x-hidden relative z-10 w-full bg-white scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
-                   {showScrollBottom && (
-                     <button 
-                       onClick={scrollToBottom}
-                       className="fixed bottom-32 right-8 sm:right-12 z-50 p-3 bg-white hover:bg-slate-50 border-2 border-slate-300 rounded-full shadow-2xl text-blue-600 hover:text-blue-700 hover:scale-110 active:scale-95 transition-all animate-bounce flex items-center justify-center cursor-pointer ring-1 ring-blue-500/20"
-                       title="Scroll to Latest"
-                     >
-                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 14l-7 7-7-7m14-8l-7 7-7-7" />
-                       </svg>
-                     </button>
-                   )}
-                   <div className="max-w-4xl mx-auto flex flex-col gap-6">
-                      {messages.map((msg, index) => {
-                         let thoughtContent = null;
-                         let finalContent = msg.content;
-                         let docTitle = null;
-                         let docContent = null;
-                         
-                         if (msg.role === 'assistant') {
-                           // Extract the reasoning inside <think> tags using RegExp
-                           const thinkMatch = msg.content.match(/<think>([\s\S]*?)<\/think>/);
-                           if (thinkMatch) {
-                               thoughtContent = thinkMatch[1].trim();
-                               // Remove the entire <think> block from the visible response
-                               finalContent = msg.content.replace(/<think>[\s\S]*?<\/think>/, '').trim();
-                           }
-                           // ---------------------------------------------------------------------------
-                           // Official document extraction — run on the FULL raw content (msg.content)
-                           // before think-stripping so tag position never matters.
-                           // Fault-tolerant regex handles:
-                           //   [/]?                      — stray leading slash on opening tag
-                           //   ["']                      — single or double quotes on title
-                           //   [^>]*                     — extra attributes
-                           //   </official_document>      — correct closing tag
-                           //   [END OFFICIAL_DOCUMENT]   — hallucinated closing tag
-                           //   $                         — missing closing tag entirely (match to EOS)
-                           // ---------------------------------------------------------------------------
-                           const OFFICIAL_DOC_RE = /<[/]?official_document\s+title=["'](.*?)["'][^>]*>([\s\S]*?)(?:<\/official_document>|\[END OFFICIAL_DOCUMENT\]|$)/i;
-                           const docMatch = OFFICIAL_DOC_RE.exec(msg.content);
-                           if (docMatch) {
-                             docTitle   = docMatch[1].trim();
-                             docContent = docMatch[2].trim();
-                             // Strip all occurrences from finalContent using the same fault-tolerant pattern
-                             finalContent = finalContent.replace(
-                               /<[/]?official_document\s+title=["'].*?["'][^>]*>[\s\S]*?(?:<\/official_document>|\[END OFFICIAL_DOCUMENT\]|$)/gi,
-                               ''
-                             ).trim();
-                           }
-                         }
+                  {showScrollBottom && (
+                    <button
+                      onClick={scrollToBottom}
+                      className="fixed bottom-32 right-8 sm:right-12 z-50 p-3 bg-white hover:bg-slate-50 border-2 border-slate-300 rounded-full shadow-2xl text-blue-600 hover:text-blue-700 hover:scale-110 active:scale-95 transition-all animate-bounce flex items-center justify-center cursor-pointer ring-1 ring-blue-500/20"
+                      title="Scroll to Latest"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 14l-7 7-7-7m14-8l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  )}
+                  <div className="max-w-4xl mx-auto flex flex-col gap-6">
+                    {messages.map((msg, index) => {
+                      let thoughtContent = null;
+                      let finalContent = msg.content;
+                      let docTitle = null;
+                      let docContent = null;
 
-                         return (
-                         <div key={index} className={`flex flex-col w-full ${msg.role === 'user' ? 'items-end' : 'items-start'} gap-1`}>
-                            {/* Timestamp outside the bubble */}
-                            {msg.timestamp && (
-                              <span className="font-mono text-[10px] text-slate-500 tracking-widest px-1 tabular-nums">
-                                {formatStamp(new Date(msg.timestamp))}
-                              </span>
-                            )}
-                            {(msg.role === 'user' || thoughtContent || finalContent.trim().length > 0 || msg.retrievedChunks?.length > 0) && (
-                            <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-4 sm:p-6 relative group transition-colors flex flex-col ${
-                                msg.role === 'user' 
-                                ? 'bg-blue-50 border-2 border-blue-600 text-black shadow-sm' 
+                      if (msg.role === 'assistant') {
+                        // Extract the reasoning inside <think> tags using RegExp
+                        const thinkMatch = msg.content.match(/<think>([\s\S]*?)<\/think>/);
+                        if (thinkMatch) {
+                          thoughtContent = thinkMatch[1].trim();
+                          // Remove the entire <think> block from the visible response
+                          finalContent = msg.content.replace(/<think>[\s\S]*?<\/think>/, '').trim();
+                        }
+                        // ---------------------------------------------------------------------------
+                        // Official document extraction — run on the FULL raw content (msg.content)
+                        // before think-stripping so tag position never matters.
+                        // Fault-tolerant regex handles:
+                        //   [/]?                      — stray leading slash on opening tag
+                        //   ["']                      — single or double quotes on title
+                        //   [^>]*                     — extra attributes
+                        //   </official_document>      — correct closing tag
+                        //   [END OFFICIAL_DOCUMENT]   — hallucinated closing tag
+                        //   $                         — missing closing tag entirely (match to EOS)
+                        // ---------------------------------------------------------------------------
+                        const OFFICIAL_DOC_RE = /<[/]?official_document\s+title=["'](.*?)["'][^>]*>([\s\S]*?)(?:<\/official_document>|\[END OFFICIAL_DOCUMENT\]|$)/i;
+                        const docMatch = OFFICIAL_DOC_RE.exec(msg.content);
+                        if (docMatch) {
+                          docTitle = docMatch[1].trim();
+                          docContent = docMatch[2].trim();
+                          // Strip all occurrences from finalContent using the same fault-tolerant pattern
+                          finalContent = finalContent.replace(
+                            /<[/]?official_document\s+title=["'].*?["'][^>]*>[\s\S]*?(?:<\/official_document>|\[END OFFICIAL_DOCUMENT\]|$)/gi,
+                            ''
+                          ).trim();
+                        }
+                      }
+
+                      return (
+                        <div key={index} className={`flex flex-col w-full ${msg.role === 'user' ? 'items-end' : 'items-start'} gap-1`}>
+                          {/* Timestamp outside the bubble */}
+                          {msg.timestamp && (
+                            <span className="font-mono text-[10px] text-slate-500 tracking-widest px-1 tabular-nums">
+                              {formatStamp(new Date(msg.timestamp))}
+                            </span>
+                          )}
+                          {(msg.role === 'user' || thoughtContent || finalContent.trim().length > 0 || msg.retrievedChunks?.length > 0) && (
+                            <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-4 sm:p-6 relative group transition-colors flex flex-col ${msg.role === 'user'
+                                ? 'bg-blue-50 border-2 border-blue-600 text-black shadow-sm'
                                 : 'bg-white border-2 border-slate-300 text-black shadow-sm'
-                            }`}>
-                                {/* File attachment cards — supports multi-file (new) and single-file legacy */}
-                                {msg.role === 'user' && (() => {
-                                  const files = msg.attachedFiles?.length > 0
-                                    ? msg.attachedFiles
-                                    : msg.fileName
-                                      ? [{ fileName: msg.fileName, fileType: msg.fileType }]
-                                      : [];
-                                  if (files.length === 0) return null;
-                                  return (
-                                    <div className="mb-3 flex flex-wrap gap-2">
-                                      {files.map((af, fi) => {
-                                        const ext = (af.fileName || '').split('.').pop().toUpperCase();
-                                        const isDoc = ['DOCX','DOC'].includes(ext);
-                                        const isPdf = ext === 'PDF';
-                                        const isCsv = ext === 'CSV';
-                                        return (
-                                          <div key={fi} className="flex items-center gap-3 bg-white border-2 border-blue-200 rounded-xl px-3 py-2 w-fit max-w-full shadow-xs">
-                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                                              isPdf ? 'bg-red-500/20' : isDoc ? 'bg-blue-500/20' : isCsv ? 'bg-green-500/20' : 'bg-slate-500/20'
-                                            }`}>
-                                              {isPdf ? (
-                                                <svg className="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM8.5 15.5h-.75V17H7v-4.5h1.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5zm3.75 1.5h-1.5V12.5h1.5c1.1 0 2 .9 2 2v.5c0 1.11-.9 2-2 2zm4.25-3.25h-1V15h1v.75H15.5v.75H14v-4.5h3v.75h-2v.75h1v.75zm-8-0h-.75V16h.75c.41 0 .75-.34.75-.75s-.34-.75-.75-.75zm3.75 0h-.75V16h.75c.69 0 1.25-.56 1.25-1.25v-.5c0-.69-.56-1.25-1.25-1.25z"/></svg>
-                                              ) : isDoc ? (
-                                                <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM7 17v-1.5h10V17H7zm0-3v-1.5h10V14H7zm0-3V9.5h7V11H7z"/></svg>
-                                              ) : (
-                                                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                              )}
-                                            </div>
-                                            <div className="overflow-hidden">
-                                              <p className="text-xs font-bold text-slate-900 truncate max-w-[200px]">{(af.fileName || '').replace(/\.[^.]+$/, '')}</p>
-                                              <p className="text-[10px] font-mono text-blue-400 uppercase tracking-wider">{ext}</p>
-                                            </div>
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  );
-                                })()}
-                                
-                                {/* AI "Show Thinking" Dropdown Component */}
-                                {thoughtContent && (
-                                  <details className="mb-4 group/think cursor-pointer">
-                                    <summary className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-colors list-none">
-                                      <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                                      <span className="text-xs font-mono tracking-widest text-slate-700 group-hover/think:text-blue-700 font-bold uppercase select-none">
-                                         Processing Intent
-                                      </span>
-                                      <svg className="w-4 h-4 text-slate-500 transform transition-transform group-open/think:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                    </summary>
-                                    <div className="mt-3 pl-4 border-l-2 border-slate-300 py-2">
-                                      <p className="font-mono text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                                         {thoughtContent}
-                                      </p>
-                                    </div>
-                                  </details>
-                                )}
-
-                                {finalContent.trim().length > 0 && (
-                                <div className={`font-sans leading-relaxed prose-chat ${msg.role === 'assistant' ? 'text-black font-normal text-[21px] sm:text-[22px]' : 'text-black font-medium text-[20px] sm:text-[21px]'}`}>
-                                   <ReactMarkdown
-                                     components={{
-                                       p: ({ children }) => {
-                                         if (typeof children === 'string' && children.includes('[[SUGGESTIONS_LINK]]')) {
-                                           const parts = children.split('[[SUGGESTIONS_LINK]]');
-                                           return <p>{parts[0]}<button onClick={() => setCurrentView('suggestions')} className="inline-flex items-center gap-1 px-2 py-0.5 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/50 text-cyan-300 hover:text-cyan-100 rounded-md text-sm font-bold transition-all">Go Here →</button>{parts[1]}</p>;
-                                         }
-                                         return <p>{children}</p>;
-                                       }
-                                     }}
-                                   >{finalContent}</ReactMarkdown>
-                                </div>
-                                )}
-
-
-                            </div>
-                            )}
-                            {/* Official Document Export Panel — outside the bubble for clean visual separation */}
-                            {msg.role === 'assistant' && docTitle && docContent && (
-                              <div className="w-full max-w-[85%] sm:max-w-[75%] rounded-xl border-2 border-blue-200 bg-blue-50/70 p-4 flex flex-col gap-3 shadow-sm">
-                                <div className="flex items-center gap-2.5">
-                                  <span className="text-base leading-none select-none">📄</span>
-                                  <span className="text-xs font-mono text-slate-700 tracking-wide">
-                                    Official Document Drafted:{' '}
-                                    <span className="text-blue-900 font-bold">{docTitle}</span>
-                                  </span>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                  <button
-                                    onClick={() => handleExport(docContent, docTitle, 'docx')}
-                                    className="px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest rounded-lg bg-blue-600 border border-blue-700 text-white hover:bg-blue-700 transition-all cursor-pointer shadow-xs"
-                                  >
-                                    ↓ Export as DOCX
-                                  </button>
-                                  <button
-                                    onClick={() => handleExport(docContent, docTitle, 'pdf')}
-                                    className="px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest rounded-lg bg-cyan-600 border border-cyan-700 text-white hover:bg-cyan-700 transition-all cursor-pointer shadow-xs"
-                                  >
-                                    ↓ Export as PDF
-                                  </button>
-                                </div>
-                              </div>                            )}
-                            {/* Export Response Button — appears on every completed assistant message (Phase 5) */}
-                            {msg.role === 'assistant' && finalContent.trim().length > 0 && (
-                              <div className="flex justify-end max-w-[85%] sm:max-w-[75%]">
-                                <ExportResponseButton
-                                  messageContent={finalContent}
-                                  hasOfficialDocument={!!(docTitle && docContent)}
-                                  officialDocTitle={docTitle}
-                                  officialDocContent={docContent}
-                                  authHeaders={authHeaders}
-                                />
-                              </div>
-                            )}
-                            {/* Sources Panel — Phase 5 Feature 2: shows document source matches with displayScore */}
-                            {msg.role === 'assistant' && (() => {
-                              if (!msg.retrievedChunks || msg.retrievedChunks.length === 0) return null;
-                              // Phase 2: compute displayScore with 1.15x boost, clamped to 1.0
-                              const withDisplay = msg.retrievedChunks.map(c => ({
-                                ...c,
-                                displayScore: Math.min(c.score * 1.15, 1.0)
-                              }));
-                              // Phase B: filter to displayScore >= 0.30
-                              const qualifying = withDisplay.filter(c => c.displayScore >= 0.30);
-                              if (qualifying.length === 0) return null;
-                              // Group by filename, keep highest displayScore per file
-                              const grouped = Object.values(qualifying.reduce((acc, c) => {
-                                const key = c.source;
-                                if (!acc[key] || c.displayScore > acc[key].displayScore) {
-                                  acc[key] = { ...c };
-                                }
-                                return acc;
-                              }, {}));
-                              grouped.sort((a, b) => b.displayScore - a.displayScore);
-                              const topScore = grouped[0].displayScore;
-                              const headerBg = topScore >= 0.90 ? 'bg-green-900' : topScore >= 0.70 ? 'bg-green-800' : topScore >= 0.50 ? 'bg-yellow-900' : 'bg-gray-700';
-                              const headerLabel = topScore >= 0.90 ? 'Very High Match' : topScore >= 0.70 ? 'High Match' : topScore >= 0.50 ? 'Moderate Match' : 'Low Match';
-                              const topPct = Math.round(topScore * 100);
-                              const topPillColor = topScore >= 0.70 ? 'bg-green-900/60 text-green-400' : topScore >= 0.50 ? 'bg-yellow-900/60 text-yellow-400' : 'bg-slate-800 text-slate-400';
-                              return (
-                                <details className="w-full max-w-[85%] sm:max-w-[75%] group/sources cursor-pointer">
-                                  <summary className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-amber-50 border-2 border-amber-500/60 hover:bg-amber-100/80 transition-colors list-none select-none">
-                                    <div className="flex items-center gap-2">
-                                      <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                      <span className="text-xs font-mono tracking-widest text-amber-950 font-bold uppercase">
-                                        SOURCES ({grouped.length})
-                                      </span>
-                                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-200/90 text-amber-900 border border-amber-300">
-                                        {topPct}% match
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs font-mono text-amber-900/80 tracking-wide font-medium hidden sm:inline">{headerLabel}</span>
-                                      <svg className="w-4 h-4 text-amber-900 transform transition-transform group-open/sources:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                    </div>
-                                  </summary>
-                                  <div className="mt-2 flex flex-col gap-2">
-                                    {grouped.map((chunk, ci) => {
-                                      const pct = Math.round(chunk.displayScore * 100);
-                                      const pillColor = chunk.displayScore >= 0.70 ? 'bg-green-900/40 text-green-400' : chunk.displayScore >= 0.50 ? 'bg-yellow-900/40 text-yellow-400' : 'bg-slate-800 text-slate-400';
-                                      const snippet = chunk.textSnippet || (chunk.text ? chunk.text.slice(0, 300) : '');
+                              }`}>
+                              {/* File attachment cards — supports multi-file (new) and single-file legacy */}
+                              {msg.role === 'user' && (() => {
+                                const files = msg.attachedFiles?.length > 0
+                                  ? msg.attachedFiles
+                                  : msg.fileName
+                                    ? [{ fileName: msg.fileName, fileType: msg.fileType }]
+                                    : [];
+                                if (files.length === 0) return null;
+                                return (
+                                  <div className="mb-3 flex flex-wrap gap-2">
+                                    {files.map((af, fi) => {
+                                      const ext = (af.fileName || '').split('.').pop().toUpperCase();
+                                      const isDoc = ['DOCX', 'DOC'].includes(ext);
+                                      const isPdf = ext === 'PDF';
+                                      const isCsv = ext === 'CSV';
                                       return (
-                                        <div key={ci} className="rounded-xl border-2 border-slate-200 bg-slate-50 overflow-hidden shadow-xs">
-                                          <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 bg-white">
-                                            <div className="flex items-center gap-2 overflow-hidden">
-                                              <svg className="w-3 h-3 text-cyan-500 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5z"/></svg>
-                                              <span className="text-xs font-mono font-bold text-slate-800 truncate max-w-[200px]">{chunk.source}</span>
-                                            </div>
-                                            <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${pillColor}`}>
-                                              {pct}% match
-                                            </span>
+                                        <div key={fi} className="flex items-center gap-3 bg-white border-2 border-blue-200 rounded-xl px-3 py-2 w-fit max-w-full shadow-xs">
+                                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isPdf ? 'bg-red-500/20' : isDoc ? 'bg-blue-500/20' : isCsv ? 'bg-green-500/20' : 'bg-slate-500/20'
+                                            }`}>
+                                            {isPdf ? (
+                                              <svg className="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM8.5 15.5h-.75V17H7v-4.5h1.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5zm3.75 1.5h-1.5V12.5h1.5c1.1 0 2 .9 2 2v.5c0 1.11-.9 2-2 2zm4.25-3.25h-1V15h1v.75H15.5v.75H14v-4.5h3v.75h-2v.75h1v.75zm-8-0h-.75V16h.75c.41 0 .75-.34.75-.75s-.34-.75-.75-.75zm3.75 0h-.75V16h.75c.69 0 1.25-.56 1.25-1.25v-.5c0-.69-.56-1.25-1.25-1.25z" /></svg>
+                                            ) : isDoc ? (
+                                              <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM7 17v-1.5h10V17H7zm0-3v-1.5h10V14H7zm0-3V9.5h7V11H7z" /></svg>
+                                            ) : (
+                                              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                            )}
                                           </div>
-                                          <details className="group/snippet">
-                                            <summary className="px-3 py-1.5 text-xs font-mono text-slate-600 hover:text-blue-700 cursor-pointer select-none list-none transition-colors">▶ View Snippet</summary>
-                                            <pre className="px-3 pb-3 pt-1 text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed border-t border-slate-200 bg-slate-50">{snippet}{snippet.length >= 300 ? '...' : ''}</pre>
-                                          </details>
+                                          <div className="overflow-hidden">
+                                            <p className="text-xs font-bold text-slate-900 truncate max-w-[200px]">{(af.fileName || '').replace(/\.[^.]+$/, '')}</p>
+                                            <p className="text-[10px] font-mono text-blue-400 uppercase tracking-wider">{ext}</p>
+                                          </div>
                                         </div>
                                       );
                                     })}
                                   </div>
-                                </details>
-                              );
-                            })()}
-                         </div>
-                         );
-                      })}
-                      
-                      {/* Phase-aware loading indicators */}
-                      {loading && streamPhase !== 'GENERATING' && (
-                         <div className="flex w-full justify-start">
-                            <div className="max-w-[80%] bg-white border-2 border-slate-300 shadow-sm rounded-xl p-4 flex items-center gap-3">
-                               {/* Spinning ring for indexing/searching phases */}
-                               <svg className="w-5 h-5 text-blue-600 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
-                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                               </svg>
-                               <span className="text-xs font-mono text-slate-800 font-bold tracking-widest uppercase animate-pulse">
-                                 {streamPhase === 'INDEXING_DOCUMENTS'  && 'Indexing Documents...'}
-                                 {streamPhase === 'RETRIEVING_CONTEXT'  && 'Searching Knowledge Base...'}
-                               </span>
-                            </div>
-                         </div>
-                      )}
+                                );
+                              })()}
 
-                      {/* Live streaming bubble — renders tokens in real-time */}
-                      {loading && streamPhase === 'GENERATING' && (
-                         <div className="flex w-full justify-start">
-                            <div className="max-w-[85%] sm:max-w-[75%] bg-white border-2 border-slate-300 text-black rounded-2xl p-4 sm:p-6 flex flex-col shadow-sm">
-                               <div className="font-sans leading-relaxed prose-chat text-black font-normal text-[21px] sm:text-[22px]">
-                                 <ReactMarkdown>{streamingContent.replace(/<official_document[\s\S]*/i, '').trim()}</ReactMarkdown>
-                               </div>
-                               {/* Blinking cursor to indicate streaming is active */}
-                               <span className="mt-2 inline-block w-2.5 h-5 bg-blue-600 animate-[pulse_0.8s_ease-in-out_infinite] align-middle" />
+                              {/* AI "Show Thinking" Dropdown Component */}
+                              {thoughtContent && (
+                                <details className="mb-4 group/think cursor-pointer">
+                                  <summary className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-colors list-none">
+                                    <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                    <span className="text-xs font-mono tracking-widest text-slate-700 group-hover/think:text-blue-700 font-bold uppercase select-none">
+                                      Processing Intent
+                                    </span>
+                                    <svg className="w-4 h-4 text-slate-500 transform transition-transform group-open/think:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                  </summary>
+                                  <div className="mt-3 pl-4 border-l-2 border-slate-300 py-2">
+                                    <p className="font-mono text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                                      {thoughtContent}
+                                    </p>
+                                  </div>
+                                </details>
+                              )}
+
+                              {finalContent.trim().length > 0 && (
+                                <div className={`font-sans leading-relaxed prose-chat ${msg.role === 'assistant' ? 'text-black font-normal text-[21px] sm:text-[22px]' : 'text-black font-medium text-[20px] sm:text-[21px]'}`}>
+                                  <ReactMarkdown
+                                    components={{
+                                      p: ({ children }) => {
+                                        if (typeof children === 'string' && children.includes('[[SUGGESTIONS_LINK]]')) {
+                                          const parts = children.split('[[SUGGESTIONS_LINK]]');
+                                          return <p>{parts[0]}<button onClick={() => setCurrentView('suggestions')} className="inline-flex items-center gap-1 px-2 py-0.5 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/50 text-cyan-300 hover:text-cyan-100 rounded-md text-sm font-bold transition-all">Go Here →</button>{parts[1]}</p>;
+                                        }
+                                        return <p>{children}</p>;
+                                      }
+                                    }}
+                                  >{finalContent}</ReactMarkdown>
+                                </div>
+                              )}
+
+
                             </div>
-                         </div>
-                      )}
-                   </div>
+                          )}
+                          {/* Official Document Export Panel — outside the bubble for clean visual separation */}
+                          {msg.role === 'assistant' && docTitle && docContent && (
+                            <div className="w-full max-w-[85%] sm:max-w-[75%] rounded-xl border-2 border-blue-200 bg-blue-50/70 p-4 flex flex-col gap-3 shadow-sm">
+                              <div className="flex items-center gap-2.5">
+                                <span className="text-base leading-none select-none">📄</span>
+                                <span className="text-xs font-mono text-slate-700 tracking-wide">
+                                  Official Document Drafted:{' '}
+                                  <span className="text-blue-900 font-bold">{docTitle}</span>
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  onClick={() => handleExport(docContent, docTitle, 'docx')}
+                                  className="px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest rounded-lg bg-blue-600 border border-blue-700 text-white hover:bg-blue-700 transition-all cursor-pointer shadow-xs"
+                                >
+                                  ↓ Export as DOCX
+                                </button>
+                                <button
+                                  onClick={() => handleExport(docContent, docTitle, 'pdf')}
+                                  className="px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest rounded-lg bg-cyan-600 border border-cyan-700 text-white hover:bg-cyan-700 transition-all cursor-pointer shadow-xs"
+                                >
+                                  ↓ Export as PDF
+                                </button>
+                              </div>
+                            </div>)}
+                          {/* Export Response Button — appears on every completed assistant message (Phase 5) */}
+                          {msg.role === 'assistant' && finalContent.trim().length > 0 && (
+                            <div className="flex justify-end max-w-[85%] sm:max-w-[75%]">
+                              <ExportResponseButton
+                                messageContent={finalContent}
+                                hasOfficialDocument={!!(docTitle && docContent)}
+                                officialDocTitle={docTitle}
+                                officialDocContent={docContent}
+                                authHeaders={authHeaders}
+                              />
+                            </div>
+                          )}
+                          {/* Sources Panel — Phase 5 Feature 2: shows document source matches with displayScore */}
+                          {msg.role === 'assistant' && (() => {
+                            if (!msg.retrievedChunks || msg.retrievedChunks.length === 0) return null;
+                            // Phase 2: compute displayScore with 1.15x boost, clamped to 1.0
+                            const withDisplay = msg.retrievedChunks.map(c => ({
+                              ...c,
+                              displayScore: Math.min(c.score * 1.15, 1.0)
+                            }));
+                            // Phase B: filter to displayScore >= 0.30
+                            const qualifying = withDisplay.filter(c => c.displayScore >= 0.30);
+                            if (qualifying.length === 0) return null;
+                            // Group by filename, keep highest displayScore per file
+                            const grouped = Object.values(qualifying.reduce((acc, c) => {
+                              const key = c.source;
+                              if (!acc[key] || c.displayScore > acc[key].displayScore) {
+                                acc[key] = { ...c };
+                              }
+                              return acc;
+                            }, {}));
+                            grouped.sort((a, b) => b.displayScore - a.displayScore);
+                            const topScore = grouped[0].displayScore;
+                            const headerBg = topScore >= 0.90 ? 'bg-green-900' : topScore >= 0.70 ? 'bg-green-800' : topScore >= 0.50 ? 'bg-yellow-900' : 'bg-gray-700';
+                            const headerLabel = topScore >= 0.90 ? 'Very High Match' : topScore >= 0.70 ? 'High Match' : topScore >= 0.50 ? 'Moderate Match' : 'Low Match';
+                            const topPct = Math.round(topScore * 100);
+                            const topPillColor = topScore >= 0.70 ? 'bg-green-900/60 text-green-400' : topScore >= 0.50 ? 'bg-yellow-900/60 text-yellow-400' : 'bg-slate-800 text-slate-400';
+                            return (
+                              <details className="w-full max-w-[85%] sm:max-w-[75%] group/sources cursor-pointer">
+                                <summary className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-amber-50 border-2 border-amber-500/60 hover:bg-amber-100/80 transition-colors list-none select-none">
+                                  <div className="flex items-center gap-2">
+                                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    <span className="text-xs font-mono tracking-widest text-amber-950 font-bold uppercase">
+                                      SOURCES ({grouped.length})
+                                    </span>
+                                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-200/90 text-amber-900 border border-amber-300">
+                                      {topPct}% match
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-mono text-amber-900/80 tracking-wide font-medium hidden sm:inline">{headerLabel}</span>
+                                    <svg className="w-4 h-4 text-amber-900 transform transition-transform group-open/sources:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                  </div>
+                                </summary>
+                                <div className="mt-2 flex flex-col gap-2">
+                                  {grouped.map((chunk, ci) => {
+                                    const pct = Math.round(chunk.displayScore * 100);
+                                    const pillColor = chunk.displayScore >= 0.70 ? 'bg-green-900/40 text-green-400' : chunk.displayScore >= 0.50 ? 'bg-yellow-900/40 text-yellow-400' : 'bg-slate-800 text-slate-400';
+                                    const snippet = chunk.textSnippet || (chunk.text ? chunk.text.slice(0, 300) : '');
+                                    return (
+                                      <div key={ci} className="rounded-xl border-2 border-slate-200 bg-slate-50 overflow-hidden shadow-xs">
+                                        <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 bg-white">
+                                          <div className="flex items-center gap-2 overflow-hidden">
+                                            <svg className="w-3 h-3 text-cyan-500 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5z" /></svg>
+                                            <span className="text-xs font-mono font-bold text-slate-800 truncate max-w-[200px]">{chunk.source}</span>
+                                          </div>
+                                          <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${pillColor}`}>
+                                            {pct}% match
+                                          </span>
+                                        </div>
+                                        <details className="group/snippet">
+                                          <summary className="px-3 py-1.5 text-xs font-mono text-slate-600 hover:text-blue-700 cursor-pointer select-none list-none transition-colors">▶ View Snippet</summary>
+                                          <pre className="px-3 pb-3 pt-1 text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed border-t border-slate-200 bg-slate-50">{snippet}{snippet.length >= 300 ? '...' : ''}</pre>
+                                        </details>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </details>
+                            );
+                          })()}
+                        </div>
+                      );
+                    })}
+
+                    {/* Phase-aware loading indicators */}
+                    {loading && streamPhase !== 'GENERATING' && (
+                      <div className="flex w-full justify-start">
+                        <div className="max-w-[80%] bg-white border-2 border-slate-300 shadow-sm rounded-xl p-4 flex items-center gap-3">
+                          {/* Spinning ring for indexing/searching phases */}
+                          <svg className="w-5 h-5 text-blue-600 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          <span className="text-xs font-mono text-slate-800 font-bold tracking-widest uppercase animate-pulse">
+                            {streamPhase === 'INDEXING_DOCUMENTS' && 'Indexing Documents...'}
+                            {streamPhase === 'RETRIEVING_CONTEXT' && 'Searching Knowledge Base...'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Live streaming bubble — renders tokens in real-time */}
+                    {loading && streamPhase === 'GENERATING' && (
+                      <div className="flex w-full justify-start">
+                        <div className="max-w-[85%] sm:max-w-[75%] bg-white border-2 border-slate-300 text-black rounded-2xl p-4 sm:p-6 flex flex-col shadow-sm">
+                          <div className="font-sans leading-relaxed prose-chat text-black font-normal text-[21px] sm:text-[22px]">
+                            <ReactMarkdown>{streamingContent.replace(/<official_document[\s\S]*/i, '').trim()}</ReactMarkdown>
+                          </div>
+                          {/* Blinking cursor to indicate streaming is active */}
+                          <span className="mt-2 inline-block w-2.5 h-5 bg-blue-600 animate-[pulse_0.8s_ease-in-out_infinite] align-middle" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Input Area — also serves as the drag-and-drop zone */}
                 <div
-                  className={`p-3 sm:p-5 bg-white border-t-2 flex-shrink-0 relative transition-all duration-200 ${
-                    isDragging
+                  className={`p-3 sm:p-5 bg-white border-t-2 flex-shrink-0 relative transition-all duration-200 ${isDragging
                       ? 'border-blue-600 bg-blue-50/40'
                       : 'border-slate-200'
-                  }`}
+                    }`}
                   onDragOver={handleDragOver}
                   onDragEnter={handleDragEnter}
                   onDragLeave={handleDragLeave}
@@ -4093,98 +4260,97 @@ function App() {
                       </div>
                     </div>
                   )}
-                   <form onSubmit={sendMessage} className="max-w-4xl mx-auto flex flex-col gap-2">
+                  <form onSubmit={sendMessage} className="max-w-4xl mx-auto flex flex-col gap-2">
 
-                      {/* File attachment chips — one per selected file, max 8 */}
-                      {selectedFiles.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {selectedFiles.map((f, idx) => (
-                            <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-lg text-xs font-mono">
-                              <svg className="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                              <span className="text-slate-800 font-bold max-w-[150px] truncate">{f.name}</span>
-                              <button
-                                type="button"
-                                onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
-                                className="text-slate-400 hover:text-red-600 transition-colors ml-1 shrink-0 cursor-pointer"
-                                title="Remove file"
-                              >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                              </button>
-                            </div>
-                          ))}
-                          {selectedFiles.length >= 8 && (
-                            <span className="self-center text-[10px] font-mono text-amber-500 tracking-wider">MAX 8 FILES</span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Input row: attach button + textarea + send */}
-                      <div className="flex items-end gap-2">
-
-                        {/* Hidden file input + visible paperclip button */}
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept=".pdf,.docx,.txt,.md,.csv,.jpg,.jpeg,.png,.tiff,.tif,.webp"
-                          multiple
-                          className="hidden"
-                          onChange={(e) => {
-                            const picked = Array.from(e.target.files || []);
-                            setSelectedFiles(prev => {
-                              const combined = [...prev, ...picked];
-                              const unique = combined.filter((f, i, arr) => arr.findIndex(x => x.name === f.name) === i);
-                              return unique.slice(0, 8);
-                            });
-                            e.target.value = '';
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={loading || selectedFiles.length >= 8}
-                          title={selectedFiles.length >= 8 ? "Max 8 files reached" : "Attach files (PDF, DOCX, TXT) — up to 8"}
-                          className="shrink-0 p-3 rounded-xl border-2 border-slate-300 bg-slate-50 text-slate-700 hover:text-black hover:border-black transition-all disabled:opacity-40 cursor-pointer"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                        </button>
-
-                        {/* Auto-expanding textarea */}
-                        <textarea
-                          ref={textareaRef}
-                          value={inputText}
-                          onChange={handleTextareaChange}
-                          onKeyDown={handleKeyDown}
-                          onPaste={handlePaste}
-                          disabled={loading}
-                          placeholder="Initiate prompt..."
-                          rows={1}
-                          style={{ maxHeight: '200px', overflowY: 'auto', resize: 'none' }}
-                          className="flex-1 w-full bg-slate-50 border-2 border-slate-300 hover:border-slate-400 focus:border-black focus:bg-white focus:ring-1 focus:ring-black rounded-xl px-4 py-3 text-black font-mono text-base sm:text-lg transition-all placeholder-slate-400 disabled:opacity-50 leading-relaxed"
-                          autoFocus
-                        />
-
-                        {/* Send button */}
-                        <button
-                          type="submit"
-                          disabled={loading || !inputText.trim()}
-                          className={`shrink-0 px-6 py-3 font-display font-bold text-sm tracking-widest uppercase rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
-                              (loading || !inputText.trim())
-                              ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                              : 'bg-black hover:bg-slate-800 text-white border border-black shadow-md hover:shadow-lg cursor-pointer active:scale-95'
-                          }`}
-                        >
-                          SEND
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                        </button>
-
+                    {/* File attachment chips — one per selected file, max 8 */}
+                    {selectedFiles.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedFiles.map((f, idx) => (
+                          <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-lg text-xs font-mono">
+                            <svg className="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                            <span className="text-slate-800 font-bold max-w-[150px] truncate">{f.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
+                              className="text-slate-400 hover:text-red-600 transition-colors ml-1 shrink-0 cursor-pointer"
+                              title="Remove file"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                          </div>
+                        ))}
+                        {selectedFiles.length >= 8 && (
+                          <span className="self-center text-[10px] font-mono text-amber-500 tracking-wider">MAX 8 FILES</span>
+                        )}
                       </div>
-                   </form>
+                    )}
+
+                    {/* Input row: attach button + textarea + send */}
+                    <div className="flex items-end gap-2">
+
+                      {/* Hidden file input + visible paperclip button */}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".pdf,.docx,.txt,.md,.csv,.jpg,.jpeg,.png,.tiff,.tif,.webp"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          const picked = Array.from(e.target.files || []);
+                          setSelectedFiles(prev => {
+                            const combined = [...prev, ...picked];
+                            const unique = combined.filter((f, i, arr) => arr.findIndex(x => x.name === f.name) === i);
+                            return unique.slice(0, 8);
+                          });
+                          e.target.value = '';
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={loading || selectedFiles.length >= 8}
+                        title={selectedFiles.length >= 8 ? "Max 8 files reached" : "Attach files (PDF, DOCX, TXT) — up to 8"}
+                        className="shrink-0 p-3 rounded-xl border-2 border-slate-300 bg-slate-50 text-slate-700 hover:text-black hover:border-black transition-all disabled:opacity-40 cursor-pointer"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                      </button>
+
+                      {/* Auto-expanding textarea */}
+                      <textarea
+                        ref={textareaRef}
+                        value={inputText}
+                        onChange={handleTextareaChange}
+                        onKeyDown={handleKeyDown}
+                        onPaste={handlePaste}
+                        disabled={loading}
+                        placeholder="Initiate prompt..."
+                        rows={1}
+                        style={{ maxHeight: '200px', overflowY: 'auto', resize: 'none' }}
+                        className="flex-1 w-full bg-slate-50 border-2 border-slate-300 hover:border-slate-400 focus:border-black focus:bg-white focus:ring-1 focus:ring-black rounded-xl px-4 py-3 text-black font-mono text-base sm:text-lg transition-all placeholder-slate-400 disabled:opacity-50 leading-relaxed"
+                        autoFocus
+                      />
+
+                      {/* Send button */}
+                      <button
+                        type="submit"
+                        disabled={loading || !inputText.trim()}
+                        className={`shrink-0 px-6 py-3 font-display font-bold text-sm tracking-widest uppercase rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${(loading || !inputText.trim())
+                            ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                            : 'bg-black hover:bg-slate-800 text-white border border-black shadow-md hover:shadow-lg cursor-pointer active:scale-95'
+                          }`}
+                      >
+                        SEND
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                      </button>
+
+                    </div>
+                  </form>
                 </div>
               </div>
-           </div>
+            </div>
 
           </>
-        )}
+          )}
 
 
 

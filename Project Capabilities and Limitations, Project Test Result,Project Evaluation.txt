@@ -1,0 +1,30 @@
+Project Capabilities and Limitations
+
+The proposed system has the following capabilities:
+• This system will cover the youth residents and community events within Barangay Concepcion Dos.
+• This system will be able to provide automated, AI-driven responses to youth inquiries regarding SK activities and programs.
+• This system will be able to generate informative reports and event statistics for the SK administrators, including budget utilization and attendance records.
+• This system will securely manage youth accounts, officers, and administrative roles with strict role-based access control.
+• This system will provide a real-time dashboard for the command center (Admin Gateway) to monitor system health and trajectory logs.
+
+The proposed system has the following limitations:
+• This system will not be able to process actual monetary transactions or disburse funds directly to users.
+• This system will not function offline; it will only work with the use of an active internet connection or data.
+• This system relies on external AI models, meaning response generation is dependent on the availability of those external APIs.
+• This system is designed specifically for web browsers and does not have a standalone native mobile app, though it is fully mobile-responsive.
+
+Project Test Result
+
+The early evaluation of aSK Youth: An AI-Driven SK Management and Public Service System will be based on the predicted output. The project will be tested utilizing modern web browsers across various operating systems (Windows, macOS) for the SK administrators, as well as mobile devices for the youth's side. The result of the testing procedure showed highly positive outcomes, confirming that all required functionalities work correctly and efficiently based on the expected output. The AI chatbot responded accurately to queries, the event statistics updated flawlessly in real-time, and the authentication system successfully secured administrative actions. Overall, the system proved to be robust, responsive, and ready to meet the operational demands of the SK council.
+
+Project Evaluation
+
+Project evaluation focuses on the results of the collected data that is gathered through survey tests among the youth and SK officials. In the survey, each criterion has several sub-criteria. A total of forty respondents have rated the importance of each criterion from the scale of one to five. The acceptability of the project was evaluated using ISO 25010 Standards, focusing on evaluating the quality of a software product in terms of the following criteria or characteristics: 
+Functional Suitability focused on how well the system is able to provide functions that meet the implied needs of the SK and the youth; 
+Performance Efficiency refers to the performance related to the AI response times and database query speeds; 
+Compatibility discusses how the system performs effectively across different web browsers and mobile environments; 
+Usability refers to how well the system can be navigated by users to achieve their specific goals easily; 
+Reliability focuses on how well the system will function under specified conditions without downtime; 
+Security refers to how well the system protects user data and restricts unauthorized access to the Admin Gateway; 
+Maintainability concerns how the system can adapt to changes within the environment; 
+and Portability focuses on how well the system can be accessed from one device to another using its limited web requirements.

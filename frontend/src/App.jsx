@@ -1845,9 +1845,9 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
 
             {/* Side-by-Side Charts Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Participation Bar Chart */}
+              {/* Event Statistics & Participation Leaderboard */}
               <div className="bg-white border-2 border-slate-200 rounded-2xl p-5 flex flex-col h-[400px] shadow-sm">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2 shrink-0">
                   <h3 className="text-xs font-display text-slate-800 uppercase tracking-wider font-bold flex items-center gap-2 m-0">
                     <span className="w-2 h-2 rounded-full bg-blue-600" /> Event Statistics
                   </h3>
@@ -1856,24 +1856,33 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     <select
                       value={leaderboardSortBy}
                       onChange={e => setLeaderboardSortBy(e.target.value)}
-                      className="bg-slate-50 border-2 border-slate-200 rounded-lg px-2 py-0.5 text-slate-800 focus:outline-none focus:border-blue-600 font-bold"
+                      className="bg-slate-50 border-2 border-slate-200 rounded-lg px-2 py-0.5 text-slate-800 focus:outline-none focus:border-blue-600 font-bold cursor-pointer"
                     >
-                      <option value="date">Date</option>
                       <option value="attendees">Attendees</option>
                       <option value="budget">Budget</option>
+                      <option value="date">Date</option>
                     </select>
                     <button
                       onClick={() => setLeaderboardSortAsc(!leaderboardSortAsc)}
-                      className="p-1 hover:bg-slate-100 rounded text-slate-600 hover:text-blue-600 transition-colors cursor-pointer"
-                      title={leaderboardSortAsc ? "Ascending" : "Descending"}
+                      className="p-1 px-1.5 hover:bg-slate-100 rounded text-slate-600 hover:text-blue-600 transition-colors cursor-pointer border border-slate-200 bg-slate-50 flex items-center justify-center gap-1 font-bold"
+                      title={leaderboardSortAsc ? "Sort Ascending" : "Sort Descending"}
+                      aria-label={leaderboardSortAsc ? "Sort Ascending" : "Sort Descending"}
                     >
-                      {leaderboardSortAsc ? '▲' : '▼'}
+                      <svg
+                        className={`w-3 h-3 transition-transform duration-200 ${leaderboardSortAsc ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                      </svg>
+                      <span className="text-[9px] uppercase">{leaderboardSortAsc ? 'ASC' : 'DESC'}</span>
                     </button>
                     <span className="text-slate-400 ml-1 border-l border-slate-200 pl-2 font-bold">Show:</span>
                     <select
                       value={leaderboardLimit}
                       onChange={e => setLeaderboardLimit(e.target.value)}
-                      className="bg-slate-50 border-2 border-slate-200 rounded-lg px-2 py-0.5 text-slate-800 focus:outline-none focus:border-blue-600 font-bold"
+                      className="bg-slate-50 border-2 border-slate-200 rounded-lg px-2 py-0.5 text-slate-800 focus:outline-none focus:border-blue-600 font-bold cursor-pointer"
                     >
                       <option value="5">Top 5</option>
                       <option value="10">Top 10</option>
@@ -1881,34 +1890,119 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     </select>
                   </div>
                 </div>
-                <div className="flex-1 w-full relative">
-                  {sortedParticipationData.length > 0 ? (
-                    <Plot
-                      data={[{
-                        type: 'bar',
-                        x: sortedParticipationData.map(d => d.title.substring(0, 15) + (d.title.length > 15 ? '…' : '')),
-                        y: sortedParticipationData.map(d => leaderboardSortBy === 'budget' ? (Number(d.budget_allotted) || 0) : (Number(d.attendees) || 0)),
-                        text: sortedParticipationData.map(d => `<b>${d.title}</b><br>Date: ${d.date ? new Date(d.date).toLocaleDateString() : 'N/A'}<br>Attendees: ${d.attendees || 0}<br>Budget: ₱${(Number(d.budget_allotted) || 0).toLocaleString()}`),
-                        hoverinfo: 'text',
-                        marker: { color: '#2563eb', opacity: 0.9, line: { color: '#1d4ed8', width: 1.5 } }
-                      }]}
-                      layout={{
-                        autosize: true,
-                        margin: { l: 45, r: 10, t: 10, b: 60 },
-                        paper_bgcolor: 'rgba(0,0,0,0)',
-                        plot_bgcolor: 'rgba(0,0,0,0)',
-                        font: { color: '#64748b', family: 'Inter, sans-serif', size: 10 },
-                        xaxis: { tickangle: -30, fixedrange: true },
-                        yaxis: { gridcolor: '#e2e8f0', fixedrange: true }
-                      }}
-                      config={{ displayModeBar: false, responsive: true }}
-                      style={{ width: '100%', height: '100%' }}
-                      useResizeHandler
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-xs font-mono text-slate-400">No attendance data collected</div>
-                  )}
-                </div>
+
+                {(() => {
+                  const maxMetricVal = Math.max(
+                    ...sortedParticipationData.map(d =>
+                      leaderboardSortBy === 'budget'
+                        ? (Number(d.budget_allotted) || 0)
+                        : (Number(d.attendees) || 0)
+                    ),
+                    1
+                  );
+
+                  return (
+                    <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
+                      {sortedParticipationData.length > 0 ? (
+                        sortedParticipationData.map((d, index) => {
+                          const attendees = Number(d.attendees) || 0;
+                          const budget = Number(d.budget_allotted) || 0;
+                          const isBudgetSort = leaderboardSortBy === 'budget';
+                          const metricVal = isBudgetSort ? budget : attendees;
+                          const pct = Math.min(100, Math.max(3, Math.round((metricVal / maxMetricVal) * 100)));
+
+                          let formattedDate = 'N/A';
+                          if (d.date) {
+                            try {
+                              const dt = new Date(d.date.includes('T') ? d.date : d.date.replace(' ', 'T'));
+                              formattedDate = isNaN(dt.getTime()) ? d.date : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            } catch {
+                              formattedDate = d.date;
+                            }
+                          }
+
+                          const rankBadgeStyle =
+                            index === 0
+                              ? 'bg-blue-600 text-white'
+                              : index === 1
+                              ? 'bg-cyan-700 text-white'
+                              : index === 2
+                              ? 'bg-slate-700 text-white'
+                              : 'bg-slate-100 text-slate-600 border border-slate-200';
+
+                          return (
+                            <div
+                              key={d.id || index}
+                              className="group p-2.5 rounded-xl border border-slate-200/80 bg-slate-50/40 hover:bg-white hover:border-blue-300 hover:shadow-xs transition-all duration-150"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                {/* Left: Rank & Title */}
+                                <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                                  <span className={`shrink-0 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded shadow-xs mt-0.5 ${rankBadgeStyle}`}>
+                                    #{String(index + 1).padStart(2, '0')}
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-blue-600 transition-colors" title={d.title}>
+                                        {d.title}
+                                      </h4>
+                                      {d.committee && (
+                                        <CommitteeBadge committee={d.committee} compact={true} className="text-[10px] py-0 px-1.5 shrink-0" />
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-0.5 text-[10px] font-mono text-slate-400">
+                                      <span>Date: {formattedDate}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Right: Metrics */}
+                                <div className="text-right shrink-0">
+                                  {isBudgetSort ? (
+                                    <>
+                                      <div className="text-xs font-mono font-bold text-emerald-700">
+                                        ₱{budget.toLocaleString()}
+                                      </div>
+                                      <div className="text-[10px] font-mono text-slate-500">
+                                        {attendees.toLocaleString()} attendees
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div className="text-xs font-mono font-bold text-blue-700">
+                                        {attendees.toLocaleString()} <span className="text-[10px] font-normal text-slate-500">attendees</span>
+                                      </div>
+                                      <div className="text-[10px] font-mono text-slate-500">
+                                        Budget: ₱{budget.toLocaleString()}
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Proportional Metric Bar */}
+                              <div className="mt-2 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200/60">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-300 ${
+                                    isBudgetSort
+                                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                                      : 'bg-gradient-to-r from-blue-600 to-cyan-500'
+                                  }`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
+                          <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">No attendance data collected</span>
+                          <span className="text-[11px] text-slate-400 mt-1">There are no event records matching your filter criteria.</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Budget Donut Chart — Overlap-free design with filtered zero slices & clean breakdown grid */}

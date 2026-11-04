@@ -1427,7 +1427,7 @@ app.get('/api/admin/logs', (req, res) => {
 
 app.get('/api/admin/participation', (req, res) => {
     try {
-        const list = db.prepare('SELECT id, title, category, date, attendees, male_count, female_count, budget_allotted FROM events ORDER BY attendees DESC').all();
+        const list = db.prepare('SELECT id, title, category, committee, date, attendees, male_count, female_count, budget_allotted FROM events ORDER BY attendees DESC').all();
         res.json(list);
     } catch (err) {
         res.status(500).json({ error: err.message });

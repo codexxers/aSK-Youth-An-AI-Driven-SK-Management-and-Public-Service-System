@@ -2434,7 +2434,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
               </div>
               {newUser.role === 'committee' && (
                 <div>
-                  <label className="text-slate-700 block mb-1 font-bold">Committee of what? <span className="text-red-500">*</span></label>
+                  <label className="text-slate-700 block mb-1 font-bold">Assigned Committee <span className="text-red-500">*</span></label>
                   <CommitteeSelect
                     apiBase={API_BASE}
                     value={newUser.committee}
@@ -2527,7 +2527,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
               </div>
               {editUser.role === 'committee' && (
                 <div>
-                  <label className="text-slate-700 font-bold block mb-1">Committee of what? <span className="text-red-500">*</span></label>
+                  <label className="text-slate-700 font-bold block mb-1">Assigned Committee <span className="text-red-500">*</span></label>
                   <CommitteeSelect
                     apiBase={API_BASE}
                     value={editUser.committee || ''}

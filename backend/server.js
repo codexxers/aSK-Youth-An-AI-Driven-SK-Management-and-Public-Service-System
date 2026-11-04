@@ -997,40 +997,45 @@ function runCommitteeBootMigration() {
             console.log('[Migration] events table rebuilt successfully with committee CHECK constraint.');
         }
 
-        // 3. Migrate old category → committee for existing events
-        const categoryMap = {
-            health:      'health',
-            seminar:     'education',
-            scholarship: 'education',
-            education:   'education',
-            livelihood:  'economic',
-            economic:    'economic',
-            social:      'social',
-            governance:  'governance',
-            ordinance:   'governance',
-            community:   'environment',
-            environment: 'environment',
-            sports:      'general',
-            general:     'general',
-            cultural:    'general',
-        };
-        const knownCategoryCodes = new Set(Object.keys(categoryMap));
-        const unmappedEvents = db.prepare("SELECT id, category FROM events WHERE committee IS NULL OR committee = ''").all();
-        let mapped = 0, flagged = 0;
-        for (const ev of unmappedEvents) {
-            const cat = (ev.category || '').toLowerCase().trim();
-            if (knownCategoryCodes.has(cat)) {
-                db.prepare('UPDATE events SET committee = ?, needs_review = 0 WHERE id = ?')
-                  .run(categoryMap[cat], ev.id);
-                mapped++;
-            } else {
-                db.prepare("UPDATE events SET committee = 'general', needs_review = 1 WHERE id = ?")
-                  .run(ev.id);
-                flagged++;
+        // 3. Migrate old category → committee for existing events and re-map general-defaulted events
+        const alreadyRemapped = db.prepare("SELECT COUNT(*) as c FROM system_logs WHERE action = 'remap_event_committees'").get()?.c > 0;
+        if (!alreadyRemapped) {
+            const remappingRules = [
+                // Health
+                { committee: 'health', where: "LOWER(category) IN ('health', 'medical_mission', 'blood_donation', 'wellness') OR LOWER(title) LIKE '%health%' OR LOWER(title) LIKE '%wellness%' OR LOWER(title) LIKE '%malusog%'" },
+                // Education
+                { committee: 'education', where: "LOWER(category) IN ('scholarship', 'seminar', 'education', 'als') OR LOWER(title) LIKE '%scholarship%' OR LOWER(title) LIKE '%school supply%' OR LOWER(title) LIKE '%edu-aksyon%' OR LOWER(title) LIKE '%skcentives%' OR LOWER(title) LIKE '%seminar%'" },
+                // Economic Empowerment
+                { committee: 'economic', where: "LOWER(category) IN ('livelihood', 'economic', 'job_fair') OR LOWER(title) LIKE '%livelihood%' OR LOWER(title) LIKE '%digital skills%'" },
+                // Environment
+                { committee: 'environment', where: "LOWER(category) IN ('environment', 'community service', 'clean_up') OR LOWER(title) LIKE '%clean-up%' OR LOWER(title) LIKE '%bayanihan brigada%' OR LOWER(title) LIKE '%basketbottle%' OR LOWER(title) LIKE '%tree planting%'" },
+                // Citizenship
+                { committee: 'citizenship', where: "LOWER(title) LIKE '%leadership summit%'" },
+            ];
+
+            let mapped = 0;
+            for (const rule of remappingRules) {
+                const info = db.prepare(`UPDATE events SET committee = ?, needs_review = 0 WHERE (committee = 'general' OR committee IS NULL OR committee = '') AND (${rule.where})`).run(rule.committee);
+                mapped += info.changes;
             }
-        }
-        if (mapped > 0 || flagged > 0) {
-            console.log(`[Migration] Events: ${mapped} mapped, ${flagged} flagged needs_review (→ general).`);
+
+            // Normalize category casing for legacy rows
+            db.exec(`
+                UPDATE events SET category = 'health' WHERE LOWER(category) = 'health';
+                UPDATE events SET category = 'livelihood' WHERE LOWER(category) = 'livelihood';
+                UPDATE events SET category = 'sports' WHERE LOWER(category) = 'sports';
+                UPDATE events SET category = 'community' WHERE LOWER(category) = 'community service';
+                UPDATE events SET category = 'seminar' WHERE LOWER(category) = 'leadership';
+            `);
+
+            const unmappedEvents = db.prepare("SELECT id FROM events WHERE committee IS NULL OR committee = ''").all();
+            for (const ev of unmappedEvents) {
+                db.prepare("UPDATE events SET committee = 'general', needs_review = 1 WHERE id = ?").run(ev.id);
+            }
+
+            db.prepare("INSERT INTO system_logs (actor, role, action, target, details) VALUES (?, ?, ?, ?, ?)")
+              .run('System', 'migration', 'remap_event_committees', 'events', `Re-mapped ${mapped} events to designated committees based on category and title keywords`);
+            console.log(`[Migration] Re-mapped ${mapped} events to designated committees based on category and title keywords.`);
         }
     });
 

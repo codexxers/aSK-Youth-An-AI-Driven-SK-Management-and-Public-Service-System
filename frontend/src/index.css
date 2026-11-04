@@ -56,23 +56,23 @@
   pointer-events: none;
 }
 
-/* Markdown chat bubble prose styles — font size raised by 50% */
+/* Markdown chat bubble prose styles — font size reduced by 30% from 1.35rem (21.6px -> 15.1px) */
 .prose-chat {
-  font-size: 1.35rem; /* +50% increase from 0.9rem (14.4px -> 21.6px) */
-  line-height: 1.75;
+  font-size: 0.95rem; /* -30% reduction from 1.35rem (21.6px -> 15.1px) */
+  line-height: 1.65;
   color: #000000;
   font-weight: 400;
 }
-.prose-chat p { margin-bottom: 0.75rem; }
+.prose-chat p { margin-bottom: 0.6rem; }
 .prose-chat p:last-child { margin-bottom: 0; }
 .prose-chat strong,
 .prose-chat b { font-weight: 700; color: #000000; }
 .prose-chat em,
 .prose-chat i { font-style: italic; }
-.prose-chat ul { list-style-type: disc; padding-left: 1.75rem; margin-bottom: 0.75rem; }
-.prose-chat ol { list-style-type: decimal; padding-left: 1.75rem; margin-bottom: 0.75rem; }
-.prose-chat li { margin-bottom: 0.35rem; }
+.prose-chat ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.6rem; }
+.prose-chat ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 0.6rem; }
+.prose-chat li { margin-bottom: 0.25rem; }
 .prose-chat li > p { margin-bottom: 0; }
 .prose-chat code { font-family: var(--font-mono); font-size: 0.85em; background: #f1f5f9; padding: 0.15em 0.4em; border-radius: 4px; color: #0284c7; border: 1px solid #e2e8f0; }
-.prose-chat pre { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1rem 1.25rem; overflow-x: auto; margin-bottom: 0.75rem; color: #f8fafc; font-size: 0.85em; }
+.prose-chat pre { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 0.85rem 1rem; overflow-x: auto; margin-bottom: 0.6rem; color: #f8fafc; font-size: 0.85em; }
 .prose-chat pre code { background: none; padding: 0; color: #f8fafc; border: none; }

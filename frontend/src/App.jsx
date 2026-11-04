@@ -2987,7 +2987,7 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
               </svg>
             </button>
           )}
-          <span className="text-base sm:text-lg font-display font-black tracking-wider text-slate-900 truncate">💡 SUGGESTIONS &amp; FEEDBACK</span>
+          <span className="text-xl sm:text-2xl font-display font-black tracking-wider text-slate-900 truncate">💡 SUGGESTIONS &amp; FEEDBACK</span>
         </div>
       </div>
 
@@ -2995,12 +2995,12 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
         {/* Youth Submit Form */}
         {isYouth && (
           <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm">
-            <h2 className="text-xs font-display font-bold text-blue-600 uppercase tracking-widest mb-3">Submit Feedback</h2>
+            <h2 className="text-sm sm:text-base font-display font-bold text-blue-600 uppercase tracking-widest mb-3">Submit Feedback</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
               <select
                 value={form.category}
                 onChange={e => setForm({ ...form, category: e.target.value })}
-                className="w-full sm:w-auto bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-blue-600 shadow-sm"
+                className="w-full sm:w-auto bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm sm:text-base font-mono font-bold text-slate-900 focus:outline-none focus:border-blue-600 shadow-sm"
               >
                 <option value="general">General</option>
                 <option value="event">Event Idea</option>
@@ -3012,11 +3012,11 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
                 onChange={e => setForm({ ...form, content: e.target.value })}
                 rows={3}
                 placeholder="What's on your mind? (Any suggestions for SK?)"
-                className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 resize-none shadow-sm transition-all"
+                className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-base sm:text-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 resize-none shadow-sm transition-all"
                 required
               />
               <div className="flex justify-end">
-                <button type="submit" disabled={submitting || !form.content.trim()} className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-display font-bold rounded-xl text-xs uppercase tracking-wider disabled:opacity-50 transition-all shadow-md active:scale-95 cursor-pointer">
+                <button type="submit" disabled={submitting || !form.content.trim()} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-display font-bold rounded-xl text-sm sm:text-base uppercase tracking-wider disabled:opacity-50 transition-all shadow-md active:scale-95 cursor-pointer">
                   {submitting ? 'Submitting...' : 'Submit Suggestion'}
                 </button>
               </div>
@@ -3027,12 +3027,12 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
         {/* Status Filter Buttons — admin/chairman/committee only */}
         {isAdmin && (
           <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mr-1">Filter:</span>
+            <span className="text-xs sm:text-sm font-mono text-slate-500 uppercase tracking-widest mr-1.5">Filter:</span>
             {STATUS_BTNS.map(btn => (
               <button
                 key={String(btn.value)}
                 onClick={() => setStatusFilter(btn.value)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all cursor-pointer ${statusFilter === btn.value ? btn.active : btn.color
+                className={`px-4 py-2 rounded-xl text-sm sm:text-base font-bold font-mono transition-all cursor-pointer ${statusFilter === btn.value ? btn.active : btn.color
                   }`}
               >
                 {btn.label}
@@ -3049,16 +3049,16 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
         {/* List of Suggestions */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-display font-bold text-slate-700 uppercase tracking-wider">
+            <h2 className="text-sm sm:text-base font-display font-bold text-slate-700 uppercase tracking-wider">
               {statusFilter ? `${statusFilter} Suggestions` : 'All Suggestions'}
-              <span className="ml-2 font-mono text-slate-400">({filteredSuggestions.length})</span>
+              <span className="ml-2 font-mono text-slate-400 text-sm sm:text-base">({filteredSuggestions.length})</span>
             </h2>
           </div>
           {loading ? (
-            <p className="text-slate-500 font-mono text-sm">Loading suggestions...</p>
+            <p className="text-slate-500 font-mono text-base sm:text-lg">Loading suggestions...</p>
           ) : filteredSuggestions.length === 0 ? (
             <div className="bg-white border-2 border-slate-200 rounded-2xl p-8 text-center shadow-sm">
-              <p className="text-slate-500 font-mono text-sm">No {statusFilter || ''} suggestions found.</p>
+              <p className="text-slate-500 font-mono text-base sm:text-lg">No {statusFilter || ''} suggestions found.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -3066,23 +3066,23 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
                 <div key={s.id} className="bg-white border-2 border-slate-200 hover:border-slate-300 rounded-2xl p-5 shadow-sm transition-all">
                   <div className="flex justify-between items-start gap-4 mb-2">
                     <div>
-                      <span className="text-[10px] uppercase tracking-widest font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full mr-2">{s.category}</span>
-                      <span className="text-xs font-mono text-slate-400">{new Date(s.created_at.replace(' ', 'T') + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Singapore' })}</span>
+                      <span className="text-xs sm:text-sm uppercase tracking-widest font-bold bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full mr-2">{s.category}</span>
+                      <span className="text-sm font-mono text-slate-400">{new Date(s.created_at.replace(' ', 'T') + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Singapore' })}</span>
                     </div>
-                    <span className={`text-[10px] uppercase font-bold tracking-widest px-2.5 py-0.5 rounded-full ${s.status === 'pending' ? 'bg-amber-50 text-amber-800 border border-amber-300' :
+                    <span className={`text-xs sm:text-sm uppercase font-bold tracking-widest px-3 py-1 rounded-full ${s.status === 'pending' ? 'bg-amber-50 text-amber-800 border border-amber-300' :
                         s.status === 'reviewed' ? 'bg-blue-50 text-blue-800 border border-blue-300' :
                           'bg-emerald-50 text-emerald-800 border border-emerald-300'
                       }`}>
                       {s.status}
                     </span>
                   </div>
-                  <p className="text-slate-900 text-sm font-medium mb-3 leading-relaxed">{s.content}</p>
-                  <p className="text-xs font-mono text-slate-500 mb-2">— {s.submitter_name} ({s.submitter_role})</p>
+                  <p className="text-slate-900 text-base sm:text-lg font-medium mb-3 leading-relaxed">{s.content}</p>
+                  <p className="text-sm sm:text-base font-mono text-slate-500 mb-2">— {s.submitter_name} ({s.submitter_role})</p>
 
                   {s.admin_response && (
                     <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3.5 mt-3">
-                      <p className="text-[10px] font-mono font-bold text-blue-800 uppercase tracking-widest mb-1">SK Response ({s.responded_by})</p>
-                      <p className="text-slate-800 text-xs leading-relaxed">{s.admin_response}</p>
+                      <p className="text-xs sm:text-sm font-mono font-bold text-blue-800 uppercase tracking-widest mb-1.5">SK Response ({s.responded_by})</p>
+                      <p className="text-slate-800 text-sm sm:text-base leading-relaxed">{s.admin_response}</p>
                     </div>
                   )}
 
@@ -3095,16 +3095,16 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
                             onChange={e => setAdminResponse(e.target.value)}
                             rows={2}
                             placeholder="Type response to youth..."
-                            className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-600 resize-none"
+                            className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm sm:text-base text-slate-900 focus:outline-none focus:border-blue-600 resize-none"
                           />
                           <div className="flex gap-2">
-                            <button onClick={() => setEditingId(null)} className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer">Cancel</button>
-                            <button onClick={() => handleUpdateStatus(s.id, 'reviewed', adminResponse)} className="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-500 transition-colors cursor-pointer shadow-sm">Mark Reviewed</button>
-                            <button onClick={() => handleUpdateStatus(s.id, 'resolved', adminResponse)} className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-500 transition-colors cursor-pointer shadow-sm">Mark Resolved</button>
+                            <button onClick={() => setEditingId(null)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors cursor-pointer">Cancel</button>
+                            <button onClick={() => handleUpdateStatus(s.id, 'reviewed', adminResponse)} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 transition-colors cursor-pointer shadow-sm">Mark Reviewed</button>
+                            <button onClick={() => handleUpdateStatus(s.id, 'resolved', adminResponse)} className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-500 transition-colors cursor-pointer shadow-sm">Mark Resolved</button>
                           </div>
                         </div>
                       ) : (
-                        <button onClick={() => { setEditingId(s.id); setAdminResponse(s.admin_response || ''); }} className="text-xs font-display font-bold text-blue-600 hover:text-blue-700 uppercase tracking-wider cursor-pointer">
+                        <button onClick={() => { setEditingId(s.id); setAdminResponse(s.admin_response || ''); }} className="text-sm sm:text-base font-display font-bold text-blue-600 hover:text-blue-700 uppercase tracking-wider cursor-pointer">
                           {s.admin_response ? 'Edit Response' : 'Respond to Feedback'}
                         </button>
                       )}
@@ -4166,7 +4166,7 @@ function App() {
                                     <svg className="w-4 h-4 text-slate-500 transform transition-transform group-open/think:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                   </summary>
                                   <div className="mt-3 pl-4 border-l-2 border-slate-300 py-2">
-                                    <p className="font-mono text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                                    <p className="font-mono text-xs sm:text-[13px] text-slate-700 whitespace-pre-wrap leading-relaxed">
                                       {thoughtContent}
                                     </p>
                                   </div>
@@ -4174,7 +4174,7 @@ function App() {
                               )}
 
                               {finalContent.trim().length > 0 && (
-                                <div className={`font-sans leading-relaxed prose-chat ${msg.role === 'assistant' ? 'text-black font-normal text-[21px] sm:text-[22px]' : 'text-black font-medium text-[20px] sm:text-[21px]'}`}>
+                                <div className={`font-sans leading-relaxed prose-chat ${msg.role === 'assistant' ? 'text-black font-normal text-[15px] sm:text-[15.5px]' : 'text-black font-medium text-[14px] sm:text-[15px]'}`}>
                                   <ReactMarkdown
                                     components={{
                                       p: ({ children }) => {
@@ -4420,7 +4420,7 @@ function App() {
                         placeholder="Initiate prompt..."
                         rows={1}
                         style={{ maxHeight: '200px', overflowY: 'auto', resize: 'none' }}
-                        className="flex-1 w-full bg-slate-50 border-2 border-slate-300 hover:border-slate-400 focus:border-black focus:bg-white focus:ring-1 focus:ring-black rounded-xl px-4 py-3 text-black font-mono text-base sm:text-lg transition-all placeholder-slate-400 disabled:opacity-50 leading-relaxed"
+                        className="flex-1 w-full bg-slate-50 border-2 border-slate-300 hover:border-slate-400 focus:border-black focus:bg-white focus:ring-1 focus:ring-black rounded-xl px-4 py-3 text-black font-mono text-sm sm:text-base transition-all placeholder-slate-400 disabled:opacity-50 leading-relaxed"
                         autoFocus
                       />
 

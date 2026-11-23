@@ -2412,7 +2412,7 @@ const GLOBAL_SCOPES = {
 // Track seen conversation IDs for the one-time notification nudge (Task 4.3)
 const _seenConversations = new Set();
 
-async function buildRagContext(currentQuery, documentsData, conversationId = null, activeRole = 'youth', sendEvent = null, clientDateString = null, user = null) {
+async function buildRagContext(currentQuery, documentsData, conversationId = null, activeRole = 'youth', sendEvent = null, clientDateString = null, user = null, history = []) {
     let retrievedChunks  = [];
     let finalUserPrompt  = currentQuery;
 
@@ -2656,6 +2656,43 @@ ${c.text}
 
     } // end if (isEventQuery)
 
+    // --- Deterministic ABYIP Context Injection ---
+    // If the query asks about the ABYIP (Annual Barangay Youth Investment Program),
+    // inject the authoritative, complete record of all 8 approved projects directly from knowledge base.
+    const isAbyipInQuery = /\b(abyip|annual\s+barangay\s+youth\s+investment|taunang\s+plano)\b/i.test(currentQuery);
+    const wasAbyipInRecentTurn = Array.isArray(history) && history.slice(-3).some(m => /\babyip\b/i.test(m.content || ''));
+    const isAbyipFollowUp = wasAbyipInRecentTurn && /(more|iba|all|lahat|extract|summarize|list|yun lang|meron pa|that all|only)/i.test(currentQuery);
+    const isAbyipQuery = isAbyipInQuery || isAbyipFollowUp;
+
+    if (isAbyipQuery) {
+        try {
+            const kbPath = path.join(__dirname, '..', 'knowledge_base', 'abyip', 'abyip_2025_chunks.json');
+            if (fs.existsSync(kbPath)) {
+                const abyipData = JSON.parse(fs.readFileSync(kbPath, 'utf8'));
+                if (Array.isArray(abyipData) && abyipData.length > 0) {
+                    const overview = abyipData[0];
+                    const projects = abyipData.slice(1).map((p, idx) => `[Program ${idx + 1}]\n${p}`).join('\n\n');
+                    
+                    const abyipBlock = `\n\n[AUTHORITATIVE INSTITUTIONAL RECORD: ABYIP 2025]\n` +
+                        `The user is asking specifically about the Annual Barangay Youth Investment Program (ABYIP 2025) of Sangguniang Kabataan Barangay Concepcion Dos, City of Marikina.\n` +
+                        `The following is the COMPLETE, EXHAUSTIVE, and SOLE SOURCE OF TRUTH for all approved ABYIP 2025 programs:\n\n` +
+                        `${overview}\n\n` +
+                        `DETAILED RECORD OF ALL 8 APPROVED PROGRAMS:\n${projects}\n\n` +
+                        `CRITICAL DIRECTIVES:\n` +
+                        `1. There are EXACTLY 8 approved programs under the 2025 ABYIP. When asked to summarize, list, or extract data from the ABYIP, provide ALL 8 approved programs.\n` +
+                        `2. Answer ONLY using the ABYIP programs above. Do NOT confuse or merge them with general calendar events from the events database.\n` +
+                        `3. DO NOT hallucinate, invent, or mention any fictional programs.\n` +
+                        `[END ABYIP 2025]`;
+                        
+                    finalUserPrompt += abyipBlock;
+                    console.log(`[aSK Youth] Deterministic ABYIP context injected (${abyipData.length} entries).`);
+                }
+            }
+        } catch (abyipErr) {
+            console.error('[aSK Youth] ABYIP context injection error:', abyipErr.message);
+        }
+    }
+
     // --- Append Python AI Layer flags to the final prompt ---
     // Intent mode flag (A=Casual, B=Professional, C=Document Analysis)
     if (intentMode && intentMode !== 'A') {
@@ -2788,7 +2825,7 @@ app.post('/api/chat', upload.array('files', MAX_FILES), async (req, res) => {
         const conversationId = req.body.conversationId || null;
         const clientDateString = req.body.clientDateString || null;
         const { finalUserPrompt, eventContext, retrievedChunks } =
-            await buildRagContext(currentQuery, documentsData, conversationId, activeRole, null, clientDateString, chatUser);
+            await buildRagContext(currentQuery, documentsData, conversationId, activeRole, null, clientDateString, chatUser, messages);
 
         const fullSystemPrompt = buildFullSystemPrompt(eventContext, activeRole, clientDateString);
         console.log("Final Prompt sent to LLM:", finalUserPrompt.substring(0, 200) + "...");
@@ -2890,6 +2927,7 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
     res.on('close', () => {
         logAI('info', 'SSE', 'res.close fired — client disconnected');
         aborted = true;
+        clearInterval(keepAlive);
     });
 
     // Immediate ping: keeps the connection alive through cold-start / embedding
@@ -2905,8 +2943,8 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
     }, 5000);
 
     const sendEvent = (data) => {
-        if (!aborted && !res.writableEnded) {
-            try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch (e) { console.error('[SSE] write error:', e.message); }
+        if (!aborted && !res.writableEnded && res.socket && !res.socket.destroyed) {
+            try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch (_) {}
         }
     };
 
@@ -2982,7 +3020,7 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
         const activeRole = resolveActiveRole(req);
         const clientDateString = req.body.clientDateString || null;
         const { finalUserPrompt, eventContext, retrievedChunks } =
-            await buildRagContext(currentQuery, documentsData, conversationId, activeRole, sendEvent, clientDateString);
+            await buildRagContext(currentQuery, documentsData, conversationId, activeRole, sendEvent, clientDateString, null, messages);
 
         if (retrievedChunks.length > 0) {
             sendEvent({ type: 'retrieved', chunks: retrievedChunks });
@@ -3017,6 +3055,7 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
                 compressedRoleHistory,
                 { temperature: 0.7, maxTokens: 2048 },
                 (text) => {
+                    if (aborted || res.writableEnded) return;
                     process.stdout.write(text);
                     streamBuf += text;
 
@@ -3099,7 +3138,9 @@ app.post('/api/chat/stream', upload.array('files', MAX_FILES), async (req, res) 
         sendEvent({ type: 'error', message: error.message || String(error) });
     }
     clearInterval(keepAlive);
-    res.end();
+    if (!res.writableEnded && !aborted) {
+        try { res.end(); } catch (_) {}
+    }
 });
 
 // ---------------------------------------------------------------------------
@@ -3708,3 +3749,11 @@ async function gracefulShutdown(signal) {
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
+
+// Process crash safety handlers — prevent container exit code 1 on unhandled errors
+process.on('uncaughtException', (err) => {
+    console.error('[FATAL] Uncaught Exception caught safely:', err?.stack || err?.message || err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('[FATAL] Unhandled Rejection caught safely at:', promise, 'reason:', reason);
+});

@@ -1,30 +1,18 @@
-# Cloudflare secrets — never commit
-cloudflared-tunnel-token.txt
-cloudflared-origin-cert.txt
+# =====================================================
+# aSKYouth .gitignore — cloud-hosted stack only
+# Frontend: Vercel | Backend: Render | DB: Supabase
+# =====================================================
 
-# API Keys
+# --- Secrets & API Keys ---
+.env
+backend/.env
+backend/tools/.env
 API KEYS.txt
 API keys.txt
 key.txt
 Key.txt
 
-
-# ---------------------------------------------------
-# Dependencies
-node_modules/
-.venv/
-.cache/
-_MIGRATION_BACKUP_LOCAL_AI/
-Qwen25GGUF/
-backend/data/hnsw.index
-backend/data/hnsw-meta.json
-backend/.env
-backend/tools/.env
-.env
-API keys.txt
-
-# Dependencies & Virtual Environments
-.agents/
+# --- Node / Python dependencies ---
 node_modules/
 **/node_modules/
 .venv/
@@ -32,33 +20,95 @@ node_modules/
 .cache/
 __pycache__/
 
-# Backups & Heavy Models
+# --- Local model files (not part of hosted stack) ---
 _MIGRATION_BACKUP_LOCAL_AI/
 Qwen25GGUF/
+
+# --- Cloudflare Tunnel (not used in hosted stack) ---
+cloudflared-tunnel-token.txt
+cloudflared-tunnel-token.example.txt
+cloudflared-tunnel-name.txt
+cloudflared-tunnel-name.example
+cloudflared-tunnel-id.example.txt
+cloudflared-origin-cert.txt
+cloudflared-origin-cert.example.txt
+
+# --- Local-only batch / launcher scripts ---
+start.bat
+stop.bat
+start_system.bat
+stop_system.bat
+setup_project.bat
+scripts/
+
+# --- Log files ---
+*.log
 *.bak
 
-# Unrelated Folders & Archives
-Copy of FEU Alumnix/
+# --- Binary / heavy files not needed in repo ---
+*.docx
+*.pdf
+*.db
+*.sqlite
+
+# --- Generated / temp output ---
+generated_docs/
+scratch/
+backend/tools/generated_docs/
+backend/data/hnsw.index
+backend/data/hnsw-meta.json
+
+# --- Obsolete / stale folders ---
 askyouth-web-only/
 frontend-copy-pre-update/
 frontend-post-update/
 CONTEXTS-IMPORTANT - Copy/
 response_styles_old_205_lines(PROTECTED DONT MODIFY)/
+ai-layer/
 
-# Secrets & Environment Files
-.env
-backend/.env
-backend/tools/.env
-API keys.txt
-API KEYS.txt
-cloudflared-tunnel-token.txt
-cloudflared-tunnel-name.txt
+# --- Dev/agent internal files ---
+.agents/
+.vscode/
 
-# Generated Files & Binary DBs
-generated_docs/
-backend/data/hnsw.index
-backend/data/hnsw-meta.json
-*.log
-scratch/
-*.docx
-*.pdf
+# --- Stale root-level docs & prompt artifacts ---
+ANTIGRAVITY_AGENT_PROMPT_FIX_EVENT_SQL_FUSION.md
+CLEANUP_AND_REVERT_PROMPT.md
+PHASE_UPDATE_PROMPT.md
+MODEL_DOWNLOAD.md
+DEMO_GUIDE.md
+SKILL.md
+skills-lock.json
+tech-stack.txt
+project-brief-askyouth-ai.md
+user-guide-prompt.md
+CHAP1-3_UPDATED_SECTIONS.txt
+ADEPLOY After Manual Deploy.txt
+ADEPLOY Before Manual Deploy.txt
+Project Capabilities and Limitations*
+
+# --- Stale folders ---
+System Overviews/
+UPDATE TO DO/
+docs/GPU_RAM_SETUP_GUIDE.md
+docs/HARDWARE_AND_INFRASTRUCTURE*.md
+docs/CHAPTER_3_DIAGRAM_PROMPTS*
+
+# --- Backend test/scratch scripts ---
+backend/test.js
+backend/testHistory.js
+backend/test_attendance.js
+backend/test_committee_access.mjs
+backend/test_faq_visibility.cjs
+backend/test_llm_tiers.mjs
+backend/test_migration.mjs
+backend/test_sql.cjs
+backend/scratch_migrate.cjs
+backend/scratch_seed_suggestions.cjs
+backend/tools/pm2.ecosystem.config.cjs
+
+# --- Duplicate backend files ---
+backend/timestamp_util.js
+backend/database.sqlite
+backend/aSKYouth.db
+backend/data/database.sqlite
+backend/data/*.bak*

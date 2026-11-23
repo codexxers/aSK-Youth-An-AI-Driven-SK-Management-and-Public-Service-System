@@ -719,8 +719,8 @@ function SystemHealthTab({ authHeaders }) {
                       key={snap.filename}
                       onClick={() => handleSelectSnapshot(snap)}
                       className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all cursor-pointer ${snap.isSafety
-                          ? 'bg-blue-50/60 border-blue-200 hover:bg-blue-100/50'
-                          : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-blue-400'
+                        ? 'bg-blue-50/60 border-blue-200 hover:bg-blue-100/50'
+                        : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-blue-400'
                         }`}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -855,8 +855,8 @@ function SystemHealthTab({ authHeaders }) {
                       <td className="px-3 py-1.5 text-slate-500 whitespace-nowrap">{new Date(entry.ts).toLocaleTimeString()}</td>
                       <td className="px-3 py-1.5">
                         <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${entry.level === 'warn' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
-                            entry.level === 'error' ? 'bg-red-100 text-red-800 border border-red-300' :
-                              'bg-slate-100 text-slate-700 border border-slate-200'
+                          entry.level === 'error' ? 'bg-red-100 text-red-800 border border-red-300' :
+                            'bg-slate-100 text-slate-700 border border-slate-200'
                           }`}>{entry.level}</span>
                       </td>
                       <td className="px-3 py-1.5 text-blue-700 font-bold whitespace-nowrap">{entry.source}</td>
@@ -1010,8 +1010,8 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
               key={t}
               onClick={() => setMainTab(t)}
               className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-display font-bold uppercase tracking-wider transition-all cursor-pointer ${mainTab === t
-                  ? 'bg-slate-900 text-white shadow-md'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+                ? 'bg-slate-900 text-white shadow-md'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
                 }`}
             >
               {t === 'dashboard' ? '📊 Dashboard' : '📋 Events'}
@@ -1097,11 +1097,10 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                 <button
                   type="button"
                   onClick={() => setFilterNeedsReview(!filterNeedsReview)}
-                  className={`px-3 py-2 rounded-xl text-xs font-mono font-bold transition-all border-2 flex items-center gap-1.5 cursor-pointer shrink-0 ${
-                    filterNeedsReview
+                  className={`px-3 py-2 rounded-xl text-xs font-mono font-bold transition-all border-2 flex items-center gap-1.5 cursor-pointer shrink-0 ${filterNeedsReview
                       ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
                       : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
-                  }`}
+                    }`}
                   title="Filter events migrated as general needing review"
                 >
                   <span>⚠️</span> Needs Review ({needsReviewCount})
@@ -1173,8 +1172,8 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${ev.status === 'completed' ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' :
-                          ev.status === 'active' ? 'bg-emerald-600 text-white shadow-sm' :
-                            'bg-amber-50 text-amber-800 border border-amber-300'
+                        ev.status === 'active' ? 'bg-emerald-600 text-white shadow-sm' :
+                          'bg-amber-50 text-amber-800 border border-amber-300'
                         }`}>
                         {ev.status === 'completed' ? 'Completed' : ev.status === 'active' ? 'Active' : 'Not Started'}
                       </span>
@@ -1429,8 +1428,8 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
                 key={t.id}
                 onClick={() => setTemplateId(t.id)}
                 className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 text-sm font-display font-bold transition-all cursor-pointer ${templateId === t.id
-                    ? 'bg-blue-50 border-blue-600 text-blue-900 shadow-md scale-[1.02]'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 shadow-sm'
+                  ? 'bg-blue-50 border-blue-600 text-blue-900 shadow-md scale-[1.02]'
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 shadow-sm'
                   }`}
               >
                 <span className="text-2xl drop-shadow-sm">{t.emoji}</span>
@@ -1846,8 +1845,8 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`shrink-0 flex items-center gap-2 px-3 sm:px-4 py-2 border-b-2 font-display text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${activeTab === tab.id
-                  ? 'border-blue-600 text-blue-700 bg-blue-50/60 rounded-t-xl'
-                  : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50/50 rounded-t-xl'
+                ? 'border-blue-600 text-blue-700 bg-blue-50/60 rounded-t-xl'
+                : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50/50 rounded-t-xl'
                 }`}
             >
               <span>{tab.icon}</span>
@@ -1978,10 +1977,10 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                             index === 0
                               ? 'bg-blue-600 text-white'
                               : index === 1
-                              ? 'bg-cyan-700 text-white'
-                              : index === 2
-                              ? 'bg-slate-700 text-white'
-                              : 'bg-slate-100 text-slate-600 border border-slate-200';
+                                ? 'bg-cyan-700 text-white'
+                                : index === 2
+                                  ? 'bg-slate-700 text-white'
+                                  : 'bg-slate-100 text-slate-600 border border-slate-200';
 
                           return (
                             <div
@@ -2036,11 +2035,10 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                               {/* Proportional Metric Bar */}
                               <div className="mt-2 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200/60">
                                 <div
-                                  className={`h-full rounded-full transition-all duration-300 ${
-                                    isBudgetSort
+                                  className={`h-full rounded-full transition-all duration-300 ${isBudgetSort
                                       ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
                                       : 'bg-gradient-to-r from-blue-600 to-cyan-500'
-                                  }`}
+                                    }`}
                                   style={{ width: `${pct}%` }}
                                 />
                               </div>
@@ -2199,9 +2197,9 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                       </td>
                       <td className="p-3">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${usr.role === 'admin' ? 'bg-red-100 text-red-800 border border-red-200' :
-                            usr.role === 'chairman' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
-                              usr.role === 'committee' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                                'bg-slate-100 text-slate-700'
+                          usr.role === 'chairman' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                            usr.role === 'committee' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                              'bg-slate-100 text-slate-700'
                           }`}>
                           {usr.role === 'committee' ? 'Committee' : usr.role}
                         </span>
@@ -2560,8 +2558,8 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                       onChange={e => setEditUserConfirmPw(e.target.value)}
                       placeholder="••••••••"
                       className={`w-full bg-white border-2 rounded-xl px-3 py-2 text-slate-900 focus:outline-none font-mono ${editUserConfirmPw && editUser.password !== editUserConfirmPw
-                          ? 'border-red-500 focus:border-red-500'
-                          : 'border-slate-200 focus:border-blue-500'
+                        ? 'border-red-500 focus:border-red-500'
+                        : 'border-slate-200 focus:border-blue-500'
                         }`}
                     />
                     {editUserConfirmPw && editUser.password !== editUserConfirmPw && (
@@ -2662,8 +2660,8 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   placeholder={`Type "${deleteTarget.username}" to confirm`}
                   autoFocus
                   className={`w-full bg-slate-50 border-2 rounded-xl px-3 py-2 text-slate-900 text-xs font-mono focus:outline-none ${deleteConfirmInput && deleteConfirmInput !== deleteTarget.username
-                      ? 'border-red-500 focus:border-red-500'
-                      : 'border-slate-200 focus:border-blue-500'
+                    ? 'border-red-500 focus:border-red-500'
+                    : 'border-slate-200 focus:border-blue-500'
                     }`}
                 />
                 {deleteConfirmInput && deleteConfirmInput !== deleteTarget.username && (
@@ -2904,8 +2902,8 @@ function LoginPage({ apiBase, onLogin }) {
             type="submit"
             disabled={loading || lockedSecs > 0 || !username.trim() || !password.trim()}
             className={`w-full py-3.5 rounded-xl font-display font-bold text-sm tracking-widest uppercase transition-all duration-300 flex items-center justify-center gap-2 ${loading || !username.trim() || !password.trim()
-                ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/50'
-                : 'bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 text-white shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:shadow-[0_4px_30px_rgba(37,99,235,0.6)] hover:from-blue-500 hover:to-cyan-500 cursor-pointer active:scale-[0.98]'
+              ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/50'
+              : 'bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 text-white shadow-[0_4px_20px_rgba(37,99,235,0.4)] hover:shadow-[0_4px_30px_rgba(37,99,235,0.6)] hover:from-blue-500 hover:to-cyan-500 cursor-pointer active:scale-[0.98]'
               }`}
           >
             {loading ? (
@@ -3123,8 +3121,8 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
                       <span className="text-sm font-mono text-slate-400">{new Date(s.created_at.replace(' ', 'T') + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Singapore' })}</span>
                     </div>
                     <span className={`text-xs sm:text-sm uppercase font-bold tracking-widest px-3 py-1 rounded-full ${s.status === 'pending' ? 'bg-amber-50 text-amber-800 border border-amber-300' :
-                        s.status === 'reviewed' ? 'bg-blue-50 text-blue-800 border border-blue-300' :
-                          'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                      s.status === 'reviewed' ? 'bg-blue-50 text-blue-800 border border-blue-300' :
+                        'bg-emerald-50 text-emerald-800 border border-emerald-300'
                       }`}>
                       {s.status}
                     </span>
@@ -3843,8 +3841,8 @@ function App() {
 
         {/* --- LEFT SIDEBAR (Gemini-Style Chats Menu) --- */}
         <div className={`transition-all duration-300 h-full flex-shrink-0 border-slate-300 bg-slate-50/50 backdrop-blur-3xl shadow-[5px_0_30px_rgba(0,0,0,0.05)] flex flex-col z-[60] fixed inset-y-0 left-0 md:relative ${sidebarOpen
-            ? 'w-[280px] md:w-[320px] translate-x-0 border-r opacity-100'
-            : 'w-[280px] md:w-0 -translate-x-full md:translate-x-0 border-r-0 opacity-0 overflow-hidden pointer-events-none'
+          ? 'w-[280px] md:w-[320px] translate-x-0 border-r opacity-100'
+          : 'w-[280px] md:w-0 -translate-x-full md:translate-x-0 border-r-0 opacity-0 overflow-hidden pointer-events-none'
           }`}>
           <div className="p-4 flex items-center justify-between border-b border-slate-200 shrink-0">
             <div className="flex items-center gap-2.5">
@@ -3881,8 +3879,8 @@ function App() {
                 key={t.id}
                 onClick={() => { setActiveThreadId(t.id); setCurrentView('chat'); if (window.innerWidth < 768) setSidebarOpen(false); }}
                 className={`group relative flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${activeThreadId === t.id
-                    ? 'bg-blue-100/50 border border-blue-200 text-blue-900 shadow-sm'
-                    : 'hover:bg-slate-200/50 border border-transparent text-slate-600 hover:text-slate-900'
+                  ? 'bg-blue-100/50 border border-blue-200 text-blue-900 shadow-sm'
+                  : 'hover:bg-slate-200/50 border border-transparent text-slate-600 hover:text-slate-900'
                   }`}
               >
                 {/* Icon + title / rename input */}
@@ -3912,8 +3910,8 @@ function App() {
                   <button
                     onClick={() => setOpenMenuId(openMenuId === t.id ? null : t.id)}
                     className={`p-1.5 rounded-md transition-colors ${openMenuId === t.id
-                        ? 'opacity-100 bg-slate-200 text-slate-700'
-                        : 'opacity-0 group-hover:opacity-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
+                      ? 'opacity-100 bg-slate-200 text-slate-700'
+                      : 'opacity-0 group-hover:opacity-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
                       }`}
                     title="Options"
                   >
@@ -3964,8 +3962,8 @@ function App() {
                 key={id}
                 onClick={() => setCurrentView(id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${currentView === id
-                    ? 'bg-blue-100 border border-blue-200 text-blue-800 shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 border border-transparent'
+                  ? 'bg-blue-100 border border-blue-200 text-blue-800 shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 border border-transparent'
                   }`}
               >
                 <span className="text-base leading-none select-none">{emoji}</span>
@@ -4082,9 +4080,9 @@ function App() {
                       {formatClock(now)}
                     </span>
                     <span className={`text-[10px] font-mono uppercase tracking-widest ${!lastModelUsed ? 'text-slate-500' :
-                        lastModelUsed.tier === 'gemini' ? 'text-cyan-500' :
-                          lastModelUsed.tier === 'groq' ? 'text-amber-400' :
-                            'text-red-400'
+                      lastModelUsed.tier === 'gemini' ? 'text-cyan-500' :
+                        lastModelUsed.tier === 'groq' ? 'text-amber-400' :
+                          'text-red-400'
                       }`}>
                       {lastModelUsed ? lastModelUsed.model.toUpperCase() + ' ACTIVE' : 'AI ENGINE STANDBY'}
                     </span>
@@ -4167,8 +4165,8 @@ function App() {
                           )}
                           {(msg.role === 'user' || thoughtContent || finalContent.trim().length > 0 || msg.retrievedChunks?.length > 0) && (
                             <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-4 sm:p-6 relative group transition-colors flex flex-col ${msg.role === 'user'
-                                ? 'bg-blue-50 border-2 border-blue-600 text-black shadow-sm'
-                                : 'bg-white border-2 border-slate-300 text-black shadow-sm'
+                              ? 'bg-blue-50 border-2 border-blue-600 text-black shadow-sm'
+                              : 'bg-white border-2 border-slate-300 text-black shadow-sm'
                               }`}>
                               {/* File attachment cards — supports multi-file (new) and single-file legacy */}
                               {msg.role === 'user' && (() => {
@@ -4390,8 +4388,8 @@ function App() {
                 {/* Input Area — also serves as the drag-and-drop zone */}
                 <div
                   className={`p-3 sm:p-5 bg-white border-t-2 flex-shrink-0 relative transition-all duration-200 ${isDragging
-                      ? 'border-blue-600 bg-blue-50/40'
-                      : 'border-slate-200'
+                    ? 'border-blue-600 bg-blue-50/40'
+                    : 'border-slate-200'
                     }`}
                   onDragOver={handleDragOver}
                   onDragEnter={handleDragEnter}
@@ -4482,8 +4480,8 @@ function App() {
                         type="submit"
                         disabled={loading || !inputText.trim()}
                         className={`shrink-0 px-6 py-3 font-display font-bold text-sm tracking-widest uppercase rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${(loading || !inputText.trim())
-                            ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                            : 'bg-black hover:bg-slate-800 text-white border border-black shadow-md hover:shadow-lg cursor-pointer active:scale-95'
+                          ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                          : 'bg-black hover:bg-slate-800 text-white border border-black shadow-md hover:shadow-lg cursor-pointer active:scale-95'
                           }`}
                       >
                         SEND

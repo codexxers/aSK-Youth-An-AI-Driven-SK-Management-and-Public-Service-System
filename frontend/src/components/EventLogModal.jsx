@@ -33,7 +33,7 @@ export default function EventLogModal({ open, onClose, event: ev, token, authUse
     if (!ev?.id || !token) return
     setLoading(true)
     setError('')
-    
+
     fetch(`${API_URL}/api/events/${ev.id}/logs`, { headers: { Authorization: `Bearer ${token}` } })
       .then(async (r) => {
         const data = await r.json().catch(() => ({}))
@@ -81,24 +81,23 @@ export default function EventLogModal({ open, onClose, event: ev, token, authUse
               Total Recorded Attendees: <span className="font-bold text-blue-700">{ev.attendees || attendees.length}</span>
             </p>
           </div>
-          
+
           <div className="flex gap-2 flex-wrap items-start">
             {authUser?.role === 'admin' && ev.status !== 'completed' && (
-              <button 
-                onClick={() => onToggleStatus(ev)} 
-                className={`px-3 py-1.5 text-white text-[10px] uppercase font-bold tracking-wider rounded-xl shadow-sm transition-all active:scale-95 ${
-                  ev.status === 'upcoming' 
-                    ? 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500' 
+              <button
+                onClick={() => onToggleStatus(ev)}
+                className={`px-3 py-1.5 text-white text-[10px] uppercase font-bold tracking-wider rounded-xl shadow-sm transition-all active:scale-95 ${ev.status === 'upcoming'
+                    ? 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500'
                     : 'bg-amber-600 hover:bg-amber-500'
-                }`}
+                  }`}
               >
                 {ev.status === 'upcoming' ? 'Start Event' : 'End Event'}
               </button>
             )}
-            
+
             {ev.status === 'active' && (
-              <button 
-                onClick={() => { onClose(); onShowQR(ev); }} 
+              <button
+                onClick={() => { onClose(); onShowQR(ev); }}
                 className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] uppercase font-bold tracking-wider rounded-xl shadow-sm transition-all active:scale-95"
               >
                 Show QR Code
@@ -117,15 +116,15 @@ export default function EventLogModal({ open, onClose, event: ev, token, authUse
           {ev.status === 'active' && (
             <div className="mb-6 flex flex-col items-center p-6 bg-slate-50 rounded-2xl border-2 border-slate-200 shadow-sm max-w-sm mx-auto transition-all">
               <div className="bg-white p-3 rounded-xl mb-4 border-2 border-slate-200 shadow-md">
-                <img 
-                  src={`${API_URL}/api/events/${ev.id}/qr?token=${encodeURIComponent(token || '')}&h=${qrRefreshHash}`} 
-                  alt="Event QR Code" 
+                <img
+                  src={`${API_URL}/api/events/${ev.id}/qr?token=${encodeURIComponent(token || '')}&h=${qrRefreshHash}`}
+                  alt="Event QR Code"
                   className="w-48 h-48 sm:w-56 sm:h-56 object-contain"
                 />
               </div>
               {authUser?.role === 'admin' && (
-                <button 
-                  onClick={() => onRefreshQR(ev.id)} 
+                <button
+                  onClick={() => onRefreshQR(ev.id)}
                   className="mb-3 px-4 py-2 bg-amber-600 text-white font-bold rounded-xl text-xs uppercase tracking-wider hover:bg-amber-500 transition-colors w-full shadow-sm"
                 >
                   Refresh QR

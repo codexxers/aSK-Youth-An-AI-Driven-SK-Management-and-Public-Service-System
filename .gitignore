@@ -85,13 +85,22 @@ CHAP1-3_UPDATED_SECTIONS.txt
 ADEPLOY After Manual Deploy.txt
 ADEPLOY Before Manual Deploy.txt
 Project Capabilities and Limitations*
+AI_INSTRUCTIONS.md
+SYSTEM_ARCHITECTURE_CONTEXT.md
+ASKYOUTH.LOGO.png
+UsersGuide_Progress_Logs.md
+Users-Guide-aSKYOUTH.md
+Users-Guide-aSKYOUTH-v2.md
+maintenance-guide(Reference Point).md
 
 # --- Stale folders ---
 System Overviews/
 UPDATE TO DO/
+CONTEXTS-IMPORTANT/
 docs/GPU_RAM_SETUP_GUIDE.md
 docs/HARDWARE_AND_INFRASTRUCTURE*.md
 docs/CHAPTER_3_DIAGRAM_PROMPTS*
+docs/2026-11-05-event-categories-committee-sync-design.md
 
 # --- Backend test/scratch scripts ---
 backend/test.js

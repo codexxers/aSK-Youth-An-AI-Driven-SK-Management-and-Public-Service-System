@@ -4,11 +4,11 @@
   "installCommand": "echo 'skip root install'",
   "framework": "vite",
   "env": {
-    "VITE_BACKEND_URL": "https://askyouth-backend.onrender.com"
+    "VITE_BACKEND_URL": "https://ask-youth-an-ai-driven-sk-management-and.onrender.com"
   },
   "build": {
     "env": {
-      "VITE_BACKEND_URL": "https://askyouth-backend.onrender.com"
+      "VITE_BACKEND_URL": "https://ask-youth-an-ai-driven-sk-management-and.onrender.com"
     }
   }
 }

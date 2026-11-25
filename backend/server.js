@@ -654,6 +654,14 @@ const healthCors = cors({
     methods: ['GET', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 });
+app.get('/', healthCors, (_req, res) => {
+    res.json({
+        service: 'aSKYouth Central API Backend',
+        status: 'online',
+        health: '/health',
+        timestamp: new Date().toISOString()
+    });
+});
 app.get('/health', healthCors, (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });

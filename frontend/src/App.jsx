@@ -3228,20 +3228,20 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
     : suggestions;
 
   const STATUS_BTNS = [
-    { label: 'All', value: null, color: 'bg-white border-2 border-slate-200 text-slate-600 hover:bg-slate-50', active: 'bg-slate-900 border-2 border-slate-900 text-white shadow-sm' },
-    { label: 'Pending', value: 'pending', color: 'bg-white border-2 border-amber-200 text-amber-700 hover:bg-amber-50', active: 'bg-amber-600 border-2 border-amber-600 text-white shadow-sm' },
-    { label: 'Reviewed', value: 'reviewed', color: 'bg-white border-2 border-blue-200 text-blue-700 hover:bg-blue-50', active: 'bg-blue-600 border-2 border-blue-600 text-white shadow-sm' },
-    { label: 'Resolved', value: 'resolved', color: 'bg-white border-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50', active: 'bg-emerald-600 border-2 border-emerald-600 text-white shadow-sm' },
+    { label: 'All', value: null, color: 'bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600', active: 'bg-slate-900 dark:bg-slate-200 border-2 border-slate-900 dark:border-slate-200 text-white dark:text-slate-900 shadow-sm' },
+    { label: 'Pending', value: 'pending', color: 'bg-white dark:bg-slate-700 border-2 border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30', active: 'bg-amber-600 border-2 border-amber-600 text-white shadow-sm' },
+    { label: 'Reviewed', value: 'reviewed', color: 'bg-white dark:bg-slate-700 border-2 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30', active: 'bg-blue-600 border-2 border-blue-600 text-white shadow-sm' },
+    { label: 'Resolved', value: 'resolved', color: 'bg-white dark:bg-slate-700 border-2 border-emerald-200 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/30', active: 'bg-emerald-600 border-2 border-emerald-600 text-white shadow-sm' },
   ];
 
   return (
-    <div className="flex flex-col h-full bg-transparent overflow-y-auto relative text-slate-900">
-      <div className="h-16 shrink-0 border-b border-slate-200/80 bg-white/70 backdrop-blur-md flex items-center px-4 sm:px-6 justify-between sticky top-0 z-30">
+    <div className="flex flex-col h-full bg-transparent overflow-y-auto relative text-slate-900 dark:text-slate-100">
+      <div className="h-16 shrink-0 border-b border-slate-200/80 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md flex items-center px-4 sm:px-6 justify-between sticky top-0 z-30">
         <div className="flex items-center gap-3 min-w-0">
           {!sidebarOpen && (
             <button
               onClick={onToggleSidebar}
-              className="text-slate-500 hover:text-blue-600 transition-all p-1.5 hover:bg-slate-100 rounded-lg border border-slate-200/60 flex items-center justify-center cursor-pointer md:hidden"
+              className="text-slate-500 hover:text-blue-600 transition-all p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg border border-slate-200/60 dark:border-slate-600 flex items-center justify-center cursor-pointer md:hidden"
               title="Open Menu"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3249,20 +3249,20 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
               </svg>
             </button>
           )}
-          <span className="text-xl sm:text-2xl font-display font-black tracking-wider text-slate-900 truncate">💡 SUGGESTIONS &amp; FEEDBACK</span>
+          <span className="text-xl sm:text-2xl font-display font-black tracking-wider text-slate-900 dark:text-slate-100 truncate">💡 SUGGESTIONS &amp; FEEDBACK</span>
         </div>
       </div>
 
       <div className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-6">
         {/* Youth Submit Form */}
         {isYouth && (
-          <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm">
-            <h2 className="text-sm sm:text-base font-display font-bold text-blue-600 uppercase tracking-widest mb-3">Submit Feedback</h2>
+          <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+            <h2 className="text-sm sm:text-base font-display font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-3">Submit Feedback</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
               <select
                 value={form.category}
                 onChange={e => setForm({ ...form, category: e.target.value })}
-                className="w-full sm:w-auto bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm sm:text-base font-mono font-bold text-slate-900 focus:outline-none focus:border-blue-600 shadow-sm"
+                className="w-full sm:w-auto bg-slate-50 dark:bg-slate-700 hover:bg-white dark:hover:bg-slate-600 focus:bg-white dark:focus:bg-slate-600 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm sm:text-base font-mono font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-600 shadow-sm"
               >
                 <option value="general">General</option>
                 <option value="event">Event Idea</option>
@@ -3274,7 +3274,7 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
                 onChange={e => setForm({ ...form, content: e.target.value })}
                 rows={3}
                 placeholder="What's on your mind? (Any suggestions for SK?)"
-                className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-base sm:text-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 resize-none shadow-sm transition-all"
+                className="w-full bg-slate-50 dark:bg-slate-700 hover:bg-white dark:hover:bg-slate-600 focus:bg-white dark:focus:bg-slate-600 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-4 py-3 text-base sm:text-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-600 resize-none shadow-sm transition-all"
                 required
               />
               <div className="flex justify-end">
@@ -3289,7 +3289,7 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
         {/* Status Filter Buttons — admin/chairman/committee only */}
         {isAdmin && (
           <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-xs sm:text-sm font-mono text-slate-500 uppercase tracking-widest mr-1.5">Filter:</span>
+            <span className="text-xs sm:text-sm font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest mr-1.5">Filter:</span>
             {STATUS_BTNS.map(btn => (
               <button
                 key={String(btn.value)}
@@ -3311,45 +3311,45 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
         {/* List of Suggestions */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm sm:text-base font-display font-bold text-slate-700 uppercase tracking-wider">
+            <h2 className="text-sm sm:text-base font-display font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
               {statusFilter ? `${statusFilter} Suggestions` : 'All Suggestions'}
-              <span className="ml-2 font-mono text-slate-400 text-sm sm:text-base">({filteredSuggestions.length})</span>
+              <span className="ml-2 font-mono text-slate-400 dark:text-slate-500 text-sm sm:text-base">({filteredSuggestions.length})</span>
             </h2>
           </div>
           {loading ? (
-            <p className="text-slate-500 font-mono text-base sm:text-lg">Loading suggestions...</p>
+            <p className="text-slate-500 dark:text-slate-400 font-mono text-base sm:text-lg">Loading suggestions...</p>
           ) : filteredSuggestions.length === 0 ? (
-            <div className="bg-white border-2 border-slate-200 rounded-2xl p-8 text-center shadow-sm">
-              <p className="text-slate-500 font-mono text-base sm:text-lg">No {statusFilter || ''} suggestions found.</p>
+            <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-8 text-center shadow-sm">
+              <p className="text-slate-500 dark:text-slate-400 font-mono text-base sm:text-lg">No {statusFilter || ''} suggestions found.</p>
             </div>
           ) : (
             <div className="space-y-4">
               {filteredSuggestions.map(s => (
-                <div key={s.id} className="bg-white border-2 border-slate-200 hover:border-slate-300 rounded-2xl p-5 shadow-sm transition-all">
+                <div key={s.id} className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 rounded-2xl p-5 shadow-sm transition-all">
                   <div className="flex justify-between items-start gap-4 mb-2">
                     <div>
-                      <span className="text-xs sm:text-sm uppercase tracking-widest font-bold bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full mr-2">{s.category}</span>
-                      <span className="text-sm font-mono text-slate-400">{new Date(s.created_at.replace(' ', 'T') + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Singapore' })}</span>
+                      <span className="text-xs sm:text-sm uppercase tracking-widest font-bold bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 px-3 py-1 rounded-full mr-2">{s.category}</span>
+                      <span className="text-sm font-mono text-slate-400 dark:text-slate-500">{new Date(s.created_at.replace(' ', 'T') + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Singapore' })}</span>
                     </div>
-                    <span className={`text-xs sm:text-sm uppercase font-bold tracking-widest px-3 py-1 rounded-full ${s.status === 'pending' ? 'bg-amber-50 text-amber-800 border border-amber-300' :
-                      s.status === 'reviewed' ? 'bg-blue-50 text-blue-800 border border-blue-300' :
-                        'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                    <span className={`text-xs sm:text-sm uppercase font-bold tracking-widest px-3 py-1 rounded-full ${s.status === 'pending' ? 'bg-amber-50 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700' :
+                      s.status === 'reviewed' ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-700' :
+                        'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
                       }`}>
                       {s.status}
                     </span>
                   </div>
-                  <p className="text-slate-900 text-base sm:text-lg font-medium mb-3 leading-relaxed">{s.content}</p>
-                  <p className="text-sm sm:text-base font-mono text-slate-500 mb-2">— {s.submitter_name} ({s.submitter_role})</p>
+                  <p className="text-slate-900 dark:text-slate-100 text-base sm:text-lg font-medium mb-3 leading-relaxed">{s.content}</p>
+                  <p className="text-sm sm:text-base font-mono text-slate-500 dark:text-slate-400 mb-2">— {s.submitter_name} ({s.submitter_role})</p>
 
                   {s.admin_response && (
-                    <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3.5 mt-3">
-                      <p className="text-xs sm:text-sm font-mono font-bold text-blue-800 uppercase tracking-widest mb-1.5">SK Response ({s.responded_by})</p>
-                      <p className="text-slate-800 text-sm sm:text-base leading-relaxed">{s.admin_response}</p>
+                    <div className="bg-blue-50/70 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-xl p-3.5 mt-3">
+                      <p className="text-xs sm:text-sm font-mono font-bold text-blue-800 dark:text-blue-300 uppercase tracking-widest mb-1.5">SK Response ({s.responded_by})</p>
+                      <p className="text-slate-800 dark:text-slate-200 text-sm sm:text-base leading-relaxed">{s.admin_response}</p>
                     </div>
                   )}
 
                   {isAdmin && (
-                    <div className="mt-4 pt-4 border-t border-slate-100">
+                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                       {editingId === s.id ? (
                         <div className="space-y-2">
                           <textarea
@@ -3357,16 +3357,16 @@ function SuggestionsModule({ authHeaders, authUser, onNavigate, sidebarOpen, onT
                             onChange={e => setAdminResponse(e.target.value)}
                             rows={2}
                             placeholder="Type response to youth..."
-                            className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm sm:text-base text-slate-900 focus:outline-none focus:border-blue-600 resize-none"
+                            className="w-full bg-slate-50 dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm sm:text-base text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-600 resize-none"
                           />
                           <div className="flex gap-2">
-                            <button onClick={() => setEditingId(null)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors cursor-pointer">Cancel</button>
+                            <button onClick={() => setEditingId(null)} className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors cursor-pointer">Cancel</button>
                             <button onClick={() => handleUpdateStatus(s.id, 'reviewed', adminResponse)} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 transition-colors cursor-pointer shadow-sm">Mark Reviewed</button>
                             <button onClick={() => handleUpdateStatus(s.id, 'resolved', adminResponse)} className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-500 transition-colors cursor-pointer shadow-sm">Mark Resolved</button>
                           </div>
                         </div>
                       ) : (
-                        <button onClick={() => { setEditingId(s.id); setAdminResponse(s.admin_response || ''); }} className="text-sm sm:text-base font-display font-bold text-blue-600 hover:text-blue-700 uppercase tracking-wider cursor-pointer">
+                        <button onClick={() => { setEditingId(s.id); setAdminResponse(s.admin_response || ''); }} className="text-sm sm:text-base font-display font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 uppercase tracking-wider cursor-pointer">
                           {s.admin_response ? 'Edit Response' : 'Respond to Feedback'}
                         </button>
                       )}

@@ -23,8 +23,10 @@ import {
   COMMITTEE_EVENT_CATEGORIES, getCategoriesForCommittee
 } from './committees.js';
 import {
-  isAdmin, isChairman, isCommittee, isYouth, isElevated,
+  isAdmin, isChairman, isSecretary, isCommittee, isYouth, isElevated,
+  canReadBudget, canWriteBudget,
   canViewEventDetails, canMutateEvent, canAssignCommittee, eventScopeSql, eventNotice,
+  getViewerCaps, serializeEvent,
   validateUserCommittee, validateEventCommittee,
 } from './authz.js';
 
@@ -810,7 +812,7 @@ db.exec(`
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     username      TEXT UNIQUE NOT NULL,
     full_name     TEXT NOT NULL,
-    role          TEXT NOT NULL CHECK(role IN ('admin','chairman','committee','officer','youth')),
+    role          TEXT NOT NULL CHECK(role IN ('admin','chairman','secretary','committee','officer','youth')),
     committee     TEXT DEFAULT NULL CHECK(committee IS NULL OR committee IN ('health','education','economic','social','peacebuilding','governance','citizenship','environment','global','agriculture')),
     password_hash TEXT NOT NULL,
     status        TEXT DEFAULT 'active' CHECK(status IN ('active','inactive')),
@@ -879,6 +881,29 @@ db.exec(`
   );
 `);
 
+// ── Event Feedback table — per-event comments and suggestions (Defense Revision #3) ─
+db.exec(`
+  CREATE TABLE IF NOT EXISTS event_feedback (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id      INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    display_name  TEXT NOT NULL,
+    role_hint     TEXT DEFAULT 'youth',
+    content       TEXT NOT NULL,
+    parent_id     INTEGER DEFAULT NULL REFERENCES event_feedback(id) ON DELETE CASCADE,
+    is_moderated  INTEGER DEFAULT 0,
+    moderated_by  TEXT DEFAULT NULL,
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+// Add indexes for event_feedback if not present (idempotent)
+try {
+    db.exec('CREATE INDEX IF NOT EXISTS idx_ef_event ON event_feedback(event_id);');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_ef_parent ON event_feedback(parent_id);');
+} catch (e) {
+    console.warn('[aSK Youth] event_feedback index creation skipped:', e.message);
+}
+
 // ── category_other_label column for events (panelist suggestion #2) ─────────
 try {
     const evtCols = db.pragma('table_info(events)').map(c => c.name);
@@ -892,14 +917,14 @@ try {
 
 // ===========================================================================
 // ── Committee Access Control Boot Migration (Idempotent, Single Transaction)
-// ── Rebuilds: users table to update CHECK constraint to include 'committee'
+// ── Rebuilds: users table to update CHECK constraint to include 'committee' and 'secretary'
 // ── Adds: users.committee column, events.committee column, events.needs_review
 // ── Migrates: 'officer' role rows → 'committee' (committee = NULL), categories → committees
 // ── Safe to re-run: detects already-migrated table via sqlite_master
 // ===========================================================================
 function runCommitteeBootMigration() {
     const usersCreate = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").get();
-    const needsUserRebuild = !usersCreate || !usersCreate.sql.includes("'committee'");
+    const needsUserRebuild = !usersCreate || !usersCreate.sql.includes("'secretary'");
 
     db.pragma('foreign_keys = OFF');
 
@@ -916,7 +941,7 @@ function runCommitteeBootMigration() {
                     id            INTEGER PRIMARY KEY AUTOINCREMENT,
                     username      TEXT NOT NULL UNIQUE,
                     password_hash TEXT NOT NULL,
-                    role          TEXT NOT NULL CHECK(role IN ('admin','chairman','committee','officer','youth')),
+                    role          TEXT NOT NULL CHECK(role IN ('admin','chairman','secretary','committee','officer','youth')),
                     committee     TEXT DEFAULT NULL CHECK(committee IS NULL OR committee IN ('health','education','economic','social','peacebuilding','governance','citizenship','environment','global','agriculture')),
                     full_name     TEXT NOT NULL,
                     status        TEXT DEFAULT 'active' CHECK(status IN ('active','inactive')),
@@ -1189,11 +1214,32 @@ function verifyAdmin(req, res, next) {
     });
 }
 
-// verifyElevated — requires admin, chairman, or committee role
+// verifyElevated — requires admin, chairman, secretary, or committee role
 function verifyElevated(req, res, next) {
     verifyJWT(req, res, () => {
         if (!isElevated(req.authUser)) {
             return res.status(403).json({ error: 'Forbidden: elevated access required.' });
+        }
+        next();
+    });
+}
+
+// verifyFinance — requires chairman or secretary (budget data, D2)
+function verifyFinance(req, res, next) {
+    verifyJWT(req, res, () => {
+        if (!canReadBudget(req.authUser)) {
+            return res.status(403).json({ error: 'Forbidden: budget data requires Chairman or Secretary access.' });
+        }
+        next();
+    });
+}
+
+// verifyControl — requires chairman, secretary, or committee (event control tier, D4)
+// Note: admin is intentionally excluded from control writes but may read via verifyElevated
+function verifyControl(req, res, next) {
+    verifyJWT(req, res, () => {
+        if (!isChairman(req.authUser) && !isSecretary(req.authUser) && !isCommittee(req.authUser)) {
+            return res.status(403).json({ error: 'Forbidden: event control requires Chairman, Secretary, or Committee access.' });
         }
         next();
     });
@@ -1454,31 +1500,46 @@ app.get('/api/admin/stats', (req, res) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({ error: 'Unauthorized — missing token' });
     }
-    try { jwt.verify(authHeader.split(' ')[1], JWT_SECRET); }
+    let decoded;
+    try { decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET); }
     catch { return res.status(401).json({ error: 'Unauthorized — invalid token' }); }
+
+    // Derive viewer from DB for finance tier check
+    let viewer = null;
+    if (!decoded.isGuest && decoded.id) {
+        viewer = db.prepare('SELECT id, role, committee, status FROM users WHERE id = ?').get(decoded.id);
+        if (!viewer || viewer.status !== 'active') return res.status(403).json({ error: 'Account inactive or not found.' });
+    }
 
     try {
         const actor = req.headers['x-actor'] || 'Admin';
-        const role  = req.headers['x-role']  || 'admin';
+        const role  = viewer?.role || decoded.role || 'unknown';
         writeLog(actor, role, 'view_dashboard_stats', 'analytics', 'Accessed overview telemetry', req.ip);
 
         const totalEvents        = db.prepare('SELECT COUNT(*) as c FROM events').get().c || 0;
         const totalAttendees     = db.prepare('SELECT COALESCE(SUM(attendees), 0) as c FROM events').get().c || 0;
-        const totalBudget        = db.prepare('SELECT COALESCE(SUM(budget_allotted), 0) as c FROM events').get().c || 0;
         const pendingSuggestions = db.prepare("SELECT COUNT(*) as c FROM suggestions WHERE status = 'pending'").get().c || 0;
         const activeUsers        = db.prepare("SELECT COUNT(*) as c FROM users WHERE status = 'active'").get().c || 0;
 
-        res.json({ totalEvents, totalAttendees, totalBudget, pendingSuggestions, activeUsers });
+        const response = { totalEvents, totalAttendees, pendingSuggestions, activeUsers };
+
+        // Budget total — finance tier only (chairman + secretary). Admin is excluded (D2).
+        if (canReadBudget(viewer)) {
+            const totalBudget = db.prepare('SELECT COALESCE(SUM(budget_allotted), 0) as c FROM events').get().c || 0;
+            response.totalBudget = totalBudget;
+        }
+
+        res.json(response);
     } catch (err) {
         console.error('[Admin Stats] Error:', err.message);
         res.status(500).json({ error: 'Failed to fetch stats' });
     }
 });
 
-app.get('/api/admin/logs', (req, res) => {
+app.get('/api/admin/logs', verifyAdmin, (req, res) => {
     try {
-        const actor = req.headers['x-actor'] || 'Admin';
-        const role  = req.headers['x-role'] || 'admin';
+        const actor = req.authUser.full_name || 'Admin';
+        const role  = req.authUser.role || 'admin';
         writeLog(actor, role, 'view_system_logs', 'logs', `Accessed audit logs page ${req.query.page || 1}`, req.ip);
 
         const page = parseInt(req.query.page) || 1;
@@ -1501,17 +1562,27 @@ app.get('/api/admin/logs', (req, res) => {
     }
 });
 
-app.get('/api/admin/participation', (req, res) => {
+app.get('/api/admin/participation', verifyElevated, (req, res) => {
     try {
-        const list = db.prepare('SELECT id, title, category, committee, date, attendees, male_count, female_count, budget_allotted FROM events ORDER BY attendees DESC').all();
+        // Return participation data — budget excluded for non-finance viewers
+        const rows = db.prepare('SELECT id, title, category, committee, date, attendees, male_count, female_count, budget_allotted FROM events ORDER BY attendees DESC').all();
+        const financeViewer = canReadBudget(req.authUser);
+        const list = rows.map(r => {
+            const { budget_allotted, ...rest } = r;
+            if (financeViewer) rest.budget_allotted = budget_allotted;
+            return rest;
+        });
         res.json(list);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-app.get('/api/admin/budget', (req, res) => {
+app.get('/api/admin/budget', verifyFinance, (req, res) => {
     try {
+        const actor = req.authUser.full_name || 'Finance';
+        const role  = req.authUser.role;
+        writeLog(actor, role, 'view_budget_data', 'budget', 'Accessed budget breakdown', req.ip);
         const list = db.prepare('SELECT category, SUM(budget_allotted) as total_budget, COUNT(*) as count FROM events GROUP BY category').all();
         res.json(list);
     } catch (err) {
@@ -1570,10 +1641,27 @@ app.post('/api/users', verifyAdmin, (req, res) => {
         return res.status(400).json({ error: 'All fields are required' });
     }
 
+    // Validate allowed roles — 'officer' is legacy DB-only; never accept it via API
+    const ALLOWED_ROLES = ['admin', 'chairman', 'secretary', 'committee', 'youth'];
+    if (!ALLOWED_ROLES.includes(role)) {
+        return res.status(400).json({ error: `Invalid role: "${role}". Allowed: ${ALLOWED_ROLES.join(', ')}` });
+    }
+
     try {
         validateUserCommittee(role, committee || null);
     } catch (valErr) {
         return res.status(400).json({ error: valErr.message });
+    }
+
+    // Enforce at most one active chairman and one active secretary (D13)
+    const SINGLETON_ROLES = ['chairman', 'secretary'];
+    if (SINGLETON_ROLES.includes(role)) {
+        const existing = db.prepare(
+            "SELECT COUNT(*) as c FROM users WHERE role = ? AND status = 'active'"
+        ).get(role);
+        if (existing.c > 0) {
+            return res.status(409).json({ error: `Only one active ${role} account is allowed. Deactivate the existing ${role} first.` });
+        }
     }
 
     if (role === 'admin') {
@@ -1617,10 +1705,27 @@ app.patch('/api/users/:id', verifyAdmin, (req, res) => {
         const effectiveRole = role !== undefined ? role : targetUser.role;
         const effectiveCommittee = committee !== undefined ? (committee || null) : (role !== undefined && role !== 'committee' ? null : targetUser.committee);
 
+        // Validate role (no legacy 'officer' via API)
+        const ALLOWED_ROLES = ['admin', 'chairman', 'secretary', 'committee', 'youth'];
+        if (role !== undefined && !ALLOWED_ROLES.includes(effectiveRole)) {
+            return res.status(400).json({ error: `Invalid role: "${effectiveRole}". Allowed: ${ALLOWED_ROLES.join(', ')}` });
+        }
+
         try {
             validateUserCommittee(effectiveRole, effectiveCommittee);
         } catch (valErr) {
             return res.status(400).json({ error: valErr.message });
+        }
+
+        // Enforce singleton roles — at most one active chairman, one active secretary (D13)
+        const SINGLETON_ROLES = ['chairman', 'secretary'];
+        if (role !== undefined && SINGLETON_ROLES.includes(effectiveRole) && effectiveRole !== targetUser.role) {
+            const existing = db.prepare(
+                "SELECT COUNT(*) as c FROM users WHERE role = ? AND status = 'active' AND id != ?"
+            ).get(effectiveRole, id);
+            if (existing.c > 0) {
+                return res.status(409).json({ error: `Only one active ${effectiveRole} account is allowed. Deactivate the existing ${effectiveRole} first.` });
+            }
         }
 
         if (password) {
@@ -1676,10 +1781,10 @@ app.delete('/api/users/:id', verifyAdmin, (req, res) => {
 });
 
 // Admin: manually lift a login lockout for a specific username
-app.post('/api/admin/unlock-user', (req, res) => {
+app.post('/api/admin/unlock-user', verifyAdmin, (req, res) => {
     const { username } = req.body;
-    const actor = req.headers['x-actor'] || 'Admin';
-    const actorRole = req.headers['x-role'] || 'admin';
+    const actor = req.authUser.full_name || 'Admin';
+    const actorRole = req.authUser.role || 'admin';
     const ip = req.ip || req.socket.remoteAddress;
     if (!username) return res.status(400).json({ error: 'username required' });
     const hadLock = loginAttempts.has(username);
@@ -1739,30 +1844,39 @@ function isEventQuery(text) {
     return EVENT_KEYWORDS.test(text);
 }
 
-function fetchEventsAsContext(filterStatus) {
+function fetchEventsAsContext(filterStatus, user) {
     let rows;
     if (filterStatus) {
-        // filterStatus is 'upcoming' or 'active' — query by exact match
         rows = db.prepare('SELECT * FROM events WHERE status = ? ORDER BY date ASC').all(filterStatus);
     } else {
         rows = db.prepare('SELECT * FROM events ORDER BY date DESC').all();
     }
     if (rows.length === 0) return null;
+    const financeViewer = user && canReadBudget(user);
     const formatted = rows.map(e => {
-        let entry = `- ${e.title} (${e.status.toUpperCase()})\n  Date: ${e.date}${e.time ? ' at ' + e.time : ''}\n  Category: ${e.category}\n  Location: ${e.location}\n  Description: ${e.description}`;
+        const caps = user ? getViewerCaps(user, e) : new Set(['public']);
+        const safe = serializeEvent(e, caps);
+        let entry = `- ${safe.title} (${safe.status?.toUpperCase() || 'UPCOMING'})\n  Date: ${safe.date}${safe.time ? ' at ' + safe.time : ''}\n  Category: ${safe.category || 'general'}\n  Location: ${safe.location}\n  Description: ${safe.description}`;
         // Use event_logs count as authoritative attendee count if available
-        const logCount = db.prepare('SELECT COUNT(*) as c FROM event_logs WHERE event_id = ?').get(e.id);
-        const actualAttendees = logCount?.c || 0;
-        if (actualAttendees > 0) {
-            entry += `\n  Registered Attendees (from event logs): ${actualAttendees}`;
-        } else if (e.attendees > 0) {
-            entry += `\n  Attendees (recorded): ${e.attendees} (Male: ${e.male_count || 0}, Female: ${e.female_count || 0})`;
-        } else {
-            entry += `\n  Attendees: 0 (no registrations recorded in the system)`;
+        if (caps.has('control')) {
+            const logCount = db.prepare('SELECT COUNT(*) as c FROM event_logs WHERE event_id = ?').get(e.id);
+            const actualAttendees = logCount?.c || 0;
+            if (actualAttendees > 0) {
+                entry += `\n  Registered Attendees (from event logs): ${actualAttendees}`;
+            } else if (safe.attendees > 0) {
+                entry += `\n  Attendees (recorded): ${safe.attendees} (Male: ${safe.male_count || 0}, Female: ${safe.female_count || 0})`;
+            } else {
+                entry += `\n  Attendees: 0 (no registrations recorded in the system)`;
+            }
+            if (safe.staff_count != null) entry += `\n  Staff: ${safe.staff_count}`;
         }
-        if (e.staff_count != null) entry += `\n  Staff: ${e.staff_count}`;
-        if (e.budget_allotted > 0) entry += `\n  Budget Allotted: PHP ${Number(e.budget_allotted).toLocaleString()}`;
-        entry += `\n  Requirements: ${e.requirements}\n  Contact: ${e.contact}`;
+        // Budget — finance tier only. Never in context for committee, admin, or youth.
+        if (financeViewer && caps.has('finance') && safe.budget_allotted > 0) {
+            entry += `\n  Budget Allotted: PHP ${Number(safe.budget_allotted).toLocaleString()}`;
+        }
+        if (caps.has('control')) {
+            entry += `\n  Requirements: ${safe.requirements}\n  Contact: ${safe.contact}`;
+        }
         return entry;
     }).join('\n\n');
     return `SK Events Database (Barangay Concepcion Dos):\n\n${formatted}\n\nIMPORTANT: The above data is the COMPLETE and AUTHORITATIVE record. Do NOT invent, estimate, or add ANY data not shown above (no demographics, schedules, satisfaction rates, or participant details unless explicitly listed).`;
@@ -1790,28 +1904,32 @@ function fetchScopedEvents(user, nonCompletedOnly = false) {
     return db.prepare(query).all(...params);
 }
 
-// Helper: format a single event row according to viewer role
+// Helper: format a single event row according to viewer role (uses serializeEvent for field safety)
 function formatEventForRole(e, user) {
-    const isPublicUser = !user || user.role === 'youth' || user.isGuest;
+    const caps = getViewerCaps(user, e);
+    const safe = serializeEvent(e, caps);
+    const isPublicUser = !caps.has('control');
     if (isPublicUser) {
-        return `- ${e.title} (${e.status.toUpperCase()})\n  Date: ${e.date}${e.time ? ' at ' + e.time : ''}\n  Kind: ${committeeLabel(e.committee)}\n  Location: ${e.location || 'Barangay Concepcion Dos'}\n  Description: ${e.description || 'SK Event'}`;
+        return `- ${safe.title} (${safe.status?.toUpperCase() || 'UPCOMING'})\n  Date: ${safe.date}${safe.time ? ' at ' + safe.time : ''}\n  Kind: ${safe.committee_label}\n  Location: ${safe.location || 'Barangay Concepcion Dos'}\n  Description: ${safe.description || 'SK Event'}`;
     }
-    let entry = `- ${e.title} (${e.status.toUpperCase()})\n  Date: ${e.date}${e.time ? ' at ' + e.time : ''}\n  Committee: ${committeeLabel(e.committee)}\n  Category: ${e.category || 'general'}\n  Location: ${e.location || 'TBD'}\n  Description: ${e.description || ''}`.trim();
-    if (e.attendees > 0) entry += `\n  Attendees: ${e.attendees}`;
-    if (e.budget_allotted > 0) entry += `\n  Budget Allotted: PHP ${Number(e.budget_allotted).toLocaleString()}`;
-    entry += `\n  Requirements: ${e.requirements || 'None'}\n  Contact: ${e.contact || 'SK Secretariat'}`;
+    let entry = `- ${safe.title} (${safe.status?.toUpperCase()})\n  Date: ${safe.date}${safe.time ? ' at ' + safe.time : ''}\n  Committee: ${safe.committee_label}\n  Category: ${safe.category || 'general'}\n  Location: ${safe.location || 'TBD'}\n  Description: ${safe.description || ''}`.trim();
+    if (safe.attendees > 0) entry += `\n  Attendees: ${safe.attendees}`;
+    if (caps.has('finance') && safe.budget_allotted > 0) entry += `\n  Budget Allotted: PHP ${Number(safe.budget_allotted).toLocaleString()}`;
+    entry += `\n  Requirements: ${safe.requirements || 'None'}\n  Contact: ${safe.contact || 'SK Secretariat'}`;
     return entry;
 }
 
-// Helper: format a single event row into a short summary string
-function formatEventShort(e) {
-    let entry = `- ${e.title} (${e.status.toUpperCase()})\n  Date: ${e.date}${e.time ? ' at ' + e.time : ''}\n  Category: ${e.category}\n  Location: ${e.location || 'TBD'}\n  Description: ${e.description || ''}`.trim();
-    if (e.budget_allotted > 0) entry += `\n  Budget Allotted: PHP ${Number(e.budget_allotted).toLocaleString()}`;
-    entry += `\n  Requirements: ${e.requirements || 'None'}\n  Contact: ${e.contact || 'SK Secretariat'}`;
+// Helper: format a single event row into a short summary string (AI context, finance-aware)
+function formatEventShort(e, user) {
+    const caps = user ? getViewerCaps(user, e) : new Set(['public']);
+    const safe = serializeEvent(e, caps);
+    let entry = `- ${safe.title} (${safe.status?.toUpperCase() || 'UPCOMING'})\n  Date: ${safe.date}${safe.time ? ' at ' + safe.time : ''}\n  Category: ${safe.category || 'general'}\n  Location: ${safe.location || 'TBD'}\n  Description: ${safe.description || ''}`.trim();
+    if (caps.has('finance') && safe.budget_allotted > 0) entry += `\n  Budget Allotted: PHP ${Number(safe.budget_allotted).toLocaleString()}`;
+    entry += `\n  Requirements: ${safe.requirements || 'None'}\n  Contact: ${safe.contact || 'SK Secretariat'}`;
     return entry;
 }
 
-// API to list events (Admin, Chairman, Committee)
+// API to list events (Admin, Chairman, Secretary, Committee)
 app.get('/api/events', verifyJWT, (req, res) => {
     // Youth/Guest: Never event details on any endpoint
     if (isYouth(req.authUser)) {
@@ -1835,7 +1953,9 @@ app.get('/api/events', verifyJWT, (req, res) => {
     if (needs_review !== undefined) { conditions.push('needs_review = ?'); params.push(parseInt(needs_review)); }
 
     query += ' WHERE ' + conditions.join(' AND ') + ' ORDER BY date ASC';
-    res.json(db.prepare(query).all(...params));
+    const rows = db.prepare(query).all(...params);
+    const serialized = rows.map(e => serializeEvent(e, getViewerCaps(req.authUser, e)));
+    res.json(serialized);
 });
 
 // API to get single event details
@@ -1848,7 +1968,7 @@ app.get('/api/events/:id', verifyJWT, (req, res) => {
     if (!event || !canViewEventDetails(req.authUser, event)) {
         return res.status(404).json({ error: 'Event not found' });
     }
-    res.json(event);
+    res.json(serializeEvent(event, getViewerCaps(req.authUser, event)));
 });
 
 // API to create a new event
@@ -1898,7 +2018,11 @@ app.patch('/api/events/:id', verifyElevated, (req, res) => {
     }
 
     const fields = req.body;
-    const allowed = ['title','description','category','category_other_label','date','time','location','organizer','status','requirements','contact','attendees','male_count','female_count','staff_count','budget_allotted'];
+    const allowed = ['title','description','category','category_other_label','date','time','location','organizer','status','requirements','contact','attendees','male_count','female_count','staff_count'];
+    // Budget fields — finance tier only (chairman + secretary). Committee users cannot write budget (D3).
+    if (canWriteBudget(req.authUser)) {
+        allowed.push('budget_allotted');
+    }
     if (isAdmin(req.authUser) || isChairman(req.authUser)) {
         allowed.push('committee');
         if (fields.committee) {
@@ -1948,6 +2072,109 @@ app.patch('/api/events/:id/assign-committee', verifyElevated, (req, res) => {
     writeLog(actor, role, 'assign_event_committee', `Event ID ${id}`, `Delegated from ${targetEvent.committee} to ${committeeLabel(committee)}`, req.ip);
     res.json({ success: true, committee, message: `Event delegated to ${committeeLabel(committee)}.` });
     scheduleSnapshot();
+});
+
+// ---------------------------------------------------------------------------
+// PUBLIC EVENTS — No authentication required. Returns public tier fields only.
+// Used by the /publicevents page at askyouth.online/publicevents (Defense Revision #2)
+// ---------------------------------------------------------------------------
+app.get('/api/public/events', (req, res) => {
+    try {
+        const { committee, status } = req.query;
+        let query = "SELECT * FROM events WHERE committee != 'unassigned'";
+        const params = [];
+        if (committee) { query += ' AND committee = ?'; params.push(committee); }
+        if (status) { query += ' AND status = ?'; params.push(status); }
+        query += ' ORDER BY date ASC';
+        const rows = db.prepare(query).all(...params);
+        const publicCaps = new Set(['public']);
+        res.json(rows.map(e => serializeEvent(e, publicCaps)));
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/public/events/:id', (req, res) => {
+    try {
+        const event = db.prepare("SELECT * FROM events WHERE id = ? AND committee != 'unassigned'").get(req.params.id);
+        if (!event) return res.status(404).json({ error: 'Event not found.' });
+        const publicCaps = new Set(['public']);
+        res.json(serializeEvent(event, publicCaps));
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ---------------------------------------------------------------------------
+// EVENT FEEDBACK — Per-event comments and suggestions (Defense Revision #3)
+// GET  /api/public/events/:id/feedback   — Public read (no auth required)
+// POST /api/public/events/:id/feedback   — Requires JWT (guest or user)
+// DELETE /api/event-feedback/:id         — Moderation (committee own / chairman all)
+// ---------------------------------------------------------------------------
+app.get('/api/public/events/:id/feedback', (req, res) => {
+    try {
+        const { id } = req.params;
+        const rows = db.prepare(
+            'SELECT id, event_id, display_name, role_hint, content, parent_id, created_at FROM event_feedback WHERE event_id = ? AND is_moderated = 0 ORDER BY created_at ASC'
+        ).all(id);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/public/events/:id/feedback', verifyJWT, (req, res) => {
+    try {
+        const { id } = req.params;
+        const { display_name, content, parent_id } = req.body;
+        if (!content || !content.trim()) return res.status(400).json({ error: 'content is required.' });
+
+        // display_name: required for guests, default to full_name for logged-in users
+        const name = (display_name || req.authUser?.full_name || '').trim();
+        if (!name) return res.status(400).json({ error: 'display_name is required.' });
+
+        const event = db.prepare("SELECT id, committee FROM events WHERE id = ?").get(id);
+        if (!event) return res.status(404).json({ error: 'Event not found.' });
+
+        const role_hint = req.authUser?.role || 'youth';
+        const result = db.prepare(
+            'INSERT INTO event_feedback (event_id, display_name, role_hint, content, parent_id) VALUES (?, ?, ?, ?, ?)'
+        ).run(id, name, role_hint, content.trim(), parent_id || null);
+
+        writeLog(name, role_hint, 'post_event_feedback', `Event ID ${id}`, `Posted feedback ID ${result.lastInsertRowid}`, req.ip);
+        res.json({ id: result.lastInsertRowid, success: true });
+        scheduleSnapshot();
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/event-feedback/:id', verifyJWT, (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = req.authUser;
+
+        // Only committee (own events), chairman (all), secretary (all), admin (all) can moderate
+        if (!isElevated(user)) {
+            return res.status(403).json({ error: 'Forbidden: moderation requires elevated access.' });
+        }
+
+        const feedback = db.prepare('SELECT ef.*, e.committee as event_committee FROM event_feedback ef JOIN events e ON ef.event_id = e.id WHERE ef.id = ?').get(id);
+        if (!feedback) return res.status(404).json({ error: 'Feedback not found.' });
+
+        // Committee users can only moderate feedback on their own committee events
+        if (isCommittee(user) && feedback.event_committee !== user.committee) {
+            return res.status(403).json({ error: 'Forbidden: you can only moderate feedback on your own committee events.' });
+        }
+
+        const moderator = user.full_name || user.username;
+        db.prepare('UPDATE event_feedback SET is_moderated = 1, moderated_by = ? WHERE id = ?').run(moderator, id);
+        writeLog(moderator, user.role, 'moderate_feedback', `Feedback ID ${id}`, 'Hidden by moderator', req.ip);
+        res.json({ success: true });
+        scheduleSnapshot();
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // API to delete an event
@@ -2674,7 +2901,11 @@ ${c.text}
 
     if (isAbyipQuery) {
         try {
-            const kbPath = path.join(__dirname, '..', 'knowledge_base', 'abyip', 'abyip_2025_chunks.json');
+            // Finance-tier users (chairman + secretary) get the full ABYIP with budget figures.
+            // All other roles get the public version (budgets replaced with [Confidential]).
+            const useFinanceVersion = user && canReadBudget(user);
+            const kbFileName = useFinanceVersion ? 'abyip_2025_chunks.json' : 'abyip_2025_public_chunks.json';
+            const kbPath = path.join(__dirname, '..', 'knowledge_base', 'abyip', kbFileName);
             if (fs.existsSync(kbPath)) {
                 const abyipData = JSON.parse(fs.readFileSync(kbPath, 'utf8'));
                 if (Array.isArray(abyipData) && abyipData.length > 0) {
@@ -3298,33 +3529,30 @@ app.post('/api/generate-document', async (req, res) => {
 
 
 // ---------------------------------------------------------------------------
-// Phase 2: Events Analytics Dashboard (Feature 5) — proxy to Python
+// Phase 2: Events Analytics Dashboard (Feature 5)
 // ---------------------------------------------------------------------------
-app.get('/api/analytics/events', async (req, res) => {
+app.get('/api/analytics/events', verifyElevated, async (req, res) => {
     try {
         const rows = db.prepare('SELECT category, attendees, male_count, female_count, budget_allotted FROM events').all();
-        
+        const financeViewer = canReadBudget(req.authUser);
+
         let total_events = rows.length;
         let total_attendees = 0;
         let total_budget = 0;
         const category_counts = {};
-        
+
         rows.forEach(r => {
             total_attendees += (r.attendees || 0);
             total_budget += (r.budget_allotted || 0);
             const cat = r.category || 'Uncategorized';
             category_counts[cat] = (category_counts[cat] || 0) + 1;
         });
-        
-        res.json({
-            chart: null,
-            stats: {
-                total_events,
-                total_attendees,
-                total_budget,
-                category_counts
-            }
-        });
+
+        const stats = { total_events, total_attendees, category_counts };
+        // Budget — finance tier only (D2)
+        if (financeViewer) stats.total_budget = total_budget;
+
+        res.json({ chart: null, stats });
     } catch (err) {
         console.error('[Analytics] Error:', err.message);
         res.status(500).json({ error: err.message });

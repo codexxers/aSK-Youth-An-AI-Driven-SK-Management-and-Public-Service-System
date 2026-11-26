@@ -16,6 +16,10 @@ export function isChairman(user) {
   return user && user.role === 'chairman';
 }
 
+export function isSecretary(user) {
+  return user && user.role === 'secretary';
+}
+
 export function isCommittee(user) {
   return user && user.role === 'committee';
 }
@@ -25,21 +29,39 @@ export function isYouth(user) {
 }
 
 export function isElevated(user) {
-  return isAdmin(user) || isChairman(user) || isCommittee(user);
+  return isAdmin(user) || isChairman(user) || isSecretary(user) || isCommittee(user);
+}
+
+// ─── Finance / Budget Access ──────────────────────────────────────────────────
+
+/**
+ * Can this user READ budget fields?
+ * Chairman and Secretary only. Admin is intentionally excluded (D2).
+ */
+export function canReadBudget(user) {
+  return isChairman(user) || isSecretary(user);
+}
+
+/**
+ * Can this user WRITE budget fields on an event?
+ * Same as read — chairman and secretary only.
+ */
+export function canWriteBudget(user) {
+  return isChairman(user) || isSecretary(user);
 }
 
 // ─── Event Access Control ─────────────────────────────────────────────────────
 
 /**
- * Can the user view full event details?
- * - admin/chairman: always
+ * Can the user view full event details (control tier)?
+ * - admin/chairman/secretary: always
  * - committee with assigned committee: own committee + general events
  * - committee with NULL committee: never (not assigned yet)
  * - youth/guest: never (they get notices via chat/notifications only)
  */
 export function canViewEventDetails(user, event) {
   if (!user) return false;
-  if (isAdmin(user) || isChairman(user)) return true;
+  if (isAdmin(user) || isChairman(user) || isSecretary(user)) return true;
   if (isCommittee(user)) {
     if (!user.committee) return false; // unassigned user
     if (event.committee === 'unassigned') return false; // unassigned event hidden from committee
@@ -50,26 +72,27 @@ export function canViewEventDetails(user, event) {
 
 /**
  * Can the user create or edit this event?
- * Same scope as canViewEventDetails plus the event being mutated must belong
- * to the user's committee (or be general, which only admin/chairman can touch).
+ * - Chairman: all events including general
+ * - Committee: own committee only (not general, not other committees)
+ * - Secretary/Admin: read-only — cannot mutate events
  */
 export function canMutateEvent(user, event) {
   if (!user) return false;
-  if (isAdmin(user) || isChairman(user)) return true;
+  if (isChairman(user)) return true;
   if (isCommittee(user)) {
     if (!user.committee) return false;
-    if (event.committee === 'unassigned') return false; // committee cannot touch unassigned
-    return event.committee === user.committee; // committee users cannot touch 'general' events
+    if (event.committee === 'unassigned') return false;
+    return event.committee === user.committee;
   }
-  return false;
+  return false; // admin and secretary are read-only on events (D4)
 }
 
 /**
  * Can the user assign or delegate an event to a committee?
- * Strictly restricted to Chairman and Admin.
+ * Strictly restricted to Chairman only (admin can read but not delegate — D4).
  */
 export function canAssignCommittee(user) {
-  return isAdmin(user) || isChairman(user);
+  return isChairman(user);
 }
 
 /**
@@ -78,7 +101,7 @@ export function canAssignCommittee(user) {
  */
 export function eventScopeSql(user) {
   if (!user) return { frag: '1 = 0', params: [] }; // youth: no rows
-  if (isAdmin(user) || isChairman(user)) return { frag: '1 = 1', params: [] };
+  if (isAdmin(user) || isChairman(user) || isSecretary(user)) return { frag: '1 = 1', params: [] };
   if (isCommittee(user)) {
     if (!user.committee) return { frag: '1 = 0', params: [] }; // unassigned
     return {
@@ -89,6 +112,76 @@ export function eventScopeSql(user) {
   return { frag: '1 = 0', params: [] }; // fallback
 }
 
+// ─── Event Serializer — Allowlist by Construction ─────────────────────────────
+
+/**
+ * PUBLIC tier fields — safe for anyone, including unauthenticated visitors.
+ * Never includes budget, attendance counts, organizer, contact, or QR data.
+ */
+const PUBLIC_FIELDS = [
+  'id', 'title', 'description', 'date', 'time', 'location', 'status',
+  'requirements', 'committee', 'category',
+];
+
+/**
+ * CONTROL tier extra fields — committee user (own events) + chairman.
+ * Adds attendance data, organizer, contact.
+ */
+const CONTROL_EXTRA = [
+  'organizer', 'contact',
+  'attendees', 'male_count', 'female_count', 'staff_count',
+  'category_other_label', 'needs_review', 'qr_token', 'qr_rotated_at',
+];
+
+/**
+ * FINANCE tier extra fields — chairman + secretary only.
+ */
+const FINANCE_EXTRA = ['budget_allotted'];
+
+/**
+ * Derive the viewer's capability set for a specific event.
+ * Returns a Set containing: 'public', 'control', 'finance'
+ */
+export function getViewerCaps(user, event) {
+  const caps = new Set(['public']);
+  if (!user) return caps;
+
+  if (canViewEventDetails(user, event)) {
+    caps.add('control');
+  }
+  if (canReadBudget(user)) {
+    caps.add('finance');
+  }
+  return caps;
+}
+
+/**
+ * Serialize an event row to only the fields the viewer is allowed to see.
+ * @param {object} event - Raw DB row
+ * @param {Set<string>} caps - Set of 'public' | 'control' | 'finance'
+ * @returns {object} Safe serialized event
+ */
+export function serializeEvent(event, caps) {
+  const out = {};
+  for (const field of PUBLIC_FIELDS) {
+    if (field in event) out[field] = event[field];
+  }
+  // Add the committee label as a human-readable string
+  out.committee_label = committeeLabel(event.committee);
+
+  if (caps.has('control')) {
+    for (const field of CONTROL_EXTRA) {
+      if (field in event) out[field] = event[field];
+    }
+  }
+  if (caps.has('finance')) {
+    for (const field of FINANCE_EXTRA) {
+      if (field in event) out[field] = event[field];
+    }
+  }
+  return out;
+}
+
 /**
  * Returns a minimal notice object for youth/guest consumption.
  * Never includes budget, attendance, or staff counts.
@@ -96,10 +189,15 @@ export function eventScopeSql(user) {
 export function eventNotice(event) {
   if (!event || event.committee === 'unassigned') return null; // unassigned events are hidden from public notices
   return {
+    id: event.id,
+    title: event.title,
     date: event.date,
     time: event.time || null,
     location: event.location || null,
+    status: event.status || 'upcoming',
+    requirements: event.requirements || null,
     kind: committeeLabel(event.committee),
+    committee_label: committeeLabel(event.committee),
     description: event.description
       ? event.description.substring(0, 200)  // safe snippet, no classified info
       : null,
@@ -123,7 +221,7 @@ export function validateUserCommittee(role, committee) {
       throw new Error(`Invalid committee code: "${committee}". Must be one of: ${COMMITTEE_CODES.join(', ')}`);
     }
   } else {
-    // admin, chairman, youth must have NULL committee
+    // admin, chairman, secretary, youth must have NULL committee
     if (committee) {
       throw new Error(`Role "${role}" must not have a committee assigned. Only "committee" role users have a committee.`);
     }
@@ -139,4 +237,3 @@ export function validateEventCommittee(committee) {
     throw new Error(`Invalid event committee: "${committee}". Must be one of: ${VALID_EVENT_COMMITTEES.join(', ')}`);
   }
 }
-

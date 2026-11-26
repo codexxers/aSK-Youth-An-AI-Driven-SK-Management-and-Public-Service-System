@@ -50,7 +50,7 @@ try {
         { q: "How do I contact the SK office directly?", a: "You can visit the SK Hall at the Barangay Concepcion Dos center, or use the 'Suggestions' feature to send a direct message. For urgent matters, please refer to the official contact numbers posted on the barangay bulletin.", cat: 'general', v: 'public', order: 12 },
         
         // Restricted
-        { q: "How do I add or edit an FAQ entry?", a: "Log in with an Admin, Chairman, or Officer account. Navigate to the FAQ module in the sidebar. Click '+ New FAQ' to add an entry, or 'Edit' on an existing one. You can set the visibility to 'public' (visible to everyone) or 'restricted' (visible only to officers and admins).", cat: 'system', v: 'restricted', order: 101 },
+        { q: "How do I add or edit an FAQ entry?", a: "Log in with an Admin, Chairman, Secretary, or Committee account. Navigate to the FAQ module in the sidebar. Click '+ New FAQ' to add an entry, or 'Edit' on an existing one. You can set the visibility to 'public' (visible to everyone) or 'restricted' (visible only to SK officials and admins).", cat: 'system', v: 'restricted', order: 101 },
         { q: "How do I manage event categories, including 'Others'?", a: "When creating or editing an event, select the category from the dropdown. If you select 'Others', a new field will appear allowing you to specify a custom category label (e.g., 'Relief Operation').", cat: 'events', v: 'restricted', order: 102 }
     ];
 

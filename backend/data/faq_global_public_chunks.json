@@ -18,13 +18,13 @@
     "conversationId": "global_public"
   },
   {
-    "text": "Q: What should I do if the QR code won't scan?\nA: First, ensure your camera is focused and there is good lighting. If the problem persists, ask the SK officer in charge to rotate/refresh the QR code for that event. You can also approach any SK officer present to have your attendance manually logged.",
+    "text": "Q: What should I do if the QR code won't scan?\nA: First, ensure your camera is focused and there is good lighting. If the problem persists, ask the SK official in charge to rotate/refresh the QR code for that event. You can also approach any SK official present to have your attendance manually logged.",
     "documentName": "FAQ Database",
     "chunkIdx": 4,
     "conversationId": "global_public"
   },
   {
-    "text": "Q: How do I submit a suggestion or feedback to the SK?\nA: Navigate to the \"Suggestions\" module in the sidebar. Type your suggestion, select a category (e.g., Health, Sports, Community), and submit. SK officers and the Chairperson can review and respond to your suggestion. Submissions can be anonymous.",
+    "text": "Q: How do I submit a suggestion or feedback to the SK?\nA: Navigate to the \"Suggestions\" module in the sidebar. Type your suggestion, select a category (e.g., Health, Sports, Community), and submit. SK officials and the Chairperson can review and respond to your suggestion. Submissions can be anonymous.",
     "documentName": "FAQ Database",
     "chunkIdx": 5,
     "conversationId": "global_public"
@@ -36,7 +36,7 @@
     "conversationId": "global_admin"
   },
   {
-    "text": "Q: Can I ask the AI about past SK programs and budgets?\nA: Yes! The AI Assistant is knowledgeable about general SK programs and services. For more specific historical program details and budget breakdowns, those may be available to SK officers. Feel free to ask — the assistant will provide what it is authorized to share based on your role.",
+    "text": "Q: Can I ask the AI about past SK programs and budgets?\nA: Yes! The AI Assistant is knowledgeable about general SK programs and services. For more specific historical program details and budget breakdowns, those may be available to authorized SK officials. Feel free to ask — the assistant will provide what it is authorized to share based on your role.",
     "documentName": "FAQ Database",
     "chunkIdx": 7,
     "conversationId": "global_admin"
@@ -72,7 +72,7 @@
     "conversationId": "global_public"
   },
   {
-    "text": "Q: How do I add or edit an FAQ entry?\nA: Log in with an Admin, Chairman, or Officer account. Navigate to the FAQ module in the sidebar. Click '+ New FAQ' to add an entry, or 'Edit' on an existing one. You can set the visibility to 'public' (visible to everyone) or 'restricted' (visible only to officers and admins).",
+    "text": "Q: How do I add or edit an FAQ entry?\nA: Log in with an Admin, Chairman, Secretary, or Committee account. Navigate to the FAQ module in the sidebar. Click '+ New FAQ' to add an entry, or 'Edit' on an existing one. You can set the visibility to 'public' (visible to everyone) or 'restricted' (visible only to SK officials and admins).",
     "documentName": "FAQ Database",
     "chunkIdx": 13,
     "conversationId": "global_admin"

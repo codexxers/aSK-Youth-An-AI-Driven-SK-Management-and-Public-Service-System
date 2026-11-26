@@ -10,5 +10,8 @@
     "env": {
       "VITE_BACKEND_URL": "https://ask-youth-an-ai-driven-sk-management-and.onrender.com"
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

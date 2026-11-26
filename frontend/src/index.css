@@ -8,6 +8,43 @@
   --color-dark-bg: #050510;
 }
 
+/* =========================================================
+   Theme CSS variables — light is canonical, dark overrides
+   ========================================================= */
+:root {
+  --color-surface: #ffffff;
+  --color-bg: #f8fafc;
+  --color-border: #e2e8f0;
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+}
+
+html.dark {
+  --color-surface: #0f172a;
+  --color-bg: #050510;
+  --color-border: #1e293b;
+  --color-text: #f1f5f9;
+  --color-text-muted: #94a3b8;
+}
+
+/* Dark-mode prose overrides */
+html.dark .prose-chat {
+  color: #f1f5f9;
+}
+html.dark .prose-chat strong,
+html.dark .prose-chat b {
+  color: #f8fafc;
+}
+html.dark .prose-chat code {
+  background: #1e293b;
+  color: #38bdf8;
+  border-color: #334155;
+}
+html.dark .prose-chat pre {
+  background: #020617;
+  border-color: #1e293b;
+}
+
 @keyframes pulse-border {
   0% { border-color: rgba(0, 255, 255, 0.4); box-shadow: 0 0 10px rgba(0, 255, 255, 0.2); }
   50% { border-color: rgba(0, 255, 255, 1); box-shadow: 0 0 20px rgba(0, 255, 255, 0.6), inset 0 0 10px rgba(0, 255, 255, 0.2); }

@@ -7,6 +7,21 @@ import EventQrModal from './components/EventQrModal'
 import ScanAttendance from './pages/ScanAttendance'
 import CommitteeSelect, { getCategoriesForCommittee, COMMITTEE_EVENT_CATEGORIES } from './components/CommitteeSelect'
 import CommitteeBadge, { getCommitteeLabel } from './components/CommitteeBadge'
+import PublicEventsPage from './pages/PublicEventsPage'
+
+// Apply theme before first render to avoid a flash of wrong theme.
+// Priority: saved localStorage choice → system preference → light.
+;(function () {
+  try {
+    const saved = localStorage.getItem('agy-theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (saved === 'dark' || (!saved && prefersDark)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  } catch { /* private browsing may block localStorage */ }
+})();
 
 const DEFAULT_PROD_API = 'https://askyouth-backend.onrender.com';
 const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -345,7 +360,10 @@ function EventFormModal({ event, onClose, onSaved, authHeaders, authUser }) {
           <div><label className={labelCls}>Male</label><input type="number" min="0" value={form.male_count} onChange={e => set('male_count', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Female</label><input type="number" min="0" value={form.female_count} onChange={e => set('female_count', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Staff (optional)</label><input type="number" min="0" value={form.staff_count} onChange={e => set('staff_count', e.target.value)} placeholder="—" className={inputCls} /></div>
-          <div className="col-span-2 sm:col-span-2"><label className={labelCls}>Budget Allotted (₱)</label><input type="number" min="0" step="0.01" value={form.budget_allotted} onChange={e => set('budget_allotted', e.target.value)} placeholder="0.00" className={inputCls} /></div>
+          {/* Budget — finance tier only: chairman + secretary */}
+          {(authUser?.role === 'chairman' || authUser?.role === 'secretary') && (
+            <div className="col-span-2 sm:col-span-2"><label className={labelCls}>Budget Allotted (₱)</label><input type="number" min="0" step="0.01" value={form.budget_allotted} onChange={e => set('budget_allotted', e.target.value)} placeholder="0.00" className={inputCls} /></div>
+          )}
         </div>
 
         <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-slate-200">
@@ -874,6 +892,153 @@ function SystemHealthTab({ authHeaders }) {
 }
 
 
+// ---------------------------------------------------------------------------
+// EventFeedbackPanel — inline feedback (comments & suggestions) per event.
+// Reads from /api/public/events/:id/feedback (public).
+// Posts to /api/public/events/:id/feedback (requires JWT).
+// Elevated users (chairman, secretary) can moderate (hide) comments.
+// ---------------------------------------------------------------------------
+function EventFeedbackPanel({ eventId, authHeaders, authUser }) {
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [posting, setPosting] = useState(false);
+  const [form, setForm] = useState({ display_name: '', kind: 'comment', content: '' });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const isElevated = ['chairman', 'secretary', 'admin'].includes(authUser?.role);
+
+  const fetchComments = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/public/events/${eventId}/feedback`);
+      if (res.ok) setComments(await res.json());
+    } catch { }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchComments(); }, [eventId]);
+
+  const handlePost = async (e) => {
+    e.preventDefault();
+    if (!form.content.trim()) { setError('Please write your feedback.'); return; }
+    setPosting(true); setError(''); setSuccess('');
+    try {
+      const res = await fetch(`${API_BASE}/api/public/events/${eventId}/feedback`, {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          display_name: form.display_name || authUser?.full_name || 'Anonymous',
+          kind: form.kind,
+          content: form.content.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to post.');
+      setSuccess('Feedback posted!');
+      setForm(f => ({ ...f, content: '' }));
+      fetchComments();
+    } catch (err) { setError(err.message); }
+    finally { setPosting(false); }
+  };
+
+  const handleHide = async (id) => {
+    try {
+      await fetch(`${API_BASE}/api/event-feedback/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      fetchComments();
+    } catch { }
+  };
+
+  const topLevel = comments.filter(c => !c.parent_id);
+  const replies = (parentId) => comments.filter(c => c.parent_id === parentId);
+
+  return (
+    <div className="border-t border-slate-100 mt-2 pt-3 px-4 pb-4">
+      <p className="text-xs font-display font-bold uppercase tracking-widest text-slate-500 mb-3">
+        💬 Event Feedback ({comments.length})
+      </p>
+      {loading && <p className="text-xs text-slate-400 font-mono">Loading…</p>}
+      {!loading && topLevel.length === 0 && (
+        <p className="text-xs text-slate-400 italic font-mono mb-3">No feedback yet.</p>
+      )}
+      <div className="space-y-2 mb-3">
+        {topLevel.map(c => (
+          <div key={c.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-display font-bold text-slate-800">{c.author_label || c.author_name}</span>
+              <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${c.kind === 'suggestion' ? 'bg-cyan-100 text-cyan-700 border border-cyan-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
+                {c.kind}
+              </span>
+              {c.is_official === 1 && (
+                <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 font-bold">Official</span>
+              )}
+              {isElevated && (
+                <button
+                  onClick={() => handleHide(c.id)}
+                  className="ml-auto text-[9px] text-red-400 hover:text-red-600 font-bold uppercase cursor-pointer"
+                  title="Hide this feedback"
+                >Hide</button>
+              )}
+            </div>
+            <p className="text-sm text-slate-700 leading-relaxed">{c.content}</p>
+            {replies(c.id).map(r => (
+              <div key={r.id} className="ml-4 mt-2 pl-3 border-l-2 border-blue-200 bg-white rounded-lg p-2">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className="text-xs font-bold text-slate-700">{r.author_label || r.author_name}</span>
+                  {r.is_official === 1 && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 font-bold">Official</span>}
+                  {isElevated && (
+                    <button onClick={() => handleHide(r.id)} className="ml-auto text-[9px] text-red-400 hover:text-red-600 font-bold uppercase cursor-pointer">Hide</button>
+                  )}
+                </div>
+                <p className="text-xs text-slate-600">{r.content}</p>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      {/* Post feedback form — available to any logged-in user */}
+      <form onSubmit={handlePost} className="space-y-2">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder={authUser?.full_name || 'Your name (optional)'}
+            value={form.display_name}
+            onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))}
+            className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-blue-400 bg-white"
+          />
+          <select
+            value={form.kind}
+            onChange={e => setForm(f => ({ ...f, kind: e.target.value }))}
+            className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-blue-400 bg-white"
+          >
+            <option value="comment">Comment</option>
+            <option value="suggestion">Suggestion</option>
+          </select>
+        </div>
+        <textarea
+          rows={2}
+          placeholder="Write a comment or suggestion…"
+          value={form.content}
+          onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+          className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-blue-400 resize-none bg-white"
+        />
+        {error && <p className="text-xs text-red-500 font-mono">{error}</p>}
+        {success && <p className="text-xs text-emerald-600 font-mono">{success}</p>}
+        <button
+          type="submit"
+          disabled={posting}
+          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-xs font-display font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+        >
+          {posting ? 'Posting…' : 'Post Feedback'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar, setCurrentView }) {
   const [mainTab, setMainTab] = useState('dashboard'); // 'dashboard' | 'events'
   const [chartType, setChartType] = useState('event');
@@ -894,6 +1059,8 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
   const [qrEvent, setQrEvent] = useState(null);
   const [logEvent, setLogEvent] = useState(null);
   const [qrRefreshHash, setQrRefreshHash] = useState(Date.now());
+  // Feedback panel: stores the event id whose feedback is expanded, or null
+  const [feedbackEventId, setFeedbackEventId] = useState(null);
 
   const handleRefreshQR = async (eventId) => {
     const adminToken = prompt('Enter Admin Creation Token to authorize QR refresh:');
@@ -1199,9 +1366,16 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                               {canMutate && (
                                 <button onClick={() => setModalEvent(ev)} className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] uppercase font-bold rounded-lg border border-slate-200 cursor-pointer transition-colors">Edit</button>
                               )}
-                              {['admin', 'chairman', 'committee'].includes(authUser?.role) && (
+                              {['admin', 'chairman', 'secretary', 'committee'].includes(authUser?.role) && (
                                 <button onClick={() => setLogEvent(ev)} className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] uppercase font-bold rounded-lg border border-blue-200 cursor-pointer transition-colors">Event log</button>
                               )}
+                              {/* Feedback button — available to all logged-in users */}
+                              <button
+                                onClick={() => setFeedbackEventId(feedbackEventId === ev.id ? null : ev.id)}
+                                className={`px-2.5 py-1 text-[10px] uppercase font-bold rounded-lg border cursor-pointer transition-colors ${feedbackEventId === ev.id ? 'bg-cyan-600 text-white border-cyan-600' : 'bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border-cyan-200'}`}
+                              >
+                                💬 Feedback
+                              </button>
                               {canMutate && (
                                 <button onClick={() => setDeleteId(ev.id)} className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] uppercase font-bold rounded-lg border border-red-200 cursor-pointer transition-colors">Delete</button>
                               )}
@@ -1220,6 +1394,27 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
               </tbody>
             </table>
           </div>
+
+          {/* Inline feedback panel — renders below table for the selected event */}
+          {feedbackEventId && (
+            <div className="mt-4 bg-white border-2 border-cyan-200 rounded-2xl shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-4 pt-3">
+                <span className="text-xs font-display font-bold uppercase tracking-widest text-cyan-700">
+                  Event Feedback — {filteredEvents.find(e => e.id === feedbackEventId)?.title || ''}
+                </span>
+                <button
+                  onClick={() => setFeedbackEventId(null)}
+                  className="text-slate-400 hover:text-slate-700 cursor-pointer text-sm font-bold"
+                  title="Close feedback"
+                >✕</button>
+              </div>
+              <EventFeedbackPanel
+                eventId={feedbackEventId}
+                authHeaders={authHeaders}
+                authUser={authUser}
+              />
+            </div>
+          )}
         </>)}
       </div>
 
@@ -1506,7 +1701,7 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
 function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) {
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'users' | 'logs'
   const effectiveRole = authUser?.role || 'admin';
-  const [stats, setStats] = useState({ totalEvents: 0, totalAttendees: 0, totalBudget: 0, pendingSuggestions: 0, activeUsers: 0 });
+  const [stats, setStats] = useState({ totalEvents: 0, totalAttendees: 0, pendingSuggestions: 0, activeUsers: 0 });
   const [participationData, setParticipationData] = useState([]);
 
   // Leaderboard states
@@ -1558,7 +1753,8 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
           setStats({
             totalEvents: d.totalEvents || 0,
             totalAttendees: d.totalAttendees || 0,
-            totalBudget: d.totalBudget || 0,
+            // totalBudget only present for finance tier (chairman + secretary); undefined for others
+            ...(d.totalBudget !== undefined ? { totalBudget: d.totalBudget } : {}),
             pendingSuggestions: d.pendingSuggestions || 0,
             activeUsers: d.activeUsers || 0,
           });
@@ -1880,7 +2076,8 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
               {[
                 { label: 'TOTAL SK EVENTS', val: stats.totalEvents, color: 'border-blue-200 text-blue-600', icon: '📅' },
                 { label: 'ACTIVE ATTENDEES', val: (stats.totalAttendees ?? 0).toLocaleString(), color: 'border-cyan-200 text-cyan-600', icon: '🙋‍♂️' },
-                { label: 'BUDGET UTILIZED', val: `₱${(stats.totalBudget ?? 0).toLocaleString()}`, color: 'border-emerald-200 text-emerald-600', icon: '💰' },
+                // Budget tile — only shown when server returns totalBudget (finance tier: chairman + secretary)
+                ...(stats.totalBudget !== undefined ? [{ label: 'BUDGET UTILIZED', val: `₱${(stats.totalBudget ?? 0).toLocaleString()}`, color: 'border-emerald-200 text-emerald-600', icon: '💰' }] : []),
                 { label: 'PENDING SUGGESTIONS', val: stats.pendingSuggestions, color: 'border-amber-200 text-amber-600', icon: '📬' },
               ].map((st, i) => (
                 <div key={i} className={`bg-white border-2 ${st.color} rounded-2xl p-5 relative group hover:shadow-md transition-all overflow-hidden`}>
@@ -3387,22 +3584,31 @@ function App() {
     ...extra
   });
 
+  // ---- Theme toggle --------------------------------------------------------
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const toggleTheme = () => {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.toggle('dark', next);
+    try { localStorage.setItem('agy-theme', next ? 'dark' : 'light'); } catch { }
+  };
+
   const getVisibleModules = () => {
     const role = authUser?.role || 'youth';
     const modules = [
-      { id: 'chat', label: 'AI Assistant', emoji: '💬', roles: ['admin', 'chairman', 'committee', 'youth'] },
+      { id: 'chat', label: 'AI Assistant', emoji: '💬', roles: ['admin', 'chairman', 'secretary', 'committee', 'youth'] },
       { id: 'scan', label: 'Scan Attendance', emoji: '📷', roles: ['youth'] },
-      { id: 'suggestions', label: 'Suggestions', emoji: '💡', roles: ['admin', 'chairman', 'committee', 'youth'] },
-      { id: 'events', label: 'Event Management', emoji: '📅', roles: ['admin', 'chairman', 'committee'] },
-      { id: 'reports', label: 'Official Reports', emoji: '🗂️', roles: ['admin', 'chairman', 'committee'] },
-      { id: 'faq', label: 'FAQ', emoji: '❓', roles: ['admin', 'chairman', 'committee', 'youth'] },
-      { id: 'admin', label: 'Admin Dashboard', emoji: '🛡️', roles: ['admin', 'chairman'] },
+      { id: 'suggestions', label: 'Suggestions', emoji: '💡', roles: ['admin', 'chairman', 'secretary', 'committee', 'youth'] },
+      { id: 'events', label: 'Event Management', emoji: '📅', roles: ['admin', 'chairman', 'secretary', 'committee'] },
+      { id: 'reports', label: 'Official Reports', emoji: '🗂️', roles: ['admin', 'chairman', 'secretary', 'committee'] },
+      { id: 'faq', label: 'FAQ', emoji: '❓', roles: ['admin', 'chairman', 'secretary', 'committee', 'youth'] },
+      { id: 'admin', label: 'Admin Dashboard', emoji: '🛡️', roles: ['admin', 'chairman', 'secretary'] },
     ];
     return modules.filter(m => m.roles.includes(role));
   };
 
-  const ROLE_COLORS = { admin: 'bg-red-500', chairman: 'bg-amber-500', committee: 'bg-blue-500', youth: 'bg-green-500' };
-  const ROLE_LABELS = { admin: 'Admin', chairman: 'SK Chairman', committee: 'SK Committee', youth: 'Youth' };
+  const ROLE_COLORS = { admin: 'bg-red-500', chairman: 'bg-amber-500', secretary: 'bg-purple-500', committee: 'bg-blue-500', youth: 'bg-green-500' };
+  const ROLE_LABELS = { admin: 'Admin', chairman: 'SK Chairman', secretary: 'SK Secretary', committee: 'SK Committee', youth: 'Youth' };
 
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -3804,6 +4010,10 @@ function App() {
   }
 
 
+  // SPA route: /publicevents renders without login, before any auth check.
+  if (typeof window !== 'undefined' && window.location.pathname === '/publicevents') {
+    return <PublicEventsPage apiBase={API_BASE} />;
+  }
 
   if (authChecking) {
     return (
@@ -3822,7 +4032,7 @@ function App() {
   }
 
   return (
-    <div className="relative h-screen w-screen bg-white font-sans text-slate-900 overflow-hidden flex">
+    <div className="relative h-screen w-screen bg-white dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 overflow-hidden flex">
       <div className="absolute inset-0 bg-noise-dark z-0"></div>
 
       {/* Light Theme Radial Glows */}
@@ -3840,7 +4050,7 @@ function App() {
         )}
 
         {/* --- LEFT SIDEBAR (Gemini-Style Chats Menu) --- */}
-        <div className={`transition-all duration-300 h-full flex-shrink-0 border-slate-300 bg-slate-50/50 backdrop-blur-3xl shadow-[5px_0_30px_rgba(0,0,0,0.05)] flex flex-col z-[60] fixed inset-y-0 left-0 md:relative ${sidebarOpen
+        <div className={`transition-all duration-300 h-full flex-shrink-0 border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/90 backdrop-blur-3xl shadow-[5px_0_30px_rgba(0,0,0,0.05)] flex flex-col z-[60] fixed inset-y-0 left-0 md:relative ${sidebarOpen
           ? 'w-[280px] md:w-[320px] translate-x-0 border-r opacity-100'
           : 'w-[280px] md:w-0 -translate-x-full md:translate-x-0 border-r-0 opacity-0 overflow-hidden pointer-events-none'
           }`}>
@@ -3955,15 +4165,15 @@ function App() {
           </div>
 
           {/* --- Bottom Navigation Bar (role-filtered) --- */}
-          <nav className="shrink-0 border-t border-slate-200 bg-slate-100/80 backdrop-blur p-3 flex flex-col gap-1">
+          <nav className="shrink-0 border-t border-slate-200 dark:border-slate-700 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur p-3 flex flex-col gap-1">
             <p className="text-[10px] font-display font-black tracking-widest text-slate-400 uppercase px-2 mb-1">Modules</p>
             {getVisibleModules().map(({ id, label, emoji }) => (
               <button
                 key={id}
                 onClick={() => setCurrentView(id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${currentView === id
-                  ? 'bg-blue-100 border border-blue-200 text-blue-800 shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 border border-transparent'
+                  ? 'bg-blue-100 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-300 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 border border-transparent'
                   }`}
               >
                 <span className="text-base leading-none select-none">{emoji}</span>
@@ -4026,7 +4236,7 @@ function App() {
           {currentView === 'chat' && (<>
 
             {/* Top Info Header */}
-            <div className="h-16 shrink-0 border-b border-slate-200/80 bg-white/70 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 gap-3">
+            <div className="h-16 shrink-0 border-b border-slate-200/80 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 {!sidebarOpen && (
                   <button
@@ -4048,8 +4258,27 @@ function App() {
                 </button>
               </div>
 
-              {/* Right side: Notification Bell + Status Badge */}
+              {/* Right side: Theme toggle + Notification Bell + Status Badge */}
               <div className="flex items-center gap-3 shrink-0">
+                {/* Theme toggle — moon/sun */}
+                <button
+                  onClick={toggleTheme}
+                  title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+                  className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-cyan-400 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700 cursor-pointer"
+                >
+                  {isDark ? (
+                    /* Sun icon */
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="5" strokeWidth="2" />
+                      <path strokeLinecap="round" strokeWidth="2" d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                    </svg>
+                  ) : (
+                    /* Moon icon */
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+                    </svg>
+                  )}
+                </button>
                 <NotificationBell authHeaders={authHeaders} setCurrentView={setCurrentView} />
                 <div className="flex flex-col items-end shrink-0 max-w-[50%] sm:max-w-none">
                   <div className="flex items-center gap-2 sm:gap-3">
@@ -4093,7 +4322,7 @@ function App() {
 
             {/* Inner Chat Pane */}
             <div className="flex-1 flex flex-col p-2 sm:p-8 overflow-hidden relative">
-              <div className="w-full max-w-5xl mx-auto h-full bg-white border-2 border-slate-900 rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.12)] flex flex-col pointer-events-auto">
+              <div className="w-full max-w-5xl mx-auto h-full bg-white dark:bg-slate-900 border-2 border-slate-900 dark:border-slate-700 rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.12)] flex flex-col pointer-events-auto">
 
                 <div className="h-11 bg-slate-50 border-b-2 border-slate-200 flex items-center px-4 justify-between flex-shrink-0">
                   <span className="font-mono text-xs sm:text-sm text-black font-bold tracking-wider flex items-center gap-2">

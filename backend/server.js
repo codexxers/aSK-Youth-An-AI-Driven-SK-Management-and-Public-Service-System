@@ -1094,11 +1094,24 @@ const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get();
 if (userCount.c === 0) {
     const salt = bcrypt.genSaltSync(10);
     const insertUser = db.prepare('INSERT INTO users (username, full_name, role, committee, password_hash, status) VALUES (?, ?, ?, ?, ?, ?)');
-    insertUser.run('admin', 'System Administrator', 'admin', null, bcrypt.hashSync('admin2025', salt), 'active');
+    insertUser.run('sysadmin', 'System Administrator', 'admin', null, bcrypt.hashSync('admin2025', salt), 'active');
     insertUser.run('chairman', 'SK Chairperson', 'chairman', null, bcrypt.hashSync('chairman2025', salt), 'active');
     insertUser.run('committee_user', 'SK Committee Member', 'committee', null, bcrypt.hashSync('committee2025', salt), 'active');
     insertUser.run('youth', 'Juan Dela Cruz', 'youth', null, bcrypt.hashSync('youth2025', salt), 'active');
     console.log('[aSK Youth] Default users seeded (committee role, no officer).');
+}
+
+// Rename legacy root 'admin' username to 'sysadmin' if not yet migrated
+try {
+    const legacyAdmin = db.prepare("SELECT id FROM users WHERE username = 'admin'").get();
+    const hasSysadmin = db.prepare("SELECT id FROM users WHERE username = 'sysadmin'").get();
+    if (legacyAdmin && !hasSysadmin) {
+        db.prepare("UPDATE users SET username = 'sysadmin', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(legacyAdmin.id);
+        console.log('[aSK Youth] Migrated root admin username to sysadmin.');
+        scheduleSnapshot();
+    }
+} catch (migErr) {
+    console.warn('[aSK Youth] Root admin rename migration skipped:', migErr.message);
 }
 
 // Seed default suggestions if empty or sparse
@@ -1770,7 +1783,7 @@ app.delete('/api/users/:id', verifyAdmin, (req, res) => {
         const targetUser = db.prepare('SELECT id, username, full_name FROM users WHERE id = ?').get(id);
         if (!targetUser) return res.status(404).json({ error: 'User not found' });
 
-        if (targetUser.username === 'admin') {
+        if (targetUser.username === 'sysadmin' || targetUser.username === 'admin') {
             return res.status(403).json({ error: 'The protected system admin account cannot be deactivated or deleted.' });
         }
         if (Number(targetUser.id) === Number(req.authUser.id)) {

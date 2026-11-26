@@ -2450,7 +2450,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                             >
                               Edit
                             </button>
-                            {usr.username !== 'admin' && (
+                            {usr.username !== 'admin' && usr.username !== 'sysadmin' && (
                               <button
                                 onClick={() => handleDeactivateUser(usr)}
                                 className="px-2.5 py-1 bg-red-50 dark:bg-red-900/40 hover:bg-red-100 dark:hover:bg-red-900/60 text-red-600 dark:text-red-300 rounded-lg text-[10px] font-bold uppercase transition-colors border border-red-200 dark:border-red-700 cursor-pointer"
@@ -2807,8 +2807,8 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
 
               {/* Modal footer: Delete on left, Cancel + Apply on right */}
               <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-700 mt-2">
-                {/* Delete Account — 2-step, only from inside Edit modal, hidden for protected 'admin' */}
-                {editUser.username !== 'admin' ? (
+                {/* Delete Account — 2-step, only from inside Edit modal, hidden for protected 'sysadmin'/'admin' */}
+                {editUser.username !== 'admin' && editUser.username !== 'sysadmin' ? (
                   <button
                     type="button"
                     onClick={() => {

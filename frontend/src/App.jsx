@@ -4214,11 +4214,49 @@ function App() {
 
         {/* --- MAIN CONTENT AREA (Right Side) --- */}
         <div className="flex-1 flex flex-col h-full bg-transparent overflow-hidden relative transition-all duration-300">
+
+          {/* Global floating theme toggle — always visible in top-right, all views */}
+          <div className="fixed top-3 right-3 z-[70] flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className="theme-toggle"
+              data-theme={isDark ? 'dark' : 'light'}
+              role="switch"
+              aria-checked={isDark}
+              title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+            >
+              <span className="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                  <circle cx="12" cy="12" r="5" stroke={isDark ? '#64748b' : '#d97706'} />
+                  <path stroke={isDark ? '#64748b' : '#d97706'} d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                </svg>
+              </span>
+              <span className="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                  <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke={isDark ? '#f1f5f9' : '#94a3b8'} />
+                </svg>
+              </span>
+              <span className="theme-toggle__knob" aria-hidden="true">
+                {isDark ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="#f1f5f9" />
+                  </svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                    <circle cx="12" cy="12" r="5" stroke="#d97706" />
+                    <path stroke="#d97706" d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                  </svg>
+                )}
+              </span>
+            </button>
+            <NotificationBell authHeaders={authHeaders} setCurrentView={setCurrentView} />
+          </div>
+
           {/* Menu Toggle button — only visible when sidebar is collapsed */}
           {!sidebarOpen && (
             <button
               onClick={() => setSidebarOpen(true)}
-              className="fixed top-3 left-3 z-[65] text-slate-600 hover:text-blue-600 transition-all p-2 bg-white/90 hover:bg-white backdrop-blur-md rounded-xl shadow-md border border-slate-200/80 flex items-center justify-center cursor-pointer active:scale-95"
+              className="fixed top-3 left-3 z-[65] text-slate-600 dark:text-slate-300 hover:text-blue-600 transition-all p-2 bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-700 backdrop-blur-md rounded-xl shadow-md border border-slate-200/80 dark:border-slate-700 flex items-center justify-center cursor-pointer active:scale-95"
               title="Expand Sidebar"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4258,45 +4296,8 @@ function App() {
                 </button>
               </div>
 
-              {/* Right side: Theme toggle + Notification Bell + Status Badge */}
+              {/* Right side: Status Badge (toggle + bell now in global fixed header) */}
               <div className="flex items-center gap-3 shrink-0">
-                {/* Theme toggle — pill-style sliding knob */}
-                <button
-                  onClick={toggleTheme}
-                  className="theme-toggle"
-                  data-theme={isDark ? 'dark' : 'light'}
-                  role="switch"
-                  aria-checked={isDark}
-                  title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-                >
-                  {/* Sun icon — left position */}
-                  <span className="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-                      <circle cx="12" cy="12" r="5" stroke={isDark ? '#64748b' : '#d97706'} />
-                      <path stroke={isDark ? '#64748b' : '#d97706'} d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-                    </svg>
-                  </span>
-                  {/* Moon icon — right position */}
-                  <span className="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-                      <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke={isDark ? '#f1f5f9' : '#94a3b8'} />
-                    </svg>
-                  </span>
-                  {/* Sliding knob — carries the active icon */}
-                  <span className="theme-toggle__knob" aria-hidden="true">
-                    {isDark ? (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-                        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="#f1f5f9" />
-                      </svg>
-                    ) : (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-                        <circle cx="12" cy="12" r="5" stroke="#d97706" />
-                        <path stroke="#d97706" d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-                      </svg>
-                    )}
-                  </span>
-                </button>
-                <NotificationBell authHeaders={authHeaders} setCurrentView={setCurrentView} />
                 <div className="flex flex-col items-end shrink-0 max-w-[50%] sm:max-w-none">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <span className={`text-xs font-mono font-bold tracking-wider ${loading ? 'text-cyan-500' : 'text-blue-700'} hidden xs:block sm:block`}>

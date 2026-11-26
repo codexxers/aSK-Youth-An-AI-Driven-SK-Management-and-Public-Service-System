@@ -4074,50 +4074,14 @@ function App() {
               <img src="/ASKYOUTH.LOGO.png" alt="aSKYOUTH" className="w-7 h-7 object-contain shrink-0" />
               <span className="font-display font-black text-sm tracking-widest text-slate-800 dark:text-slate-100">aSKYOUTH</span>
             </div>
-            {/* Theme toggle + bell + collapse — right of header */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              {/* Pill toggle — scaled to fit sidebar */}
-              <button
-                onClick={toggleTheme}
-                className="theme-toggle theme-toggle--sm"
-                data-theme={isDark ? 'dark' : 'light'}
-                role="switch"
-                aria-checked={isDark}
-                title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-              >
-                <span className="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-                    <circle cx="12" cy="12" r="5" stroke={isDark ? '#64748b' : '#d97706'} />
-                    <path stroke={isDark ? '#64748b' : '#d97706'} d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-                  </svg>
-                </span>
-                <span className="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke={isDark ? '#f1f5f9' : '#94a3b8'} />
-                  </svg>
-                </span>
-                <span className="theme-toggle__knob" aria-hidden="true">
-                  {isDark ? (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-                      <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="#f1f5f9" />
-                    </svg>
-                  ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-                      <circle cx="12" cy="12" r="5" stroke="#d97706" />
-                      <path stroke="#d97706" d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-                    </svg>
-                  )}
-                </span>
-              </button>
-              <NotificationBell authHeaders={authHeaders} setCurrentView={setCurrentView} />
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 rounded-lg transition-colors cursor-pointer"
-                title="Collapse Sidebar"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-              </button>
-            </div>
+            {/* Collapse chevron only — toggle+bell live above Modules */}
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 rounded-lg transition-colors cursor-pointer shrink-0"
+              title="Collapse Sidebar"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+            </button>
           </div>
 
           <div className="p-3 border-b border-slate-200/80 shrink-0">
@@ -4218,6 +4182,45 @@ function App() {
 
           {/* --- Bottom Navigation Bar (role-filtered) --- */}
           <nav className="shrink-0 border-t border-slate-200 dark:border-slate-700 bg-slate-100/80 dark:bg-slate-900/80 backdrop-blur p-3 flex flex-col gap-1">
+
+            {/* Theme toggle + notification bell — above modules */}
+            <div className="flex items-center justify-between px-2 pb-2 mb-1 border-b border-slate-200/60 dark:border-slate-700/60">
+              {/* Pill theme toggle */}
+              <button
+                onClick={toggleTheme}
+                className="theme-toggle theme-toggle--sm"
+                data-theme={isDark ? 'dark' : 'light'}
+                role="switch"
+                aria-checked={isDark}
+                title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+              >
+                <span className="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                    <circle cx="12" cy="12" r="5" stroke={isDark ? '#64748b' : '#d97706'} />
+                    <path stroke={isDark ? '#64748b' : '#d97706'} d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                  </svg>
+                </span>
+                <span className="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke={isDark ? '#f1f5f9' : '#94a3b8'} />
+                  </svg>
+                </span>
+                <span className="theme-toggle__knob" aria-hidden="true">
+                  {isDark ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                      <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="#f1f5f9" />
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                      <circle cx="12" cy="12" r="5" stroke="#d97706" />
+                      <path stroke="#d97706" d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                    </svg>
+                  )}
+                </span>
+              </button>
+              <NotificationBell authHeaders={authHeaders} setCurrentView={setCurrentView} />
+            </div>
+
             <p className="text-[10px] font-display font-black tracking-widest text-slate-400 uppercase px-2 mb-1">Modules</p>
             {getVisibleModules().map(({ id, label, emoji }) => (
               <button

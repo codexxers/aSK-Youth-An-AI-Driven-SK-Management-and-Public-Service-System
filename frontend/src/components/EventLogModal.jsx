@@ -59,26 +59,26 @@ export default function EventLogModal({ open, onClose, event: ev, token, authUse
       aria-modal="true"
     >
       <div
-        className="w-full max-w-3xl max-h-[92vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden my-4 bg-white border-2 border-slate-300 text-slate-900"
+        className="w-full max-w-3xl max-h-[92vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden my-4 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-5 py-4 shrink-0 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div className="px-5 py-4 shrink-0 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-mono font-bold tracking-widest uppercase mb-1 text-blue-600">
+            <p className="text-xs font-mono font-bold tracking-widest uppercase mb-1 text-blue-600 dark:text-blue-400">
               Attendance Event Log
             </p>
-            <h2 className="text-lg font-display font-bold text-slate-900">
+            <h2 className="text-lg font-display font-bold text-slate-900 dark:text-slate-100">
               {ev.title}
             </h2>
-            <p className="text-xs mt-2 text-slate-600">
+            <p className="text-xs mt-2 text-slate-600 dark:text-slate-400">
               {ev.date} {ev.time ? `at ${ev.time}` : ''}
               {' · '}
               {ev.location || '—'}
               {' · '}
-              <span className="capitalize font-semibold text-slate-800">Status: {ev.status}</span>
+              <span className="capitalize font-semibold text-slate-800 dark:text-slate-200">Status: {ev.status}</span>
             </p>
-            <p className="text-xs mt-1 font-mono text-slate-500">
-              Total Recorded Attendees: <span className="font-bold text-blue-700">{ev.attendees || attendees.length}</span>
+            <p className="text-xs mt-1 font-mono text-slate-500 dark:text-slate-400">
+              Total Recorded Attendees: <span className="font-bold text-blue-700 dark:text-blue-400">{ev.attendees || attendees.length}</span>
             </p>
           </div>
 
@@ -107,15 +107,15 @@ export default function EventLogModal({ open, onClose, event: ev, token, authUse
         </div>
 
         {error && (
-          <div className="mx-5 mt-3 px-3 py-2 rounded-xl text-xs bg-red-50 text-red-600 border border-red-200">
+          <div className="mx-5 mt-3 px-3 py-2 rounded-xl text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-700">
             {error}
           </div>
         )}
 
         <div className="flex-1 min-h-0 overflow-auto px-5 py-5">
           {ev.status === 'active' && (
-            <div className="mb-6 flex flex-col items-center p-6 bg-slate-50 rounded-2xl border-2 border-slate-200 shadow-sm max-w-sm mx-auto transition-all">
-              <div className="bg-white p-3 rounded-xl mb-4 border-2 border-slate-200 shadow-md">
+            <div className="mb-6 flex flex-col items-center p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-slate-200 dark:border-slate-700 shadow-sm max-w-sm mx-auto transition-all">
+              <div className="bg-white p-3 rounded-xl mb-4 border-2 border-slate-200 dark:border-slate-600 shadow-md">
                 <img
                   src={`${API_URL}/api/events/${ev.id}/qr?token=${encodeURIComponent(token || '')}&h=${qrRefreshHash}`}
                   alt="Event QR Code"
@@ -130,38 +130,38 @@ export default function EventLogModal({ open, onClose, event: ev, token, authUse
                   Refresh QR
                 </button>
               )}
-              <p className="text-slate-900 font-display font-bold text-base text-center uppercase tracking-widest">
+              <p className="text-slate-900 dark:text-slate-100 font-display font-bold text-base text-center uppercase tracking-widest">
                 Scan to Register
               </p>
-              <p className="text-slate-500 text-xs text-center mt-1">
+              <p className="text-slate-500 dark:text-slate-400 text-xs text-center mt-1">
                 Point your phone's camera at this QR code
               </p>
             </div>
           )}
 
           {loading ? (
-            <p className="text-sm py-8 text-center text-slate-500">Loading…</p>
+            <p className="text-sm py-8 text-center text-slate-500 dark:text-slate-400">Loading…</p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border-2 border-slate-200 bg-white shadow-sm">
+            <div className="overflow-x-auto rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b-2 border-slate-200 bg-slate-50">
+                  <tr className="border-b-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60">
                     {['Name', 'Timestamp', 'Status'].map((h) => (
-                      <th key={h} className="text-left px-4 py-3 text-xs font-display font-bold uppercase tracking-wider text-slate-600">
+                      <th key={h} className="text-left px-4 py-3 text-xs font-display font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {attendees.map((a) => (
-                    <tr key={a.id} className="hover:bg-blue-50/40 transition-colors">
-                      <td className="px-4 py-3 font-semibold text-slate-900">{a.userName}</td>
-                      <td className="px-4 py-3 text-xs tabular-nums text-slate-600 font-mono tracking-wide">
+                    <tr key={a.id} className="hover:bg-blue-50/40 dark:hover:bg-blue-900/20 transition-colors">
+                      <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">{a.userName}</td>
+                      <td className="px-4 py-3 text-xs tabular-nums text-slate-600 dark:text-slate-400 font-mono tracking-wide">
                         {formatSGT(a.timestamp)}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
                           {a.status}
                         </span>
                       </td>
@@ -169,7 +169,7 @@ export default function EventLogModal({ open, onClose, event: ev, token, authUse
                   ))}
                   {attendees.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="px-4 py-8 text-center text-sm text-slate-500">
+                      <td colSpan={3} className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
                         No attendees have recorded their attendance yet.
                       </td>
                     </tr>
@@ -180,11 +180,11 @@ export default function EventLogModal({ open, onClose, event: ev, token, authUse
           )}
         </div>
 
-        <div className="px-5 py-4 shrink-0 flex justify-end border-t border-slate-200 bg-slate-50">
+        <div className="px-5 py-4 shrink-0 flex justify-end border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 rounded-xl text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-sm cursor-pointer"
+            className="px-5 py-2 rounded-xl text-sm font-bold bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors shadow-sm cursor-pointer"
           >
             Close
           </button>

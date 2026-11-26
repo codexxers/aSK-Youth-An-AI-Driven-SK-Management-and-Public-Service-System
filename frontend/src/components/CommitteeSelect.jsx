@@ -173,7 +173,7 @@ export default function CommitteeSelect({
     return () => { isMounted = false; };
   }, [apiBase]);
 
-  const defaultCls = "w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 focus:border-blue-600 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none transition-all shadow-sm font-medium";
+  const defaultCls = "w-full bg-slate-50 dark:bg-slate-700 hover:bg-white dark:hover:bg-slate-600 focus:bg-white dark:focus:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 focus:border-blue-600 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none transition-all shadow-sm font-medium";
 
   return (
     <div className="relative">
@@ -188,17 +188,17 @@ export default function CommitteeSelect({
       >
         <option value="">{loading ? 'Loading committees...' : placeholder}</option>
         {includeGeneral && (
-          <option value="general" className="font-semibold text-slate-900">
+          <option value="general" className="font-semibold text-slate-900 dark:text-slate-100 dark:bg-slate-800">
             {generalLabel}
           </option>
         )}
         {includeUnassigned && (
-          <option value="unassigned" className="font-semibold text-amber-700">
+          <option value="unassigned" className="font-semibold text-amber-700 dark:text-amber-300 dark:bg-slate-800">
             {unassignedLabel}
           </option>
         )}
         {committees.map(c => (
-          <option key={c.code} value={c.code} className="font-medium text-slate-900">
+          <option key={c.code} value={c.code} className="font-medium text-slate-900 dark:text-slate-100 dark:bg-slate-800">
             {c.label}
           </option>
         ))}

@@ -112,7 +112,7 @@ function ExportResponseButton({ messageContent, hasOfficialDocument, officialDoc
         <button
           ref={buttonRef}
           onClick={() => setShowPopup(!showPopup)}
-          className="p-1.5 rounded-lg text-slate-600 hover:text-black hover:bg-slate-200 border border-slate-300 transition-all cursor-pointer"
+          className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-black dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-600 transition-all cursor-pointer"
           aria-label="Export Response"
         >
           <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -122,30 +122,30 @@ function ExportResponseButton({ messageContent, hasOfficialDocument, officialDoc
           </svg>
         </button>
         {!showPopup && (
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-slate-900 text-white text-[10px] font-mono tracking-wide rounded-md whitespace-nowrap opacity-0 group-hover/export:opacity-100 transition-opacity delay-150 pointer-events-none border border-slate-700 shadow-lg">
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-slate-900 dark:bg-slate-700 text-white text-[10px] font-mono tracking-wide rounded-md whitespace-nowrap opacity-0 group-hover/export:opacity-100 transition-opacity delay-150 pointer-events-none border border-slate-700 dark:border-slate-600 shadow-lg">
             Export Response
           </div>
         )}
       </div>
 
       {showPopup && (
-        <div ref={popupRef} className="absolute bottom-full left-0 mb-2 w-[200px] bg-white border-2 border-slate-300 rounded-xl shadow-2xl p-3 z-50">
+        <div ref={popupRef} className="absolute bottom-full left-0 mb-2 w-[200px] bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl shadow-2xl p-3 z-50">
           <div className="flex items-center justify-between mb-2.5">
-            <span className="text-xs font-mono font-bold text-slate-900 tracking-wide">Export as...</span>
-            <button onClick={() => setShowPopup(false)} className="text-slate-400 hover:text-black transition-colors cursor-pointer">
+            <span className="text-xs font-mono font-bold text-slate-900 dark:text-slate-100 tracking-wide">Export as...</span>
+            <button onClick={() => setShowPopup(false)} className="text-slate-400 hover:text-black dark:hover:text-white transition-colors cursor-pointer">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
           <div className="flex flex-col gap-1.5">
             <button
               onClick={() => doExport('docx')}
-              className="flex items-center gap-2 px-3 py-2 text-xs font-mono font-bold tracking-wider rounded-lg bg-blue-50 border border-blue-300 text-blue-800 hover:bg-blue-600 hover:text-white transition-all cursor-pointer"
+              className="flex items-center gap-2 px-3 py-2 text-xs font-mono font-bold tracking-wider rounded-lg bg-blue-50 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-300 hover:bg-blue-600 hover:text-white transition-all cursor-pointer"
             >
               📄 Export to DOCX
             </button>
             <button
               onClick={() => doExport('pdf')}
-              className="flex items-center gap-2 px-3 py-2 text-xs font-mono font-bold tracking-wider rounded-lg bg-cyan-50 border border-cyan-300 text-cyan-900 hover:bg-cyan-600 hover:text-white transition-all cursor-pointer"
+              className="flex items-center gap-2 px-3 py-2 text-xs font-mono font-bold tracking-wider rounded-lg bg-cyan-50 dark:bg-cyan-900/40 border border-cyan-300 dark:border-cyan-700 text-cyan-900 dark:text-cyan-300 hover:bg-cyan-600 hover:text-white transition-all cursor-pointer"
             >
               🖨️ Export to PDF
             </button>
@@ -235,31 +235,31 @@ function EventFormModal({ event, onClose, onSaved, authHeaders, authUser }) {
     finally { setSaving(false); }
   };
 
-  const inputCls = "w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 focus:border-blue-600 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none transition-all shadow-sm";
-  const labelCls = "text-xs font-mono font-bold text-slate-700 mb-1 block uppercase tracking-wider";
+  const inputCls = "w-full bg-slate-50 dark:bg-slate-700 hover:bg-white dark:hover:bg-slate-600 focus:bg-white dark:focus:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 focus:border-blue-600 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none transition-all shadow-sm";
+  const labelCls = "text-xs font-mono font-bold text-slate-700 dark:text-slate-300 mb-1 block uppercase tracking-wider";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-white border-2 border-slate-300 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl text-slate-900" onClick={e => e.stopPropagation()}>
-        <h2 className="text-lg font-display font-bold text-slate-900 mb-4 tracking-wide">{isEdit ? 'Edit Event' : 'Add New Event'}</h2>
+      <div className="bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl text-slate-900 dark:text-slate-100" onClick={e => e.stopPropagation()}>
+        <h2 className="text-lg font-display font-bold text-slate-900 dark:text-slate-100 mb-4 tracking-wide">{isEdit ? 'Edit Event' : 'Add New Event'}</h2>
 
         {/* Document Import */}
         {!isEdit && (
-          <div className="mb-5 border-2 border-dashed border-blue-200 rounded-xl p-4 bg-blue-50/50">
-            <p className="text-xs text-blue-900 mb-2 font-bold flex items-center gap-1.5">
+          <div className="mb-5 border-2 border-dashed border-blue-200 dark:border-blue-700/60 rounded-xl p-4 bg-blue-50/50 dark:bg-blue-950/40">
+            <p className="text-xs text-blue-900 dark:text-blue-300 mb-2 font-bold flex items-center gap-1.5">
               <span>📄</span> Import from Document (optional)
             </p>
             <div className="flex gap-2 items-center flex-wrap sm:flex-nowrap">
-              <input type="file" accept=".pdf,.docx,.jpg,.jpeg,.png,.tiff,.tif,.webp,.txt,.csv" onChange={e => setImportFile(e.target.files?.[0] || null)} className="text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-slate-200 file:text-slate-800 hover:file:bg-slate-300 flex-1 cursor-pointer" />
+              <input type="file" accept=".pdf,.docx,.jpg,.jpeg,.png,.tiff,.tif,.webp,.txt,.csv" onChange={e => setImportFile(e.target.files?.[0] || null)} className="text-xs text-slate-600 dark:text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-slate-200 dark:file:bg-slate-700 file:text-slate-800 dark:file:text-slate-200 hover:file:bg-slate-300 dark:hover:file:bg-slate-600 flex-1 cursor-pointer" />
               <button onClick={handleImport} disabled={!importFile || importing} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-bold text-xs rounded-xl whitespace-nowrap shadow-sm transition-all cursor-pointer">
                 {importing ? '⏳ Extracting...' : 'Extract'}
               </button>
             </div>
-            {importBanner && <p className="text-xs text-amber-700 font-semibold mt-2">⚠️ {importBanner}</p>}
+            {importBanner && <p className="text-xs text-amber-700 dark:text-amber-300 font-semibold mt-2">⚠️ {importBanner}</p>}
           </div>
         )}
 
-        {error && <p className="text-red-600 text-xs mb-3 bg-red-50 border border-red-200 rounded-xl p-2.5 font-medium">{error}</p>}
+        {error && <p className="text-red-600 dark:text-red-300 text-xs mb-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl p-2.5 font-medium">{error}</p>}
 
         {/* Form grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
@@ -270,12 +270,12 @@ function EventFormModal({ event, onClose, onSaved, authHeaders, authUser }) {
 
           {/* Committee Access Scope */}
           {isCommitteeUser ? (
-            <div className="col-span-1 sm:col-span-2 bg-blue-50/70 border-2 border-blue-200 rounded-xl p-3 flex items-center justify-between">
+            <div className="col-span-1 sm:col-span-2 bg-blue-50/70 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-3 flex items-center justify-between">
               <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-blue-700 block">Assigned Committee Scope</span>
-                <span className="text-xs font-bold text-blue-950">{getCommitteeLabel(authUser?.committee)}</span>
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300 block">Assigned Committee Scope</span>
+                <span className="text-xs font-bold text-blue-950 dark:text-blue-100">{getCommitteeLabel(authUser?.committee)}</span>
               </div>
-              <span className="text-[10px] font-mono text-slate-500 bg-white px-2.5 py-1 rounded-md border border-slate-200 font-semibold">Auto-tagged</span>
+              <span className="text-[10px] font-mono text-slate-500 dark:text-slate-300 bg-white dark:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-600 font-semibold">Auto-tagged</span>
             </div>
           ) : (
             <div className="col-span-1 sm:col-span-2">
@@ -354,7 +354,7 @@ function EventFormModal({ event, onClose, onSaved, authHeaders, authUser }) {
         </div>
 
         {/* Attendance & Budget */}
-        <p className="text-xs font-display font-bold text-slate-800 uppercase tracking-wider mb-2 mt-2">Attendance & Budget</p>
+        <p className="text-xs font-display font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 mt-2">Attendance & Budget</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
           <div><label className={labelCls}>Attendees</label><input type="number" min="0" value={form.attendees} onChange={e => set('attendees', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Male</label><input type="number" min="0" value={form.male_count} onChange={e => set('male_count', e.target.value)} className={inputCls} /></div>
@@ -366,8 +366,8 @@ function EventFormModal({ event, onClose, onSaved, authHeaders, authUser }) {
           )}
         </div>
 
-        <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-slate-200">
-          <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer">Cancel</button>
+        <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
+          <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors cursor-pointer">Cancel</button>
           <button onClick={handleSave} disabled={saving || !form.title} className="px-5 py-2 rounded-xl text-sm font-display font-bold bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-md disabled:opacity-40 transition-all cursor-pointer">{saving ? 'Saving...' : isEdit ? 'Update Event' : 'Create Event'}</button>
         </div>
       </div>
@@ -396,24 +396,24 @@ function NotificationBell({ authHeaders, setCurrentView }) {
 
   return (
     <div className="relative">
-      <button onClick={() => setOpen(!open)} className="relative p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100/80 backdrop-blur-md rounded-lg shadow-sm border border-slate-200/50 transition-all flex items-center justify-center">
+      <button onClick={() => setOpen(!open)} className="relative p-2 text-slate-500 dark:text-slate-300 hover:text-blue-600 dark:hover:text-cyan-400 hover:bg-slate-100/80 dark:hover:bg-slate-700/80 backdrop-blur-md rounded-lg shadow-sm border border-slate-200/50 dark:border-slate-600 transition-all flex items-center justify-center">
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-        {data.count > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />}
+        {data.count > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />}
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden z-[101]">
-          <div className="bg-slate-50 px-4 py-2 border-b border-slate-200">
-            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Upcoming Events ({data.count})</h3>
+        <div className="absolute left-0 bottom-full mb-2 w-72 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden z-[101]">
+          <div className="bg-slate-50 dark:bg-slate-900/70 px-4 py-2 border-b border-slate-200 dark:border-slate-700">
+            <h3 className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Upcoming Events ({data.count})</h3>
           </div>
           <div className="max-h-64 overflow-y-auto">
             {data.events.length === 0 ? (
-              <p className="p-4 text-xs text-slate-500 text-center">No upcoming events in the next {data.windowDays || 3} days.</p>
+              <p className="p-4 text-xs text-slate-500 dark:text-slate-400 text-center">No upcoming events in the next {data.windowDays || 3} days.</p>
             ) : (
               data.events.map(ev => (
-                <div key={ev.id} onClick={() => { setOpen(false); setCurrentView('events'); }} className="p-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors">
-                  <p className="text-sm font-bold text-slate-800 line-clamp-1">{ev.title}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{ev.date} {ev.time && `• ${ev.time}`}</p>
-                  <p className="text-[10px] text-slate-400 font-mono mt-1">{ev.location || 'Concepcion Dos'}</p>
+                <div key={ev.id} onClick={() => { setOpen(false); setCurrentView('events'); }} className="p-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer transition-colors">
+                  <p className="text-sm font-bold text-slate-800 dark:text-slate-100 line-clamp-1">{ev.title}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{ev.date} {ev.time && `• ${ev.time}`}</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-1">{ev.location || 'Concepcion Dos'}</p>
                 </div>
               ))
             )}
@@ -466,10 +466,10 @@ function FaqModule({ authHeaders, authUser }) {
   const filtered = faqs.filter(f => (f.question + ' ' + f.answer).toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-y-auto">
+    <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-transparent overflow-y-auto">
       <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-4xl mx-auto w-full">
         <div className="flex items-center justify-between gap-3 mb-6">
-          <h1 className="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-2 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 min-w-0">
             <span className="text-2xl sm:text-3xl shrink-0">❓</span>
             <span className="truncate">Frequently Asked Questions</span>
           </h1>
@@ -483,62 +483,62 @@ function FaqModule({ authHeaders, authUser }) {
           )}
         </div>
 
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search FAQs..." className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all mb-6 shadow-sm" />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search FAQs..." className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all mb-6 shadow-sm" />
 
-        {loading ? <div className="animate-pulse flex flex-col gap-4">{[1, 2, 3].map(i => <div key={i} className="h-16 bg-slate-200 rounded-xl w-full" />)}</div> : (
+        {loading ? <div className="animate-pulse flex flex-col gap-4">{[1, 2, 3].map(i => <div key={i} className="h-16 bg-slate-200 dark:bg-slate-700 rounded-xl w-full" />)}</div> : (
           <div className="space-y-3">
             {filtered.map(faq => (
-              <div key={faq.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+              <div key={faq.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 <div onClick={() => setExpanded(expanded === faq.id ? null : faq.id)} className="px-4 sm:px-5 py-4 cursor-pointer flex justify-between items-center gap-2 group min-h-[56px]">
                   <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                    <span className="text-blue-500 font-bold opacity-50 group-hover:opacity-100 transition-opacity shrink-0">Q.</span>
+                    <span className="text-blue-500 dark:text-blue-400 font-bold opacity-50 group-hover:opacity-100 transition-opacity shrink-0">Q.</span>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-slate-800 text-sm sm:text-base">{faq.question}</h3>
+                      <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm sm:text-base">{faq.question}</h3>
                       <div className="flex flex-wrap gap-1 mt-0.5">
-                        {faq.status !== 'published' && <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded-full uppercase font-bold">{faq.status}</span>}
-                        {faq.visibility === 'restricted' && <span className="px-2 py-0.5 bg-red-100 text-red-800 text-[10px] rounded-full uppercase font-bold">RESTRICTED</span>}
+                        {faq.status !== 'published' && <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-[10px] rounded-full uppercase font-bold">{faq.status}</span>}
+                        {faq.visibility === 'restricted' && <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 text-[10px] rounded-full uppercase font-bold">RESTRICTED</span>}
                       </div>
                     </div>
                   </div>
                   <svg className={`w-5 h-5 text-slate-400 transition-transform shrink-0 ${expanded === faq.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                 </div>
                 {expanded === faq.id && (
-                  <div className="px-5 pb-5 pt-2 border-t border-slate-50 bg-slate-50/50">
+                  <div className="px-5 pb-5 pt-2 border-t border-slate-50 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40">
                     <div className="flex gap-3">
-                      <span className="text-slate-400 font-bold opacity-50">A.</span>
-                      <p className="text-slate-600 text-sm leading-relaxed">{faq.answer}</p>
+                      <span className="text-slate-400 dark:text-slate-500 font-bold opacity-50">A.</span>
+                      <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{faq.answer}</p>
                     </div>
                     {canEdit && (
                       <div className="mt-4 flex gap-2 justify-end">
-                        <button onClick={() => { setEditFaq(faq); setIsEditing(true); }} className="text-xs text-blue-600 font-bold hover:underline">Edit</button>
-                        <button onClick={() => handleArchive(faq.id)} className="text-xs text-red-500 font-bold hover:underline">Archive</button>
+                        <button onClick={() => { setEditFaq(faq); setIsEditing(true); }} className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline">Edit</button>
+                        <button onClick={() => handleArchive(faq.id)} className="text-xs text-red-500 dark:text-red-400 font-bold hover:underline">Archive</button>
                       </div>
                     )}
                   </div>
                 )}
               </div>
             ))}
-            {filtered.length === 0 && <p className="text-center text-slate-500 py-8">No FAQs found.</p>}
+            {filtered.length === 0 && <p className="text-center text-slate-500 dark:text-slate-400 py-8">No FAQs found.</p>}
           </div>
         )}
       </div>
 
       {isEditing && editFaq && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <form onSubmit={handleSave} className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-slate-800 mb-4">{editFaq.id ? 'Edit FAQ' : 'Add FAQ'}</h3>
+          <form onSubmit={handleSave} className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl w-full max-w-lg p-5 sm:p-6 max-h-[90vh] overflow-y-auto text-slate-900 dark:text-slate-100">
+            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">{editFaq.id ? 'Edit FAQ' : 'Add FAQ'}</h3>
             <div className="space-y-3">
-              <div><label className="text-xs font-bold text-slate-500">Question</label><input required value={editFaq.question} onChange={e => setEditFaq(p => ({ ...p, question: e.target.value }))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
-              <div><label className="text-xs font-bold text-slate-500">Answer</label><textarea required rows={4} value={editFaq.answer} onChange={e => setEditFaq(p => ({ ...p, answer: e.target.value }))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
+              <div><label className="text-xs font-bold text-slate-500 dark:text-slate-400">Question</label><input required value={editFaq.question} onChange={e => setEditFaq(p => ({ ...p, question: e.target.value }))} className="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
+              <div><label className="text-xs font-bold text-slate-500 dark:text-slate-400">Answer</label><textarea required rows={4} value={editFaq.answer} onChange={e => setEditFaq(p => ({ ...p, answer: e.target.value }))} className="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div><label className="text-xs font-bold text-slate-500">Category</label><input value={editFaq.category} onChange={e => setEditFaq(p => ({ ...p, category: e.target.value }))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
-                <div><label className="text-xs font-bold text-slate-500">Order</label><input type="number" value={editFaq.display_order} onChange={e => setEditFaq(p => ({ ...p, display_order: parseInt(e.target.value) || 0 }))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
-                <div><label className="text-xs font-bold text-slate-500">Status</label><select value={editFaq.status} onChange={e => setEditFaq(p => ({ ...p, status: e.target.value }))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none"><option>published</option><option>draft</option><option>archived</option></select></div>
-                <div><label className="text-xs font-bold text-slate-500">Visibility</label><select value={editFaq.visibility} onChange={e => setEditFaq(p => ({ ...p, visibility: e.target.value }))} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none"><option>public</option><option>restricted</option></select></div>
+                <div><label className="text-xs font-bold text-slate-500 dark:text-slate-400">Category</label><input value={editFaq.category} onChange={e => setEditFaq(p => ({ ...p, category: e.target.value }))} className="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
+                <div><label className="text-xs font-bold text-slate-500 dark:text-slate-400">Order</label><input type="number" value={editFaq.display_order} onChange={e => setEditFaq(p => ({ ...p, display_order: parseInt(e.target.value) || 0 }))} className="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none" /></div>
+                <div><label className="text-xs font-bold text-slate-500 dark:text-slate-400">Status</label><select value={editFaq.status} onChange={e => setEditFaq(p => ({ ...p, status: e.target.value }))} className="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none"><option>published</option><option>draft</option><option>archived</option></select></div>
+                <div><label className="text-xs font-bold text-slate-500 dark:text-slate-400">Visibility</label><select value={editFaq.visibility} onChange={e => setEditFaq(p => ({ ...p, visibility: e.target.value }))} className="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 mt-1 text-sm focus:border-blue-500 outline-none"><option>public</option><option>restricted</option></select></div>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
-              <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-lg">Cancel</button>
+              <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 text-sm font-bold text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">Cancel</button>
               <button type="submit" className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg">Save</button>
             </div>
           </form>
@@ -656,50 +656,50 @@ function SystemHealthTab({ authHeaders }) {
     finally { setAiLogsLoading(false); }
   };
 
-  if (loading) return <div className="p-6 font-mono text-slate-500">Loading system metrics...</div>;
-  if (!health) return <div className="p-6 font-mono text-red-600 bg-red-50 border border-red-200 rounded-xl m-4">Failed to load system health.</div>;
+  if (loading) return <div className="p-6 font-mono text-slate-500 dark:text-slate-400">Loading system metrics...</div>;
+  if (!health) return <div className="p-6 font-mono text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl m-4">Failed to load system health.</div>;
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm">
-          <p className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">Memory Usage</p>
+        <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
+          <p className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Memory Usage</p>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className={`text-2xl font-display font-black ${health.ramUsagePct > 85 ? 'text-red-600' : 'text-blue-600'}`}>{health.ramUsagePct}%</span>
-            <span className="text-xs text-slate-500 font-mono">{health.freeMemGB}GB free</span>
+            <span className={`text-2xl font-display font-black ${health.ramUsagePct > 85 ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>{health.ramUsagePct}%</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">{health.freeMemGB}GB free</span>
           </div>
         </div>
-        <div className="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm">
-          <p className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">Python Engine</p>
+        <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
+          <p className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Python Engine</p>
           <div className="mt-2 flex items-center gap-2">
             <span className={`w-3 h-3 rounded-full ${health.pythonToolsOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500'}`} />
-            <span className="text-lg font-display font-bold text-slate-900">{health.pythonToolsOnline ? 'Online' : 'Offline'}</span>
+            <span className="text-lg font-display font-bold text-slate-900 dark:text-slate-100">{health.pythonToolsOnline ? 'Online' : 'Offline'}</span>
           </div>
         </div>
-        <div className="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm">
-          <p className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">Vector DB (HNSW)</p>
+        <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
+          <p className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Vector DB (HNSW)</p>
           <div className="mt-2">
-            <span className="text-lg font-display font-bold text-blue-600">{health.hnswChunkCount}</span> <span className="text-xs text-slate-500 font-mono">chunks</span>
-            <p className="text-[10px] font-mono text-slate-400 mt-1">{health.hnswIndexSizeMB || '<1'} MB</p>
+            <span className="text-lg font-display font-bold text-blue-600 dark:text-blue-400">{health.hnswChunkCount}</span> <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">chunks</span>
+            <p className="text-[10px] font-mono text-slate-400 dark:text-slate-500 mt-1">{health.hnswIndexSizeMB || '<1'} MB</p>
           </div>
         </div>
-        <div className="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm">
-          <p className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">SQLite DB</p>
+        <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
+          <p className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">SQLite DB</p>
           <div className="mt-2">
-            <span className="text-lg font-display font-bold text-emerald-600">{health.dbSizeMB || '<1'} MB</span>
+            <span className="text-lg font-display font-bold text-emerald-600 dark:text-emerald-400">{health.dbSizeMB || '<1'} MB</span>
           </div>
         </div>
       </div>
 
       {/* Maintenance Actions */}
-      <div className="bg-white border-2 border-slate-200 rounded-2xl p-5 shadow-sm">
-        <h3 className="text-xs font-display font-bold text-slate-900 uppercase tracking-wider mb-4">Maintenance Actions</h3>
+      <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+        <h3 className="text-xs font-display font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider mb-4">Maintenance Actions</h3>
         <div className="flex flex-wrap gap-3">
           <button
             id="btn-backup-now"
             onClick={handleBackupNow}
             disabled={backupNowLoading}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold font-mono rounded-xl transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+            className="px-4 py-2 bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white text-xs font-bold font-mono rounded-xl transition-all shadow-sm disabled:opacity-50 cursor-pointer"
           >
             {backupNowLoading ? 'Backing up…' : 'Backup Now'}
           </button>
@@ -711,7 +711,7 @@ function SystemHealthTab({ authHeaders }) {
             🗃 Restore Backup
           </button>
           {health.orphanedEventLogs > 0 && (
-            <div className="px-4 py-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold rounded-xl flex items-center gap-2">
+            <div className="px-4 py-2 bg-amber-50 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-300 text-xs font-bold rounded-xl flex items-center gap-2">
               ⚠️ {health.orphanedEventLogs} orphaned logs detected
             </div>
           )}
@@ -720,16 +720,16 @@ function SystemHealthTab({ authHeaders }) {
 
       {/* ── Backup Picker Panel ── */}
       {showPicker && restoreStep === 0 && (
-        <div className="bg-white border-2 border-amber-300 rounded-2xl p-5 space-y-4 shadow-md">
+        <div className="bg-white dark:bg-slate-800 border-2 border-amber-300 dark:border-amber-700 rounded-2xl p-5 space-y-4 shadow-md">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-display font-bold text-amber-800 uppercase tracking-wider">🗃 Available Snapshots</h3>
-            <button onClick={() => setShowPicker(false)} className="text-slate-400 hover:text-slate-700 text-xs font-bold cursor-pointer">✕ Close</button>
+            <h3 className="text-xs font-display font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider">🗃 Available Snapshots</h3>
+            <button onClick={() => setShowPicker(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs font-bold cursor-pointer">✕ Close</button>
           </div>
-          {backupsLoading && <p className="text-slate-500 text-sm font-mono">Loading snapshots…</p>}
-          {backupsError && <p className="text-red-600 text-sm font-mono">{backupsError}</p>}
+          {backupsLoading && <p className="text-slate-500 dark:text-slate-400 text-sm font-mono">Loading snapshots…</p>}
+          {backupsError && <p className="text-red-600 dark:text-red-400 text-sm font-mono">{backupsError}</p>}
           {!backupsLoading && !backupsError && backups && (
             backups.length === 0
-              ? <p className="text-slate-500 text-sm font-mono">No snapshots found in bucket.</p>
+              ? <p className="text-slate-500 dark:text-slate-400 text-sm font-mono">No snapshots found in bucket.</p>
               : (
                 <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                   {backups.map((snap) => (
@@ -737,23 +737,23 @@ function SystemHealthTab({ authHeaders }) {
                       key={snap.filename}
                       onClick={() => handleSelectSnapshot(snap)}
                       className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all cursor-pointer ${snap.isSafety
-                        ? 'bg-blue-50/60 border-blue-200 hover:bg-blue-100/50'
-                        : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-blue-400'
+                        ? 'bg-blue-50/60 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 hover:bg-blue-100/50 dark:hover:bg-blue-900/50'
+                        : 'bg-slate-50 dark:bg-slate-700/60 border-slate-200 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-400 dark:hover:border-blue-500'
                         }`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="text-xs font-mono font-bold text-slate-900 truncate">{snap.filename}</p>
-                          <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                          <p className="text-xs font-mono font-bold text-slate-900 dark:text-slate-100 truncate">{snap.filename}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
                             {snap.timestamp ? new Date(snap.timestamp).toLocaleString() : 'Unknown time'}
                             {' · '}
                             {fmt(snap.size)}
                           </p>
                         </div>
                         <div className="flex-shrink-0 flex flex-col items-end gap-1">
-                          <span className="text-[11px] font-mono font-bold text-slate-600">{snap.relativeTime}</span>
+                          <span className="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300">{snap.relativeTime}</span>
                           {snap.isSafety && (
-                            <span className="text-[10px] bg-blue-100 text-blue-800 border border-blue-200 px-1.5 py-0.5 rounded font-bold">Safety</span>
+                            <span className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700 px-1.5 py-0.5 rounded font-bold">Safety</span>
                           )}
                         </div>
                       </div>
@@ -767,25 +767,25 @@ function SystemHealthTab({ authHeaders }) {
 
       {/* ── Confirm Step (Step 1) ── */}
       {restoreStep === 1 && selectedBackup && (
-        <div className="bg-white border-2 border-red-300 rounded-2xl p-5 space-y-4 shadow-xl">
-          <h3 className="text-sm font-display font-bold text-red-600 uppercase tracking-wider">⚠ Confirm Restore</h3>
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-1">
-            <p className="text-xs font-bold text-slate-700">Restoring to:</p>
-            <p className="text-sm font-mono text-blue-700 font-bold break-all">{selectedBackup.filename}</p>
-            <p className="text-xs text-slate-500 font-mono">
+        <div className="bg-white dark:bg-slate-800 border-2 border-red-300 dark:border-red-700 rounded-2xl p-5 space-y-4 shadow-xl">
+          <h3 className="text-sm font-display font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">⚠ Confirm Restore</h3>
+          <div className="bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 rounded-xl p-4 space-y-1">
+            <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Restoring to:</p>
+            <p className="text-sm font-mono text-blue-700 dark:text-blue-400 font-bold break-all">{selectedBackup.filename}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
               {selectedBackup.timestamp ? new Date(selectedBackup.timestamp).toLocaleString() : 'Unknown time'}
               {' · '}{fmt(selectedBackup.size)} · {selectedBackup.relativeTime}
             </p>
           </div>
-          <div className="text-xs text-slate-600 space-y-1.5 font-mono">
-            <p>⚠ <strong className="text-red-600">Everything written after this snapshot will be permanently discarded</strong> — events, users, changes, all of it.</p>
-            <p>✅ A safety snapshot of the <strong className="text-slate-900">current live state</strong> will be taken automatically before restoring, so you can undo this if needed.</p>
-            <p>⏳ The system will <strong className="text-slate-900">restart and be unavailable for ~30–60 seconds</strong>.</p>
+          <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1.5 font-mono">
+            <p>⚠ <strong className="text-red-600 dark:text-red-400">Everything written after this snapshot will be permanently discarded</strong> — events, users, changes, all of it.</p>
+            <p>✅ A safety snapshot of the <strong className="text-slate-900 dark:text-slate-100">current live state</strong> will be taken automatically before restoring, so you can undo this if needed.</p>
+            <p>⏳ The system will <strong className="text-slate-900 dark:text-slate-100">restart and be unavailable for ~30–60 seconds</strong>.</p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={() => { setRestoreStep(0); setSelectedBackup(null); }}
-              className="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+              className="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -802,29 +802,29 @@ function SystemHealthTab({ authHeaders }) {
 
       {/* ── Restoring Overlay (Step 2) ── */}
       {restoreStep === 2 && (
-        <div className="bg-white border-2 border-amber-400 rounded-2xl p-6 text-center space-y-3 shadow-xl">
+        <div className="bg-white dark:bg-slate-800 border-2 border-amber-400 dark:border-amber-600 rounded-2xl p-6 text-center space-y-3 shadow-xl">
           <div className="text-3xl animate-pulse">⏳</div>
-          <h3 className="text-sm font-display font-bold text-amber-800 uppercase tracking-wider">Restoring backup…</h3>
-          <p className="text-xs text-slate-600 font-mono">Safety snapshot taken. The service is restarting.</p>
-          <p className="text-xs text-slate-500 font-mono">This page will be <strong className="text-slate-900">unavailable for ~30–60 seconds</strong>. Please wait before refreshing.</p>
+          <h3 className="text-sm font-display font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider">Restoring backup…</h3>
+          <p className="text-xs text-slate-600 dark:text-slate-300 font-mono">Safety snapshot taken. The service is restarting.</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">This page will be <strong className="text-slate-900 dark:text-slate-100">unavailable for ~30–60 seconds</strong>. Please wait before refreshing.</p>
           {selectedBackup && (
-            <p className="text-[11px] font-mono text-slate-500 mt-2 break-all">Restoring to: {selectedBackup.filename}</p>
+            <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-2 break-all">Restoring to: {selectedBackup.filename}</p>
           )}
         </div>
       )}
 
       {/* ── AI / Server Log Viewer ── */}
-      <div className="bg-white border-2 border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-5 space-y-4 shadow-sm">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h3 className="text-xs font-display font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-            <span className="text-blue-600">📡</span> AI / Server Log Viewer
-            <span className="text-[10px] font-mono text-slate-500 font-normal ml-1">last 250 entries · in-memory only</span>
+          <h3 className="text-xs font-display font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+            <span className="text-blue-600 dark:text-blue-400">📡</span> AI / Server Log Viewer
+            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-normal ml-1">last 250 entries · in-memory only</span>
           </h3>
           <div className="flex items-center gap-2">
             <select
               value={aiLogFilter}
               onChange={e => setAiLogFilter(e.target.value)}
-              className="bg-slate-50 border-2 border-slate-200 rounded-xl px-2.5 py-1 text-[11px] font-mono text-slate-800 focus:outline-none focus:border-blue-600"
+              className="bg-slate-50 dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-2.5 py-1 text-[11px] font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-600"
             >
               <option value="">All sources</option>
               {['SSE', 'Cache', 'RAG', 'Snapshot', 'VectorStore', 'Python AI'].map(s => (
@@ -834,51 +834,51 @@ function SystemHealthTab({ authHeaders }) {
             <button
               onClick={fetchAiLogs}
               disabled={aiLogsLoading}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 text-[11px] font-bold font-mono rounded-xl transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 text-[11px] font-bold font-mono rounded-xl transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
             >
-              <svg className={`w-3.5 h-3.5 ${aiLogsLoading ? 'animate-spin text-blue-600' : 'text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              <svg className={`w-3.5 h-3.5 ${aiLogsLoading ? 'animate-spin text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
               {aiLogsLoading ? 'Loading…' : 'Refresh'}
             </button>
           </div>
         </div>
 
         {aiLogsError && (
-          <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl text-xs font-mono">
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-600 dark:text-red-300 p-3 rounded-xl text-xs font-mono">
             ⚠ {aiLogsError}
           </div>
         )}
 
         {aiLogs === null && !aiLogsLoading && !aiLogsError && (
-          <p className="text-slate-500 text-xs font-mono text-center py-4">Click Refresh to load the live server log buffer.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-xs font-mono text-center py-4">Click Refresh to load the live server log buffer.</p>
         )}
 
         {aiLogs !== null && (() => {
           const filtered = aiLogFilter ? aiLogs.filter(e => e.source === aiLogFilter) : aiLogs;
           return filtered.length === 0 ? (
-            <p className="text-slate-500 text-center py-6 text-xs font-mono">No entries{aiLogFilter ? ` for source "${aiLogFilter}"` : ''} in buffer.</p>
+            <p className="text-slate-500 dark:text-slate-400 text-center py-6 text-xs font-mono">No entries{aiLogFilter ? ` for source "${aiLogFilter}"` : ''} in buffer.</p>
           ) : (
-            <div className="max-h-80 overflow-y-auto rounded-xl border-2 border-slate-200 font-mono text-[11px] bg-white">
+            <div className="max-h-80 overflow-y-auto rounded-xl border-2 border-slate-200 dark:border-slate-700 font-mono text-[11px] bg-white dark:bg-slate-900">
               <table className="w-full border-collapse">
-                <thead className="sticky top-0 bg-slate-100 border-b-2 border-slate-200 z-10">
-                  <tr className="text-slate-600 text-[10px] uppercase font-bold tracking-wider">
+                <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800 border-b-2 border-slate-200 dark:border-slate-700 z-10">
+                  <tr className="text-slate-600 dark:text-slate-300 text-[10px] uppercase font-bold tracking-wider">
                     <th className="px-3 py-2 text-left w-24">Time</th>
                     <th className="px-3 py-2 text-left w-14">Level</th>
                     <th className="px-3 py-2 text-left w-24">Source</th>
                     <th className="px-3 py-2 text-left">Message</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filtered.map((entry, i) => (
-                    <tr key={i} className={`hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                      <td className="px-3 py-1.5 text-slate-500 whitespace-nowrap">{new Date(entry.ts).toLocaleTimeString()}</td>
+                    <tr key={i} className={`hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-colors ${i % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/50 dark:bg-slate-800/50'}`}>
+                      <td className="px-3 py-1.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">{new Date(entry.ts).toLocaleTimeString()}</td>
                       <td className="px-3 py-1.5">
-                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${entry.level === 'warn' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
-                          entry.level === 'error' ? 'bg-red-100 text-red-800 border border-red-300' :
-                            'bg-slate-100 text-slate-700 border border-slate-200'
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${entry.level === 'warn' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700' :
+                          entry.level === 'error' ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700' :
+                            'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600'
                           }`}>{entry.level}</span>
                       </td>
-                      <td className="px-3 py-1.5 text-blue-700 font-bold whitespace-nowrap">{entry.source}</td>
-                      <td className="px-3 py-1.5 text-slate-800 break-all">{entry.message}</td>
+                      <td className="px-3 py-1.5 text-blue-700 dark:text-blue-400 font-bold whitespace-nowrap">{entry.source}</td>
+                      <td className="px-3 py-1.5 text-slate-800 dark:text-slate-200 break-all">{entry.message}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -956,44 +956,44 @@ function EventFeedbackPanel({ eventId, authHeaders, authUser }) {
   const replies = (parentId) => comments.filter(c => c.parent_id === parentId);
 
   return (
-    <div className="border-t border-slate-100 mt-2 pt-3 px-4 pb-4">
-      <p className="text-xs font-display font-bold uppercase tracking-widest text-slate-500 mb-3">
+    <div className="border-t border-slate-100 dark:border-slate-700 mt-2 pt-3 px-4 pb-4">
+      <p className="text-xs font-display font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">
         💬 Event Feedback ({comments.length})
       </p>
-      {loading && <p className="text-xs text-slate-400 font-mono">Loading…</p>}
+      {loading && <p className="text-xs text-slate-400 dark:text-slate-500 font-mono">Loading…</p>}
       {!loading && topLevel.length === 0 && (
-        <p className="text-xs text-slate-400 italic font-mono mb-3">No feedback yet.</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500 italic font-mono mb-3">No feedback yet.</p>
       )}
       <div className="space-y-2 mb-3">
         {topLevel.map(c => (
-          <div key={c.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+          <div key={c.id} className="bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl p-3">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-display font-bold text-slate-800">{c.author_label || c.author_name}</span>
-              <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${c.kind === 'suggestion' ? 'bg-cyan-100 text-cyan-700 border border-cyan-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
+              <span className="text-xs font-display font-bold text-slate-800 dark:text-slate-100">{c.author_label || c.author_name}</span>
+              <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${c.kind === 'suggestion' ? 'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-700' : 'bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700'}`}>
                 {c.kind}
               </span>
               {c.is_official === 1 && (
-                <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 font-bold">Official</span>
+                <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-700 font-bold">Official</span>
               )}
               {isElevated && (
                 <button
                   onClick={() => handleHide(c.id)}
-                  className="ml-auto text-[9px] text-red-400 hover:text-red-600 font-bold uppercase cursor-pointer"
+                  className="ml-auto text-[9px] text-red-400 hover:text-red-600 dark:hover:text-red-300 font-bold uppercase cursor-pointer"
                   title="Hide this feedback"
                 >Hide</button>
               )}
             </div>
-            <p className="text-sm text-slate-700 leading-relaxed">{c.content}</p>
+            <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">{c.content}</p>
             {replies(c.id).map(r => (
-              <div key={r.id} className="ml-4 mt-2 pl-3 border-l-2 border-blue-200 bg-white rounded-lg p-2">
+              <div key={r.id} className="ml-4 mt-2 pl-3 border-l-2 border-blue-200 dark:border-blue-600 bg-white dark:bg-slate-800 rounded-lg p-2">
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-xs font-bold text-slate-700">{r.author_label || r.author_name}</span>
-                  {r.is_official === 1 && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 font-bold">Official</span>}
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{r.author_label || r.author_name}</span>
+                  {r.is_official === 1 && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-700 font-bold">Official</span>}
                   {isElevated && (
-                    <button onClick={() => handleHide(r.id)} className="ml-auto text-[9px] text-red-400 hover:text-red-600 font-bold uppercase cursor-pointer">Hide</button>
+                    <button onClick={() => handleHide(r.id)} className="ml-auto text-[9px] text-red-400 hover:text-red-600 dark:hover:text-red-300 font-bold uppercase cursor-pointer">Hide</button>
                   )}
                 </div>
-                <p className="text-xs text-slate-600">{r.content}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300">{r.content}</p>
               </div>
             ))}
           </div>
@@ -1007,12 +1007,12 @@ function EventFeedbackPanel({ eventId, authHeaders, authUser }) {
             placeholder={authUser?.full_name || 'Your name (optional)'}
             value={form.display_name}
             onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))}
-            className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-blue-400 bg-white"
+            className="flex-1 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-blue-400 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400"
           />
           <select
             value={form.kind}
             onChange={e => setForm(f => ({ ...f, kind: e.target.value }))}
-            className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-blue-400 bg-white"
+            className="border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-blue-400 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
           >
             <option value="comment">Comment</option>
             <option value="suggestion">Suggestion</option>
@@ -1023,10 +1023,10 @@ function EventFeedbackPanel({ eventId, authHeaders, authUser }) {
           placeholder="Write a comment or suggestion…"
           value={form.content}
           onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
-          className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-blue-400 resize-none bg-white"
+          className="w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-blue-400 resize-none bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400"
         />
-        {error && <p className="text-xs text-red-500 font-mono">{error}</p>}
-        {success && <p className="text-xs text-emerald-600 font-mono">{success}</p>}
+        {error && <p className="text-xs text-red-500 dark:text-red-400 font-mono">{error}</p>}
+        {success && <p className="text-xs text-emerald-600 dark:text-emerald-400 font-mono">{success}</p>}
         <button
           type="submit"
           disabled={posting}
@@ -1154,14 +1154,14 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
   const fmtBudget = (v) => (v != null && v !== '') ? `₱${Number(v).toLocaleString()}` : '';
 
   return (
-    <div className="flex flex-col h-full bg-transparent overflow-y-auto relative text-slate-900">
+    <div className="flex flex-col h-full bg-transparent overflow-y-auto relative text-slate-900 dark:text-slate-100">
       {/* Header */}
-      <div className="shrink-0 border-b border-slate-200/80 bg-white/70 backdrop-blur-md flex flex-wrap items-center px-4 sm:px-6 py-3 gap-x-4 gap-y-2 min-h-[4rem] sticky top-0 z-30 justify-between">
+      <div className="shrink-0 border-b border-slate-200/80 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md flex flex-wrap items-center px-4 sm:px-6 py-3 gap-x-4 gap-y-2 min-h-[4rem] sticky top-0 z-30 justify-between">
         <div className="flex items-center gap-3 min-w-0">
           {!sidebarOpen && (
             <button
               onClick={onToggleSidebar}
-              className="text-slate-500 hover:text-blue-600 transition-all p-1.5 hover:bg-slate-100 rounded-lg border border-slate-200/60 flex items-center justify-center cursor-pointer md:hidden"
+              className="text-slate-500 hover:text-blue-600 transition-all p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg border border-slate-200/60 dark:border-slate-600 flex items-center justify-center cursor-pointer md:hidden"
               title="Open Menu"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1169,7 +1169,7 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
               </svg>
             </button>
           )}
-          <span className="text-base sm:text-lg font-display font-black tracking-wider text-slate-900 truncate">📅 EVENTS &amp; ATTENDANCE</span>
+          <span className="text-base sm:text-lg font-display font-black tracking-wider text-slate-900 dark:text-slate-100 truncate">📅 EVENTS &amp; ATTENDANCE</span>
         </div>
         <div className="flex flex-wrap gap-2">
           {['dashboard', 'events'].map(t => (
@@ -1177,8 +1177,8 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
               key={t}
               onClick={() => setMainTab(t)}
               className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-display font-bold uppercase tracking-wider transition-all cursor-pointer ${mainTab === t
-                ? 'bg-slate-900 text-white shadow-md'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+                ? 'bg-slate-900 dark:bg-slate-200 text-white dark:text-slate-900 shadow-md'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'
                 }`}
             >
               {t === 'dashboard' ? '📊 Dashboard' : '📋 Events'}
@@ -1194,21 +1194,21 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
           return (
             <div className="space-y-6 max-w-4xl mx-auto">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-display font-black text-slate-900">Dashboard</h2>
-                <p className="text-slate-500 font-mono text-xs sm:text-sm mt-1">Live attendance &amp; event monitoring overview</p>
+                <h2 className="text-2xl sm:text-3xl font-display font-black text-slate-900 dark:text-slate-100">Dashboard</h2>
+                <p className="text-slate-500 dark:text-slate-400 font-mono text-xs sm:text-sm mt-1">Live attendance &amp; event monitoring overview</p>
               </div>
 
               {activeEvent ? (
                 <>
-                  <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 sm:p-8 flex flex-col justify-center items-center sm:items-start text-center sm:text-left shadow-sm">
-                    <p className="text-xs font-mono font-bold text-slate-500 uppercase tracking-widest mb-2">Total Attendees</p>
-                    <p className="text-6xl sm:text-7xl font-display font-black text-blue-600">{activeEvent.attendees || 0}</p>
+                  <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-6 sm:p-8 flex flex-col justify-center items-center sm:items-start text-center sm:text-left shadow-sm">
+                    <p className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">Total Attendees</p>
+                    <p className="text-6xl sm:text-7xl font-display font-black text-blue-600 dark:text-blue-400">{activeEvent.attendees || 0}</p>
                   </div>
 
-                  <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm">
+                  <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
                     <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-2 mb-4">
-                      <p className="text-xs font-mono font-bold text-slate-500 uppercase tracking-widest">Active events — attendance scanning</p>
-                      <span className="text-xs font-mono font-bold text-slate-700 uppercase tracking-widest bg-slate-100 border border-slate-200 px-3 py-1 rounded-xl">{activeEvent.title}</span>
+                      <p className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Active events — attendance scanning</p>
+                      <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-200 uppercase tracking-widest bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-3 py-1 rounded-xl">{activeEvent.title}</span>
                     </div>
                     <button onClick={() => setQrEvent(activeEvent)} className="w-full flex items-center justify-between bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-4 rounded-xl font-display font-bold transition-all shadow-md active:scale-[0.99] cursor-pointer">
                       <span className="text-lg truncate mr-4">{activeEvent.title}</span>
@@ -1217,10 +1217,10 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                   </div>
                 </>
               ) : (
-                <div className="bg-white border-2 border-slate-200 rounded-2xl p-12 text-center shadow-sm">
+                <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-12 text-center shadow-sm">
                   <div className="text-4xl mb-3">🎪</div>
-                  <p className="text-slate-800 font-display font-bold text-lg">No active event right now.</p>
-                  <p className="text-sm font-mono text-slate-500 mt-2">Start an event in the Events tab to see live analytics and attendance scanning.</p>
+                  <p className="text-slate-800 dark:text-slate-100 font-display font-bold text-lg">No active event right now.</p>
+                  <p className="text-sm font-mono text-slate-500 dark:text-slate-400 mt-2">Start an event in the Events tab to see live analytics and attendance scanning.</p>
                 </div>
               )}
             </div>
@@ -1232,21 +1232,21 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
           {/* Scope Banner */}
           {authUser?.role === 'committee' && (
             !authUser?.committee ? (
-              <div className="p-3.5 mb-3 bg-amber-50 border-2 border-amber-300 rounded-xl flex items-center gap-2.5 text-xs font-bold text-amber-900 shadow-sm">
+              <div className="p-3.5 mb-3 bg-amber-50 dark:bg-amber-900/30 border-2 border-amber-300 dark:border-amber-700 rounded-xl flex items-center gap-2.5 text-xs font-bold text-amber-900 dark:text-amber-200 shadow-sm">
                 <span className="text-base">⚠️</span>
                 <div>
                   <strong>Committee not assigned.</strong> Contact the administrator to assign your committee. You cannot view or create committee events until assigned.
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2.5 px-4 py-2 bg-blue-50 border-2 border-blue-200 rounded-xl text-xs font-mono font-semibold text-blue-900 mb-3 shadow-xs">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse shrink-0" />
+              <div className="flex items-center gap-2.5 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-xl text-xs font-mono font-semibold text-blue-900 dark:text-blue-200 mb-3 shadow-xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse shrink-0" />
                 <span>Scope: Showing <strong>{getCommitteeLabel(authUser.committee)}</strong> + General Events</span>
               </div>
             )
           )}
           {['admin', 'chairman'].includes(authUser?.role) && (
-            <div className="flex items-center gap-2.5 px-4 py-2 bg-slate-50 border-2 border-slate-200 rounded-xl text-xs font-mono font-semibold text-slate-800 mb-3 shadow-xs">
+            <div className="flex items-center gap-2.5 px-4 py-2 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-semibold text-slate-800 dark:text-slate-200 mb-3 shadow-xs">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
               <span>Scope: Showing <strong>All Committees & General</strong> (System-wide)</span>
             </div>
@@ -1255,8 +1255,8 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
           {/* Toolbar */}
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
             <div className="flex-1 flex gap-2 flex-wrap sm:flex-nowrap">
-              <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search events..." className="flex-1 bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 focus:border-blue-600 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none transition-all shadow-sm" />
-              <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 focus:border-blue-600 rounded-xl px-2 py-2 text-xs font-mono text-slate-900 focus:outline-none max-w-[140px] shadow-sm">
+              <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search events..." className="flex-1 bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 focus:bg-white dark:focus:bg-slate-700 border-2 border-slate-200 dark:border-slate-700 focus:border-blue-600 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none transition-all shadow-sm" />
+              <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 focus:bg-white dark:focus:bg-slate-700 border-2 border-slate-200 dark:border-slate-700 focus:border-blue-600 rounded-xl px-2 py-2 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none max-w-[140px] shadow-sm">
                 <option value="">All Categories</option>
                 {EVENT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -1266,7 +1266,7 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                   onClick={() => setFilterNeedsReview(!filterNeedsReview)}
                   className={`px-3 py-2 rounded-xl text-xs font-mono font-bold transition-all border-2 flex items-center gap-1.5 cursor-pointer shrink-0 ${filterNeedsReview
                       ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
-                      : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                      : 'bg-amber-50 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/60'
                     }`}
                   title="Filter events migrated as general needing review"
                 >
@@ -1275,7 +1275,7 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
               )}
             </div>
             <div className="flex gap-2">
-              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 focus:border-blue-600 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 focus:outline-none shadow-sm">
+              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-slate-50 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 focus:bg-white dark:focus:bg-slate-700 border-2 border-slate-200 dark:border-slate-700 focus:border-blue-600 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none shadow-sm">
                 <option value="">All Statuses</option>
                 <option value="upcoming">Upcoming</option>
                 <option value="completed">Completed</option>
@@ -1293,13 +1293,13 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
           {/* Event cards */}
           {eventsLoading && <div className="flex items-center justify-center py-12"><div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" /></div>}
           {!eventsLoading && filteredEvents.length === 0 && (
-            <div className="bg-white border-2 border-slate-200 rounded-2xl p-8 text-center shadow-sm">
-              <p className="text-slate-500 font-mono text-sm">No events found matching your filter criteria.</p>
+            <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-8 text-center shadow-sm">
+              <p className="text-slate-500 dark:text-slate-400 font-mono text-sm">No events found matching your filter criteria.</p>
             </div>
           )}
-          <div className="overflow-x-auto rounded-2xl border-2 border-slate-200 bg-white shadow-sm">
-            <table className="w-full text-left text-sm text-slate-700">
-              <thead className="bg-slate-50 text-xs font-display font-bold uppercase text-slate-600 border-b-2 border-slate-200">
+          <div className="overflow-x-auto rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
+            <table className="w-full text-left text-sm text-slate-700 dark:text-slate-200">
+              <thead className="bg-slate-50 dark:bg-slate-900/60 text-xs font-display font-bold uppercase text-slate-600 dark:text-slate-300 border-b-2 border-slate-200 dark:border-slate-700">
                 <tr>
                   <th className="px-4 py-3">Event Name</th>
                   <th className="px-4 py-3">Date</th>
@@ -1311,41 +1311,41 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {filteredEvents.map(ev => (
-                  <tr key={ev.id} className="hover:bg-blue-50/40 transition-colors">
-                    <td className="px-4 py-3 font-display font-bold text-slate-900">
+                  <tr key={ev.id} className="hover:bg-blue-50/40 dark:hover:bg-blue-900/20 transition-colors">
+                    <td className="px-4 py-3 font-display font-bold text-slate-900 dark:text-slate-100">
                       {ev.title}
-                      {ev.time && <div className="text-xs text-slate-500 font-mono font-normal">{ev.time}</div>}
+                      {ev.time && <div className="text-xs text-slate-500 dark:text-slate-400 font-mono font-normal">{ev.time}</div>}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-slate-600">
+                    <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-slate-600 dark:text-slate-400">
                       {ev.date ? new Date(ev.date + 'T00:00:00+08:00').toLocaleDateString('en-US', { timeZone: 'Asia/Singapore', month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{ev.location || '—'}</td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{ev.location || '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-1 items-start">
                         <CommitteeBadge committee={ev.committee} compact={true} />
                         {ev.needs_review === 1 && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
                             Needs Review
                           </span>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full">
+                      <span className="text-xs font-semibold bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 px-2.5 py-0.5 rounded-full">
                         {ev.category === 'others' && ev.category_other_label ? `Others: ${ev.category_other_label}` : ev.category}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${ev.status === 'completed' ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' :
+                      <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${ev.status === 'completed' ? 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700' :
                         ev.status === 'active' ? 'bg-emerald-600 text-white shadow-sm' :
-                          'bg-amber-50 text-amber-800 border border-amber-300'
+                          'bg-amber-50 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
                         }`}>
                         {ev.status === 'completed' ? 'Completed' : ev.status === 'active' ? 'Active' : 'Not Started'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-mono font-bold text-blue-700">{ev.attendees || 0}</td>
+                    <td className="px-4 py-3 font-mono font-bold text-blue-700 dark:text-blue-400">{ev.attendees || 0}</td>
                     <td className="px-4 py-3 text-right">
                       {(() => {
                         const canMutate = ['admin', 'chairman'].includes(authUser?.role) ||
@@ -1364,20 +1364,20 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
                                 </button>
                               )}
                               {canMutate && (
-                                <button onClick={() => setModalEvent(ev)} className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] uppercase font-bold rounded-lg border border-slate-200 cursor-pointer transition-colors">Edit</button>
+                                <button onClick={() => setModalEvent(ev)} className="px-2.5 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-[10px] uppercase font-bold rounded-lg border border-slate-200 dark:border-slate-600 cursor-pointer transition-colors">Edit</button>
                               )}
                               {['admin', 'chairman', 'secretary', 'committee'].includes(authUser?.role) && (
-                                <button onClick={() => setLogEvent(ev)} className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] uppercase font-bold rounded-lg border border-blue-200 cursor-pointer transition-colors">Event log</button>
+                                <button onClick={() => setLogEvent(ev)} className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-[10px] uppercase font-bold rounded-lg border border-blue-200 dark:border-blue-700 cursor-pointer transition-colors">Event log</button>
                               )}
                               {/* Feedback button — available to all logged-in users */}
                               <button
                                 onClick={() => setFeedbackEventId(feedbackEventId === ev.id ? null : ev.id)}
-                                className={`px-2.5 py-1 text-[10px] uppercase font-bold rounded-lg border cursor-pointer transition-colors ${feedbackEventId === ev.id ? 'bg-cyan-600 text-white border-cyan-600' : 'bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border-cyan-200'}`}
+                                className={`px-2.5 py-1 text-[10px] uppercase font-bold rounded-lg border cursor-pointer transition-colors ${feedbackEventId === ev.id ? 'bg-cyan-600 text-white border-cyan-600' : 'bg-cyan-50 dark:bg-cyan-900/40 hover:bg-cyan-100 dark:hover:bg-cyan-900/60 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-700'}`}
                               >
                                 💬 Feedback
                               </button>
                               {canMutate && (
-                                <button onClick={() => setDeleteId(ev.id)} className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] uppercase font-bold rounded-lg border border-red-200 cursor-pointer transition-colors">Delete</button>
+                                <button onClick={() => setDeleteId(ev.id)} className="px-2.5 py-1 bg-red-50 dark:bg-red-900/40 hover:bg-red-100 dark:hover:bg-red-900/60 text-red-600 dark:text-red-300 text-[10px] uppercase font-bold rounded-lg border border-red-200 dark:border-red-700 cursor-pointer transition-colors">Delete</button>
                               )}
                             </div>
                             {ev.status === 'active' && (
@@ -1397,14 +1397,14 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
 
           {/* Inline feedback panel — renders below table for the selected event */}
           {feedbackEventId && (
-            <div className="mt-4 bg-white border-2 border-cyan-200 rounded-2xl shadow-sm overflow-hidden">
+            <div className="mt-4 bg-white dark:bg-slate-800 border-2 border-cyan-200 dark:border-cyan-700 rounded-2xl shadow-sm overflow-hidden">
               <div className="flex items-center justify-between px-4 pt-3">
-                <span className="text-xs font-display font-bold uppercase tracking-widest text-cyan-700">
+                <span className="text-xs font-display font-bold uppercase tracking-widest text-cyan-700 dark:text-cyan-300">
                   Event Feedback — {filteredEvents.find(e => e.id === feedbackEventId)?.title || ''}
                 </span>
                 <button
                   onClick={() => setFeedbackEventId(null)}
-                  className="text-slate-400 hover:text-slate-700 cursor-pointer text-sm font-bold"
+                  className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer text-sm font-bold"
                   title="Close feedback"
                 >✕</button>
               </div>
@@ -1432,11 +1432,11 @@ function EventsAnalyticsModule({ authHeaders, authUser, sidebarOpen, onToggleSid
       {/* Delete confirmation */}
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4" onClick={() => setDeleteId(null)}>
-          <div className="bg-white border-2 border-red-300 rounded-2xl p-6 max-w-sm shadow-2xl text-slate-900" onClick={e => e.stopPropagation()}>
-            <h3 className="text-base font-display font-bold text-red-600 mb-2">Delete Event?</h3>
-            <p className="text-slate-600 text-sm mb-4">Are you sure you want to delete this event? This action cannot be undone.</p>
+          <div className="bg-white dark:bg-slate-800 border-2 border-red-300 dark:border-red-700 rounded-2xl p-6 max-w-sm shadow-2xl text-slate-900 dark:text-slate-100" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-display font-bold text-red-600 dark:text-red-400 mb-2">Delete Event?</h3>
+            <p className="text-slate-600 dark:text-slate-300 text-sm mb-4">Are you sure you want to delete this event? This action cannot be undone.</p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setDeleteId(null)} className="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-bold rounded-xl hover:bg-slate-200 transition-colors cursor-pointer">Cancel</button>
+              <button onClick={() => setDeleteId(null)} className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors cursor-pointer">Cancel</button>
               <button onClick={() => handleDelete(deleteId)} className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-500 transition-colors shadow-sm cursor-pointer">Delete</button>
             </div>
           </div>
@@ -1594,14 +1594,14 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
   ];
 
   return (
-    <div className="flex flex-col h-full bg-transparent overflow-y-auto relative text-slate-900">
+    <div className="flex flex-col h-full bg-transparent overflow-y-auto relative text-slate-900 dark:text-slate-100">
       {/* Header */}
-      <div className="shrink-0 border-b border-slate-200/80 bg-white/70 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 py-3 min-h-[4rem] sticky top-0 z-30">
+      <div className="shrink-0 border-b border-slate-200/80 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 py-3 min-h-[4rem] sticky top-0 z-30">
         <div className="flex items-center gap-3 min-w-0">
           {!sidebarOpen && (
             <button
               onClick={onToggleSidebar}
-              className="text-slate-500 hover:text-blue-600 transition-all p-1.5 hover:bg-slate-100 rounded-lg border border-slate-200/60 flex items-center justify-center cursor-pointer md:hidden"
+              className="text-slate-500 hover:text-blue-600 transition-all p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg border border-slate-200/60 dark:border-slate-600 flex items-center justify-center cursor-pointer md:hidden"
               title="Open Menu"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1609,9 +1609,9 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
               </svg>
             </button>
           )}
-          <span className="text-base sm:text-lg font-display font-black tracking-wider text-slate-900 truncate">🗂️ OFFICIAL REPORTS</span>
+          <span className="text-base sm:text-lg font-display font-black tracking-wider text-slate-900 dark:text-slate-100 truncate">🗂️ OFFICIAL REPORTS</span>
         </div>
-        <span className="font-mono text-xs text-blue-700 font-bold hidden sm:block bg-blue-50 border border-blue-200 px-3 py-1 rounded-xl">DOCUMENT ENGINE</span>
+        <span className="font-mono text-xs text-blue-700 dark:text-blue-300 font-bold hidden sm:block bg-blue-50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700 px-3 py-1 rounded-xl">DOCUMENT ENGINE</span>
       </div>
 
       <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
@@ -1623,8 +1623,8 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
                 key={t.id}
                 onClick={() => setTemplateId(t.id)}
                 className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 text-sm font-display font-bold transition-all cursor-pointer ${templateId === t.id
-                  ? 'bg-blue-50 border-blue-600 text-blue-900 shadow-md scale-[1.02]'
-                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 shadow-sm'
+                  ? 'bg-blue-50 dark:bg-blue-900/40 border-blue-600 dark:border-blue-500 text-blue-900 dark:text-blue-200 shadow-md scale-[1.02]'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm'
                   }`}
               >
                 <span className="text-2xl drop-shadow-sm">{t.emoji}</span>
@@ -1634,16 +1634,16 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
           </div>
 
           {/* Dynamic form fields */}
-          <div className="bg-white border-2 border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-            <h3 className="text-xs font-display font-bold text-slate-800 uppercase tracking-wider mb-2">
+          <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm space-y-4">
+            <h3 className="text-xs font-display font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider mb-2">
               Template Information: {templates.find(t => t.id === templateId)?.label}
             </h3>
             {templateFields[templateId].map(field => (
               <div key={field.key}>
-                <label className="block text-xs font-mono font-bold text-slate-700 mb-1.5 uppercase tracking-wide">{field.label}</label>
+                <label className="block text-xs font-mono font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wide">{field.label}</label>
                 {field.multiline ? (
                   <textarea
-                    className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-600 focus:outline-none resize-y min-h-[80px] transition-all shadow-sm"
+                    className="w-full bg-slate-50 dark:bg-slate-700 hover:bg-white dark:hover:bg-slate-600 focus:bg-white dark:focus:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400 focus:border-blue-600 focus:outline-none resize-y min-h-[80px] transition-all shadow-sm"
                     placeholder={field.placeholder}
                     value={formData[field.key] || ''}
                     onChange={e => handleFieldChange(field.key, e.target.value, field.isList)}
@@ -1652,7 +1652,7 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
                 ) : (
                   <input
                     type="text"
-                    className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-600 focus:outline-none transition-all shadow-sm"
+                    className="w-full bg-slate-50 dark:bg-slate-700 hover:bg-white dark:hover:bg-slate-600 focus:bg-white dark:focus:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400 focus:border-blue-600 focus:outline-none transition-all shadow-sm"
                     placeholder={field.placeholder}
                     value={formData[field.key] || ''}
                     onChange={e => handleFieldChange(field.key, e.target.value)}
@@ -1662,13 +1662,13 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
             ))}
 
             {/* Format selector + Generate button */}
-            <div className="flex items-center gap-4 pt-3 border-t border-slate-100">
+            <div className="flex items-center gap-4 pt-3 border-t border-slate-100 dark:border-slate-700">
               <div className="flex items-center gap-2">
-                <label className="text-xs font-mono font-bold text-slate-600 uppercase tracking-wider">Format:</label>
+                <label className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Format:</label>
                 <select
                   value={format}
                   onChange={e => setFormat(e.target.value)}
-                  className="bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:border-blue-600 focus:outline-none shadow-sm cursor-pointer"
+                  className="bg-slate-50 dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 dark:text-slate-100 focus:border-blue-600 focus:outline-none shadow-sm cursor-pointer"
                 >
                   <option value="docx">DOCX</option>
                   <option value="pdf">PDF</option>
@@ -1685,7 +1685,7 @@ function ReportsModule({ authHeaders, authUser, sidebarOpen, onToggleSidebar }) 
           </div>
 
           {error && (
-            <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 text-red-600 text-xs font-mono shadow-sm">
+            <div className="bg-red-50 dark:bg-red-900/30 border-2 border-red-200 dark:border-red-700 rounded-2xl p-4 text-red-600 dark:text-red-300 text-xs font-mono shadow-sm">
               ⚠ Error: {error}
             </div>
           )}
@@ -2053,10 +2053,10 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
           <button
             onClick={fetchDashboardData}
             disabled={loading}
-            className="ml-auto my-auto p-2 text-slate-400 hover:text-blue-600 transition-colors rounded-xl hover:bg-slate-100 shrink-0 cursor-pointer"
+            className="ml-auto my-auto p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0 cursor-pointer"
             title="Refresh Data"
           >
-            <svg className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            <svg className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600 dark:text-blue-400' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
           </button>
         </div>
       </div>
@@ -2064,7 +2064,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
       {/* Tab content wrappers */}
       <div className="flex-1 p-3 sm:p-6 max-w-7xl w-full mx-auto space-y-4 sm:space-y-6">
         {error && (
-          <div className="bg-red-50 border-2 border-red-200 text-red-600 p-3 rounded-2xl text-xs font-mono shadow-sm">
+          <div className="bg-red-50 dark:bg-red-900/30 border-2 border-red-200 dark:border-red-700 text-red-600 dark:text-red-300 p-3 rounded-2xl text-xs font-mono shadow-sm">
             ⚠️ Gateway Error: {error}
           </div>
         )}
@@ -2075,11 +2075,11 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             {/* Stats Row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'TOTAL SK EVENTS', val: stats.totalEvents, color: 'border-blue-200 text-blue-600', icon: '📅' },
-                { label: 'ACTIVE ATTENDEES', val: (stats.totalAttendees ?? 0).toLocaleString(), color: 'border-cyan-200 text-cyan-600', icon: '🙋‍♂️' },
-                // Budget tile — only shown when server returns totalBudget (finance tier: chairman + secretary)
-                ...(stats.totalBudget !== undefined ? [{ label: 'BUDGET UTILIZED', val: `₱${(stats.totalBudget ?? 0).toLocaleString()}`, color: 'border-emerald-200 text-emerald-600', icon: '💰' }] : []),
-                { label: 'PENDING SUGGESTIONS', val: stats.pendingSuggestions, color: 'border-amber-200 text-amber-600', icon: '📬' },
+                { label: 'TOTAL SK EVENTS', val: stats.totalEvents, color: 'border-blue-200 dark:border-blue-800/80 text-blue-600 dark:text-blue-400', icon: '📅' },
+                { label: 'ACTIVE ATTENDEES', val: (stats.totalAttendees ?? 0).toLocaleString(), color: 'border-cyan-200 dark:border-cyan-800/80 text-cyan-600 dark:text-cyan-400', icon: '🙋‍♂️' },
+                // Budget tile — only shown when server returns totalBudget (finance tier: admin + chairman + secretary)
+                ...(stats.totalBudget !== undefined ? [{ label: 'BUDGET UTILIZED', val: `₱${(stats.totalBudget ?? 0).toLocaleString()}`, color: 'border-emerald-200 dark:border-emerald-800/80 text-emerald-600 dark:text-emerald-400', icon: '💰' }] : []),
+                { label: 'PENDING SUGGESTIONS', val: stats.pendingSuggestions, color: 'border-amber-200 dark:border-amber-800/80 text-amber-600 dark:text-amber-400', icon: '📬' },
               ].map((st, i) => (
                 <div key={i} className={`bg-white dark:bg-slate-800 border-2 ${st.color} rounded-2xl p-5 relative group hover:shadow-md transition-all overflow-hidden`}>
                   <div className="flex justify-between items-start">
@@ -2421,13 +2421,13 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                           <div className="flex items-center justify-end gap-2 flex-wrap">
                             {/* Lockout badge + lift button — admin-only, only when locked */}
                             {usr.locked && (
-                              <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-xl px-2 py-0.5">
-                                <span className="text-[9px] font-mono text-red-700 tabular-nums">
+                              <div className="flex items-center gap-1.5 bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-700 rounded-xl px-2 py-0.5">
+                                <span className="text-[9px] font-mono text-red-700 dark:text-red-300 tabular-nums">
                                   🔒 {Math.ceil(usr.lockedRemainingSec / 60)}m locked
                                 </span>
                                 <button
                                   onClick={() => handleLiftLockout(usr.username)}
-                                  className="text-[9px] font-mono font-bold text-amber-700 hover:text-amber-800 underline underline-offset-2 transition-colors cursor-pointer"
+                                  className="text-[9px] font-mono font-bold text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 underline underline-offset-2 transition-colors cursor-pointer"
                                 >
                                   Lift
                                 </button>
@@ -2435,14 +2435,14 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                             )}
                             <button
                               onClick={() => { setEditUser(usr); setEditUserConfirmPw(''); setEditUserToken(''); }}
-                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold uppercase transition-colors border border-slate-200 cursor-pointer"
+                              className="px-2.5 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-[10px] font-bold uppercase transition-colors border border-slate-200 dark:border-slate-600 cursor-pointer"
                             >
                               Edit
                             </button>
                             {usr.username !== 'admin' && (
                               <button
                                 onClick={() => handleDeactivateUser(usr)}
-                                className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-[10px] font-bold uppercase transition-colors border border-red-200 cursor-pointer"
+                                className="px-2.5 py-1 bg-red-50 dark:bg-red-900/40 hover:bg-red-100 dark:hover:bg-red-900/60 text-red-600 dark:text-red-300 rounded-lg text-[10px] font-bold uppercase transition-colors border border-red-200 dark:border-red-700 cursor-pointer"
                               >
                                 Deactivate
                               </button>
@@ -2454,7 +2454,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   ))}
                   {users.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="p-6 text-center text-slate-400 font-mono">No accounts retrieved</td>
+                      <td colSpan={7} className="p-6 text-center text-slate-400 dark:text-slate-500 font-mono">No accounts retrieved</td>
                     </tr>
                   )}
                 </tbody>
@@ -2573,39 +2573,39 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
       {showAddUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAddUser(false)} />
-          <div className="relative bg-white border-2 border-slate-300 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4 z-10 text-slate-900">
-            <h3 className="text-sm font-display font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <span className="text-blue-600">⚡</span> Authorize New Account
+          <div className="relative bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4 z-10 text-slate-900 dark:text-slate-100">
+            <h3 className="text-sm font-display font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+              <span className="text-blue-600 dark:text-blue-400">⚡</span> Authorize New Account
             </h3>
             <form onSubmit={handleCreateUser} className="space-y-3 font-mono text-xs">
               <div>
-                <label className="text-slate-700 block mb-1 font-bold">Account ID (Username)</label>
+                <label className="text-slate-700 dark:text-slate-300 block mb-1 font-bold">Account ID (Username)</label>
                 <input
                   type="text"
                   required
                   value={newUser.username}
                   onChange={e => setNewUser({ ...newUser, username: e.target.value })}
                   placeholder="e.g. jdelacruz"
-                  className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-600 shadow-sm"
+                  className="w-full bg-slate-50 dark:bg-slate-700 hover:bg-white dark:hover:bg-slate-600 focus:bg-white dark:focus:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400 focus:outline-none focus:border-blue-600 shadow-sm"
                 />
               </div>
               <div>
-                <label className="text-slate-700 block mb-1 font-bold">Full Legal Name</label>
+                <label className="text-slate-700 dark:text-slate-300 block mb-1 font-bold">Full Legal Name</label>
                 <input
                   type="text"
                   required
                   value={newUser.full_name}
                   onChange={e => setNewUser({ ...newUser, full_name: e.target.value })}
                   placeholder="e.g. Juan Dela Cruz"
-                  className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-600 shadow-sm"
+                  className="w-full bg-slate-50 dark:bg-slate-700 hover:bg-white dark:hover:bg-slate-600 focus:bg-white dark:focus:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400 focus:outline-none focus:border-blue-600 shadow-sm"
                 />
               </div>
               <div>
-                <label className="text-slate-700 block mb-1 font-bold">Privilege Tier</label>
+                <label className="text-slate-700 dark:text-slate-300 block mb-1 font-bold">Privilege Tier</label>
                 <select
                   value={newUser.role}
                   onChange={e => setNewUser({ ...newUser, role: e.target.value, committee: e.target.value === 'committee' ? newUser.committee : '' })}
-                  className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-600 shadow-sm"
+                  className="w-full bg-slate-50 dark:bg-slate-700 hover:bg-white dark:hover:bg-slate-600 focus:bg-white dark:focus:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-600 shadow-sm"
                 >
                   <option value="admin">Admin</option>
                   <option value="chairman" disabled={hasChairman} className={hasChairman ? 'text-slate-400' : ''}>
@@ -2617,15 +2617,15 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   <option value="committee">Committee</option>
                 </select>
                 {newUser.role === 'chairman' && hasChairman && (
-                  <p className="mt-1 text-amber-600 text-[10px]">⚠️ A Chairman already exists. Only one Chairman is allowed.</p>
+                  <p className="mt-1 text-amber-600 dark:text-amber-400 text-[10px]">⚠️ A Chairman already exists. Only one Chairman is allowed.</p>
                 )}
                 {newUser.role === 'secretary' && hasSecretary && (
-                  <p className="mt-1 text-amber-600 text-[10px]">⚠️ A Secretary already exists. Only one Secretary is allowed.</p>
+                  <p className="mt-1 text-amber-600 dark:text-amber-400 text-[10px]">⚠️ A Secretary already exists. Only one Secretary is allowed.</p>
                 )}
               </div>
               {newUser.role === 'committee' && (
                 <div>
-                  <label className="text-slate-700 block mb-1 font-bold">Assigned Committee <span className="text-red-500">*</span></label>
+                  <label className="text-slate-700 dark:text-slate-300 block mb-1 font-bold">Assigned Committee <span className="text-red-500">*</span></label>
                   <CommitteeSelect
                     apiBase={API_BASE}
                     value={newUser.committee}
@@ -2633,37 +2633,37 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     required
                     placeholder="-- Select Committee (10 Centers) --"
                   />
-                  <p className="text-[10px] text-slate-500 mt-1">Select one of the 10 Centers of Participation.</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Select one of the 10 Centers of Participation.</p>
                 </div>
               )}
               <div>
-                <label className="text-slate-700 block mb-1 font-bold">Authentication Passkey</label>
+                <label className="text-slate-700 dark:text-slate-300 block mb-1 font-bold">Authentication Passkey</label>
                 <input
                   type="password"
                   required
                   value={newUser.password}
                   onChange={e => setNewUser({ ...newUser, password: e.target.value })}
                   placeholder="••••••••"
-                  className="w-full bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-600 shadow-sm"
+                  className="w-full bg-slate-50 dark:bg-slate-700 hover:bg-white dark:hover:bg-slate-600 focus:bg-white dark:focus:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400 focus:outline-none focus:border-blue-600 shadow-sm"
                 />
               </div>
               {/* Token — required for account creations */}
-              <div className="border-2 border-red-200 bg-red-50/50 rounded-xl p-3.5 space-y-2">
-                <p className="text-red-700 text-[10px] font-bold uppercase tracking-widest">🔐 Authorization Required</p>
-                <p className="text-slate-600 text-[10px]">Creating an account requires a privileged authorization token.</p>
+              <div className="border-2 border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/40 rounded-xl p-3.5 space-y-2">
+                <p className="text-red-700 dark:text-red-300 text-[10px] font-bold uppercase tracking-widest">🔐 Authorization Required</p>
+                <p className="text-slate-600 dark:text-slate-300 text-[10px]">Creating an account requires a privileged authorization token.</p>
                 <input
                   type="password"
                   value={newUserToken}
                   onChange={e => setNewUserToken(e.target.value)}
                   placeholder="Enter admin authorization token…"
-                  className="w-full bg-white border-2 border-red-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-red-500 text-xs shadow-sm"
+                  className="w-full bg-white dark:bg-slate-800 border-2 border-red-200 dark:border-red-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400 focus:outline-none focus:border-red-500 text-xs shadow-sm"
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
                 <button
                   type="button"
                   onClick={() => { setShowAddUser(false); setNewUserToken(''); }}
-                  className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors font-bold cursor-pointer"
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition-colors font-bold cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -2683,27 +2683,27 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
       {editUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => { setEditUser(null); setEditUserConfirmPw(''); setEditUserToken(''); }} />
-          <div className="relative bg-white border-2 border-slate-300 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4 z-10 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-sm font-display font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <span className="text-blue-600">🔧</span> Modify Account: <span className="font-mono text-blue-600">{editUser.username}</span>
+          <div className="relative bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4 z-10 max-h-[90vh] overflow-y-auto text-slate-900 dark:text-slate-100">
+            <h3 className="text-sm font-display font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+              <span className="text-blue-600 dark:text-blue-400">🔧</span> Modify Account: <span className="font-mono text-blue-600 dark:text-blue-400">{editUser.username}</span>
             </h3>
             <form onSubmit={handleUpdateUser} className="space-y-3 text-xs">
               <div>
-                <label className="text-slate-700 font-bold block mb-1">Full Legal Name</label>
+                <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">Full Legal Name</label>
                 <input
                   type="text"
                   required
                   value={editUser.full_name}
                   onChange={e => setEditUser({ ...editUser, full_name: e.target.value })}
-                  className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-500 font-mono"
+                  className="w-full bg-slate-50 dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-mono"
                 />
               </div>
               <div>
-                <label className="text-slate-700 font-bold block mb-1">Privilege Tier</label>
+                <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">Privilege Tier</label>
                 <select
                   value={editUser.role}
                   onChange={e => setEditUser({ ...editUser, role: e.target.value, committee: e.target.value === 'committee' ? editUser.committee : null })}
-                  className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-500 font-mono font-bold"
+                  className="w-full bg-slate-50 dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-mono font-bold"
                 >
                   <option value="admin">Admin</option>
                   <option
@@ -2725,7 +2725,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
               </div>
               {editUser.role === 'committee' && (
                 <div>
-                  <label className="text-slate-700 font-bold block mb-1">Assigned Committee <span className="text-red-500">*</span></label>
+                  <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">Assigned Committee <span className="text-red-500">*</span></label>
                   <CommitteeSelect
                     apiBase={API_BASE}
                     value={editUser.committee || ''}
@@ -2736,11 +2736,11 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                 </div>
               )}
               <div>
-                <label className="text-slate-700 font-bold block mb-1">Status</label>
+                <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">Status</label>
                 <select
                   value={editUser.status}
                   onChange={e => setEditUser({ ...editUser, status: e.target.value })}
-                  className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-500 font-mono font-bold"
+                  className="w-full bg-slate-50 dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-mono font-bold"
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
@@ -2748,54 +2748,54 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
               </div>
 
               {/* Password change section */}
-              <div className="border-2 border-slate-200 bg-slate-50/70 rounded-xl p-3 space-y-2">
-                <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">Password Change (leave blank to keep current)</p>
+              <div className="border-2 border-slate-200 dark:border-slate-600 bg-slate-50/70 dark:bg-slate-900/50 rounded-xl p-3 space-y-2">
+                <p className="text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-widest font-bold">Password Change (leave blank to keep current)</p>
                 <div>
-                  <label className="text-slate-700 font-bold block mb-1">New Password</label>
+                  <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">New Password</label>
                   <input
                     type="password"
                     value={editUser.password || ''}
                     onChange={e => setEditUser({ ...editUser, password: e.target.value })}
                     placeholder="••••••••"
-                    className="w-full bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-500 font-mono"
+                    className="w-full bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400 focus:outline-none focus:border-blue-500 font-mono"
                   />
                 </div>
                 {editUser.password && (
                   <div>
-                    <label className="text-slate-700 font-bold block mb-1">Confirm New Password</label>
+                    <label className="text-slate-700 dark:text-slate-300 font-bold block mb-1">Confirm New Password</label>
                     <input
                       type="password"
                       value={editUserConfirmPw}
                       onChange={e => setEditUserConfirmPw(e.target.value)}
                       placeholder="••••••••"
-                      className={`w-full bg-white border-2 rounded-xl px-3 py-2 text-slate-900 focus:outline-none font-mono ${editUserConfirmPw && editUser.password !== editUserConfirmPw
+                      className={`w-full bg-white dark:bg-slate-700 border-2 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400 focus:outline-none font-mono ${editUserConfirmPw && editUser.password !== editUserConfirmPw
                         ? 'border-red-500 focus:border-red-500'
-                        : 'border-slate-200 focus:border-blue-500'
+                        : 'border-slate-200 dark:border-slate-600 focus:border-blue-500'
                         }`}
                     />
                     {editUserConfirmPw && editUser.password !== editUserConfirmPw && (
-                      <p className="mt-1 text-red-500 text-[10px] font-bold">Passwords do not match</p>
+                      <p className="mt-1 text-red-500 dark:text-red-400 text-[10px] font-bold">Passwords do not match</p>
                     )}
                   </div>
                 )}
               </div>
 
               {/* Authorization token — ALWAYS required for any modification */}
-              <div className="border-2 border-amber-300 bg-amber-50/80 rounded-xl p-3 space-y-1">
-                <p className="text-amber-800 text-[10px] font-bold uppercase tracking-widest">🔐 Authorization Token Required</p>
-                <p className="text-amber-700/80 text-[10px]">Required for all account modifications, including role changes and status updates.</p>
+              <div className="border-2 border-amber-300 dark:border-amber-700 bg-amber-50/80 dark:bg-amber-950/40 rounded-xl p-3 space-y-1">
+                <p className="text-amber-800 dark:text-amber-300 text-[10px] font-bold uppercase tracking-widest">🔐 Authorization Token Required</p>
+                <p className="text-amber-700/80 dark:text-amber-200/80 text-[10px]">Required for all account modifications, including role changes and status updates.</p>
                 <input
                   type="password"
                   required
                   value={editUserToken}
                   onChange={e => setEditUserToken(e.target.value)}
                   placeholder="Enter admin authorization token…"
-                  className="w-full bg-white border-2 border-amber-300 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500 font-mono"
+                  className="w-full bg-white dark:bg-slate-800 border-2 border-amber-300 dark:border-amber-700 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400 focus:outline-none focus:border-amber-500 font-mono"
                 />
               </div>
 
               {/* Modal footer: Delete on left, Cancel + Apply on right */}
-              <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 mt-2">
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-700 mt-2">
                 {/* Delete Account — 2-step, only from inside Edit modal, hidden for protected 'admin' */}
                 {editUser.username !== 'admin' ? (
                   <button
@@ -2804,7 +2804,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                       setEditUser(null); setEditUserConfirmPw(''); setEditUserToken('');
                       openDeleteFlow(editUser);
                     }}
-                    className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs font-bold uppercase rounded-xl border border-red-200 transition-colors"
+                    className="px-3 py-1.5 bg-red-50 dark:bg-red-900/40 hover:bg-red-100 dark:hover:bg-red-900/60 text-red-600 dark:text-red-300 hover:text-red-700 dark:hover:text-red-200 text-xs font-bold uppercase rounded-xl border border-red-200 dark:border-red-700 transition-colors"
                   >
                     🗑 Delete Account
                   </button>
@@ -2813,7 +2813,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   <button
                     type="button"
                     onClick={() => { setEditUser(null); setEditUserConfirmPw(''); setEditUserToken(''); }}
-                    className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors font-bold text-xs cursor-pointer"
+                    className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition-colors font-bold text-xs cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -2835,21 +2835,21 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={cancelDelete} />
-          <div className="relative bg-white border-2 border-red-300 rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4 z-10">
+          <div className="relative bg-white dark:bg-slate-800 border-2 border-red-300 dark:border-red-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4 z-10 text-slate-900 dark:text-slate-100">
             {deleteStep === 1 ? (
               <>
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🗑️</span>
-                  <h3 className="text-sm font-display font-bold text-red-600 uppercase tracking-wider">Delete This Account?</h3>
+                  <h3 className="text-sm font-display font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">Delete This Account?</h3>
                 </div>
-                <p className="text-slate-700 text-xs leading-relaxed">
+                <p className="text-slate-700 dark:text-slate-300 text-xs leading-relaxed">
                   You are about to permanently delete the account{' '}
-                  <span className="text-blue-600 font-bold font-mono">{deleteTarget.username}</span>{' '}
+                  <span className="text-blue-600 dark:text-blue-400 font-bold font-mono">{deleteTarget.username}</span>{' '}
                   ({deleteTarget.full_name}). Their access will be revoked immediately.
                 </p>
-                <p className="text-slate-500 text-[10px]">This is a destructive action. Proceed to the next step to confirm.</p>
+                <p className="text-slate-500 dark:text-slate-400 text-[10px]">This is a destructive action. Proceed to the next step to confirm.</p>
                 <div className="flex justify-end gap-2 pt-1">
-                  <button onClick={cancelDelete} className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl text-xs font-bold transition-colors cursor-pointer">Cancel</button>
+                  <button onClick={cancelDelete} className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl text-xs font-bold transition-colors cursor-pointer">Cancel</button>
                   <button onClick={() => setDeleteStep(2)} className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-colors shadow-md cursor-pointer">Proceed</button>
                 </div>
               </>
@@ -2857,11 +2857,11 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
               <>
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">⚠️</span>
-                  <h3 className="text-sm font-display font-bold text-red-600 uppercase tracking-wider">Confirm Deletion</h3>
+                  <h3 className="text-sm font-display font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">Confirm Deletion</h3>
                 </div>
-                <p className="text-slate-700 text-xs leading-relaxed">
+                <p className="text-slate-700 dark:text-slate-300 text-xs leading-relaxed">
                   To finish, type the username{' '}
-                  <span className="text-blue-600 font-bold font-mono">{deleteTarget.username}</span>{' '}
+                  <span className="text-blue-600 dark:text-blue-400 font-bold font-mono">{deleteTarget.username}</span>{' '}
                   in the field below.
                 </p>
                 <input
@@ -2870,20 +2870,20 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   onChange={e => setDeleteConfirmInput(e.target.value)}
                   placeholder={`Type "${deleteTarget.username}" to confirm`}
                   autoFocus
-                  className={`w-full bg-slate-50 border-2 rounded-xl px-3 py-2 text-slate-900 text-xs font-mono focus:outline-none ${deleteConfirmInput && deleteConfirmInput !== deleteTarget.username
+                  className={`w-full bg-slate-50 dark:bg-slate-700 border-2 rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-400 text-xs font-mono focus:outline-none ${deleteConfirmInput && deleteConfirmInput !== deleteTarget.username
                     ? 'border-red-500 focus:border-red-500'
-                    : 'border-slate-200 focus:border-blue-500'
+                    : 'border-slate-200 dark:border-slate-600 focus:border-blue-500'
                     }`}
                 />
                 {deleteConfirmInput && deleteConfirmInput !== deleteTarget.username && (
-                  <p className="text-red-500 text-[10px] font-bold">Username does not match.</p>
+                  <p className="text-red-500 dark:text-red-400 text-[10px] font-bold">Username does not match.</p>
                 )}
                 <div className="flex justify-end gap-2 pt-1">
-                  <button onClick={cancelDelete} className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl text-xs font-bold transition-colors cursor-pointer">Cancel</button>
+                  <button onClick={cancelDelete} className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl text-xs font-bold transition-colors cursor-pointer">Cancel</button>
                   <button
                     onClick={handleDeleteUser}
                     disabled={deleteConfirmInput !== deleteTarget.username}
-                    className="px-5 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs transition-colors shadow-md cursor-pointer"
+                    className="px-5 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-200 dark:disabled:bg-slate-700 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs transition-colors shadow-md cursor-pointer"
                   >
                     Delete Account
                   </button>
@@ -4084,7 +4084,7 @@ function App() {
             </button>
           </div>
 
-          <div className="p-3 border-b border-slate-200/80 shrink-0">
+          <div className="p-3 border-b border-slate-200/80 dark:border-slate-700 shrink-0">
             <button
               onClick={createNewChat}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-display font-bold tracking-widest uppercase rounded-xl shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-cyan-500/30 transition-all cursor-pointer active:scale-[0.98]"
@@ -4094,27 +4094,27 @@ function App() {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+          <div className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
             {/* Invisible backdrop to close open menu on outside click */}
             {openMenuId && (
               <div className="fixed inset-0 z-30" onClick={() => setOpenMenuId(null)} />
             )}
-            <h3 className="text-[10px] font-display font-black tracking-widest text-slate-400 uppercase mb-3 px-2">Recent Threads</h3>
+            <h3 className="text-[10px] font-display font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase mb-3 px-2">Recent Threads</h3>
             {sortedThreads.map(t => (
               <div
                 key={t.id}
                 onClick={() => { setActiveThreadId(t.id); setCurrentView('chat'); if (window.innerWidth < 768) setSidebarOpen(false); }}
                 className={`group relative flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${activeThreadId === t.id
-                  ? 'bg-blue-100/50 border border-blue-200 text-blue-900 shadow-sm'
-                  : 'hover:bg-slate-200/50 border border-transparent text-slate-600 hover:text-slate-900'
+                  ? 'bg-blue-100/50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700 text-blue-900 dark:text-blue-200 shadow-sm'
+                  : 'hover:bg-slate-200/50 dark:hover:bg-slate-800 border border-transparent text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
                   }`}
               >
                 {/* Icon + title / rename input */}
                 <div className="flex items-center gap-3 overflow-hidden flex-1 min-w-0">
                   {t.pinned ? (
-                    <svg className="w-3.5 h-3.5 shrink-0 text-blue-500 rotate-45" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" /></svg>
+                    <svg className="w-3.5 h-3.5 shrink-0 text-blue-500 dark:text-blue-400 rotate-45" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" /></svg>
                   ) : (
-                    <svg className={`w-4 h-4 shrink-0 ${activeThreadId === t.id ? 'text-blue-500' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    <svg className={`w-4 h-4 shrink-0 ${activeThreadId === t.id ? 'text-blue-500 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                   )}
                   {renamingId === t.id ? (
                     <input
@@ -4124,7 +4124,7 @@ function App() {
                       onKeyDown={e => handleRenameKeyDown(e, t.id)}
                       onBlur={() => handleRenameSubmit(t.id)}
                       onClick={e => e.stopPropagation()}
-                      className="flex-1 min-w-0 text-sm font-medium bg-white border border-blue-400 rounded px-2 py-0.5 text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="flex-1 min-w-0 text-sm font-medium bg-white dark:bg-slate-700 border border-blue-400 rounded px-2 py-0.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                   ) : (
                     <span className="text-sm font-medium truncate">{t.title}</span>
@@ -4136,8 +4136,8 @@ function App() {
                   <button
                     onClick={() => setOpenMenuId(openMenuId === t.id ? null : t.id)}
                     className={`p-1.5 rounded-md transition-colors ${openMenuId === t.id
-                      ? 'opacity-100 bg-slate-200 text-slate-700'
-                      : 'opacity-0 group-hover:opacity-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
+                      ? 'opacity-100 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
+                      : 'opacity-0 group-hover:opacity-100 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                       }`}
                     title="Options"
                   >
@@ -4150,25 +4150,25 @@ function App() {
 
                   {/* Dropdown */}
                   {openMenuId === t.id && (
-                    <div className="absolute right-0 top-full mt-1 z-[100] w-44 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+                    <div className="absolute right-0 top-full mt-1 z-[100] w-44 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
                       <button
                         onClick={() => handlePin(t.id)}
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                       >
                         <svg className="w-3.5 h-3.5 rotate-45 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" /></svg>
                         {t.pinned ? 'Unpin' : 'Pin'}
                       </button>
                       <button
                         onClick={() => handleRenameStart(t.id, t.title)}
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors"
                       >
                         <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                         Rename
                       </button>
-                      <div className="border-t border-slate-100" />
+                      <div className="border-t border-slate-100 dark:border-slate-700" />
                       <button
                         onClick={() => confirmDelete(t.id)}
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors"
                       >
                         <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         Delete
@@ -4221,7 +4221,7 @@ function App() {
               <NotificationBell authHeaders={authHeaders} setCurrentView={setCurrentView} />
             </div>
 
-            <p className="text-[10px] font-display font-black tracking-widest text-slate-400 uppercase px-2 mb-1">Modules</p>
+            <p className="text-[10px] font-display font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase px-2 mb-1">Modules</p>
             {getVisibleModules().map(({ id, label, emoji }) => (
               <button
                 key={id}
@@ -4240,16 +4240,16 @@ function App() {
             ))}
 
             {/* User info + Logout */}
-            <div className="mt-3 pt-3 border-t border-slate-200">
+            <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
               <div className="flex items-center gap-2 px-2 py-1.5 mb-2">
                 <div className={`w-2 h-2 rounded-full shrink-0 ${ROLE_COLORS[authUser?.role] || 'bg-slate-400'}`} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-display font-bold text-slate-900 truncate">
+                  <p className="text-xs font-display font-bold text-slate-900 dark:text-slate-100 truncate">
                     {authUser?.role === 'committee'
                       ? `${authUser?.full_name} / ${getCommitteeLabel(authUser?.committee)}`
                       : authUser?.full_name}
                   </p>
-                  <p className="text-[10px] text-blue-600 font-display font-bold tracking-wider">
+                  <p className="text-[10px] text-blue-600 dark:text-cyan-400 font-display font-bold tracking-wider">
                     {authUser?.role === 'committee'
                       ? getCommitteeLabel(authUser?.committee)
                       : (ROLE_LABELS[authUser?.role] || authUser?.role)}
@@ -4258,7 +4258,7 @@ function App() {
               </div>
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 hover:text-red-700 transition-all border border-transparent hover:border-red-200"
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-700 dark:hover:text-red-300 transition-all border border-transparent hover:border-red-200 dark:hover:border-red-800"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 Sign Out
@@ -4308,7 +4308,7 @@ function App() {
                 <img src="/ASKYOUTH.LOGO.png" alt="Logo" className="w-8 h-8 object-contain shrink-0 drop-shadow-sm hidden sm:block" />
                 <button
                   onClick={() => window.location.reload()}
-                  className="select-none text-base sm:text-2xl font-display font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-cyan-600 to-blue-800 drop-shadow-[0_2px_10px_rgba(0,100,255,0.15)] hover:from-cyan-500 hover:to-blue-500 transition-all duration-200 cursor-pointer whitespace-nowrap"
+                  className="select-none text-base sm:text-2xl font-display font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-cyan-600 to-blue-800 dark:from-blue-400 dark:via-cyan-400 dark:to-blue-300 drop-shadow-[0_2px_10px_rgba(0,100,255,0.15)] hover:from-cyan-500 hover:to-blue-500 transition-all duration-200 cursor-pointer whitespace-nowrap"
                 >
                   aSK//YOUTH.AI
                 </button>
@@ -4318,7 +4318,7 @@ function App() {
               <div className="flex items-center gap-3 shrink-0">
                 <div className="flex flex-col items-end shrink-0 max-w-[50%] sm:max-w-none">
                   <div className="flex items-center gap-2 sm:gap-3">
-                    <span className={`text-xs font-mono font-bold tracking-wider ${loading ? 'text-cyan-500' : 'text-blue-700'} hidden xs:block sm:block`}>
+                    <span className={`text-xs font-mono font-bold tracking-wider ${loading ? 'text-cyan-500' : 'text-blue-700 dark:text-cyan-400'} hidden xs:block sm:block`}>
                       {loading
                         ? streamPhase === 'INDEXING_DOCUMENTS' ? 'INDEXING...'
                           : streamPhase === 'RETRIEVING_CONTEXT' ? 'SEARCHING...'
@@ -4341,10 +4341,10 @@ function App() {
                   </div>
                   {/* Clock beside Llama model label */}
                   <div className="flex items-center gap-2 mt-1 hidden sm:flex">
-                    <span className="font-mono text-[10px] font-normal tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-cyan-600 select-none tabular-nums">
+                    <span className="font-mono text-[10px] font-normal tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-cyan-600 dark:from-blue-400 dark:to-cyan-400 select-none tabular-nums">
                       {formatClock(now)}
                     </span>
-                    <span className={`text-[10px] font-mono uppercase tracking-widest ${!lastModelUsed ? 'text-slate-500' :
+                    <span className={`text-[10px] font-mono uppercase tracking-widest ${!lastModelUsed ? 'text-slate-500 dark:text-slate-400' :
                       lastModelUsed.tier === 'gemini' ? 'text-cyan-500' :
                         lastModelUsed.tier === 'groq' ? 'text-amber-400' :
                           'text-red-400'
@@ -4360,20 +4360,20 @@ function App() {
             <div className="flex-1 flex flex-col p-2 sm:p-8 overflow-hidden relative">
               <div className="w-full max-w-5xl mx-auto h-full bg-white dark:bg-slate-900 border-2 border-slate-900 dark:border-slate-700 rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.12)] flex flex-col pointer-events-auto">
 
-                <div className="h-11 bg-slate-50 border-b-2 border-slate-200 flex items-center px-4 justify-between flex-shrink-0">
-                  <span className="font-mono text-xs sm:text-sm text-black font-bold tracking-wider flex items-center gap-2">
-                    <svg className="w-4 h-4 text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                <div className="h-11 bg-slate-50 dark:bg-slate-800 border-b-2 border-slate-200 dark:border-slate-700 flex items-center px-4 justify-between flex-shrink-0">
+                  <span className="font-mono text-xs sm:text-sm text-black dark:text-slate-100 font-bold tracking-wider flex items-center gap-2">
+                    <svg className="w-4 h-4 text-slate-800 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
                     THREAD: {activeThread?.title || 'New Chat'}
                   </span>
-                  <span className="font-mono text-xs text-blue-600 font-bold hidden sm:block">LOCAL: SECURE</span>
+                  <span className="font-mono text-xs text-blue-600 dark:text-cyan-400 font-bold hidden sm:block">LOCAL: SECURE</span>
                 </div>
 
                 {/* Scrollable Messages Area */}
-                <div ref={scrollRef} className="flex-1 p-3 sm:p-8 overflow-y-auto overflow-x-hidden relative z-10 w-full bg-white scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+                <div ref={scrollRef} className="flex-1 p-3 sm:p-8 overflow-y-auto overflow-x-hidden relative z-10 w-full bg-white dark:bg-slate-900 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
                   {showScrollBottom && (
                     <button
                       onClick={scrollToBottom}
-                      className="fixed bottom-32 right-8 sm:right-12 z-50 p-3 bg-white hover:bg-slate-50 border-2 border-slate-300 rounded-full shadow-2xl text-blue-600 hover:text-blue-700 hover:scale-110 active:scale-95 transition-all animate-bounce flex items-center justify-center cursor-pointer ring-1 ring-blue-500/20"
+                      className="fixed bottom-32 right-8 sm:right-12 z-50 p-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-2 border-slate-300 dark:border-slate-600 rounded-full shadow-2xl text-blue-600 dark:text-cyan-400 hover:text-blue-700 hover:scale-110 active:scale-95 transition-all animate-bounce flex items-center justify-center cursor-pointer ring-1 ring-blue-500/20"
                       title="Scroll to Latest"
                     >
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4424,14 +4424,14 @@ function App() {
                         <div key={index} className={`flex flex-col w-full ${msg.role === 'user' ? 'items-end' : 'items-start'} gap-1`}>
                           {/* Timestamp outside the bubble */}
                           {msg.timestamp && (
-                            <span className="font-mono text-[10px] text-slate-500 tracking-widest px-1 tabular-nums">
+                            <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400 tracking-widest px-1 tabular-nums">
                               {formatStamp(new Date(msg.timestamp))}
                             </span>
                           )}
                           {(msg.role === 'user' || thoughtContent || finalContent.trim().length > 0 || msg.retrievedChunks?.length > 0) && (
                             <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-4 sm:p-6 relative group transition-colors flex flex-col ${msg.role === 'user'
-                              ? 'bg-blue-50 border-2 border-blue-600 text-black shadow-sm'
-                              : 'bg-white border-2 border-slate-300 text-black shadow-sm'
+                              ? 'bg-blue-50 dark:bg-blue-950/60 border-2 border-blue-600 dark:border-blue-500 text-black dark:text-slate-100 shadow-sm'
+                              : 'bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 text-black dark:text-slate-100 shadow-sm'
                               }`}>
                               {/* File attachment cards — supports multi-file (new) and single-file legacy */}
                               {msg.role === 'user' && (() => {
@@ -4449,7 +4449,7 @@ function App() {
                                       const isPdf = ext === 'PDF';
                                       const isCsv = ext === 'CSV';
                                       return (
-                                        <div key={fi} className="flex items-center gap-3 bg-white border-2 border-blue-200 rounded-xl px-3 py-2 w-fit max-w-full shadow-xs">
+                                        <div key={fi} className="flex items-center gap-3 bg-white dark:bg-slate-800 border-2 border-blue-200 dark:border-blue-700 rounded-xl px-3 py-2 w-fit max-w-full shadow-xs">
                                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isPdf ? 'bg-red-500/20' : isDoc ? 'bg-blue-500/20' : isCsv ? 'bg-green-500/20' : 'bg-slate-500/20'
                                             }`}>
                                             {isPdf ? (
@@ -4461,7 +4461,7 @@ function App() {
                                             )}
                                           </div>
                                           <div className="overflow-hidden">
-                                            <p className="text-xs font-bold text-slate-900 truncate max-w-[200px]">{(af.fileName || '').replace(/\.[^.]+$/, '')}</p>
+                                            <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate max-w-[200px]">{(af.fileName || '').replace(/\.[^.]+$/, '')}</p>
                                             <p className="text-[10px] font-mono text-blue-400 uppercase tracking-wider">{ext}</p>
                                           </div>
                                         </div>
@@ -4474,15 +4474,15 @@ function App() {
                               {/* AI "Show Thinking" Dropdown Component */}
                               {thoughtContent && (
                                 <details className="mb-4 group/think cursor-pointer">
-                                  <summary className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-colors list-none">
-                                    <svg className="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                                    <span className="text-xs font-mono tracking-widest text-slate-700 group-hover/think:text-blue-700 font-bold uppercase select-none">
+                                  <summary className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600 transition-colors list-none">
+                                    <svg className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                    <span className="text-xs font-mono tracking-widest text-slate-700 dark:text-slate-200 group-hover/think:text-blue-700 dark:group-hover/think:text-cyan-300 font-bold uppercase select-none">
                                       Processing Intent
                                     </span>
-                                    <svg className="w-4 h-4 text-slate-500 transform transition-transform group-open/think:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    <svg className="w-4 h-4 text-slate-500 dark:text-slate-400 transform transition-transform group-open/think:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                   </summary>
-                                  <div className="mt-3 pl-4 border-l-2 border-slate-300 py-2">
-                                    <p className="font-mono text-xs sm:text-[13px] text-slate-700 whitespace-pre-wrap leading-relaxed">
+                                  <div className="mt-3 pl-4 border-l-2 border-slate-300 dark:border-slate-600 py-2">
+                                    <p className="font-mono text-xs sm:text-[13px] text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
                                       {thoughtContent}
                                     </p>
                                   </div>
@@ -4490,13 +4490,13 @@ function App() {
                               )}
 
                               {finalContent.trim().length > 0 && (
-                                <div className={`font-sans leading-relaxed prose-chat ${msg.role === 'assistant' ? 'text-black font-normal text-[15px] sm:text-[15.5px]' : 'text-black font-medium text-[14px] sm:text-[15px]'}`}>
+                                <div className={`font-sans leading-relaxed prose-chat ${msg.role === 'assistant' ? 'text-black dark:text-slate-100 font-normal text-[15px] sm:text-[15.5px]' : 'text-black dark:text-slate-100 font-medium text-[14px] sm:text-[15px]'}`}>
                                   <ReactMarkdown
                                     components={{
                                       p: ({ children }) => {
                                         if (typeof children === 'string' && children.includes('[[SUGGESTIONS_LINK]]')) {
                                           const parts = children.split('[[SUGGESTIONS_LINK]]');
-                                          return <p>{parts[0]}<button onClick={() => setCurrentView('suggestions')} className="inline-flex items-center gap-1 px-2 py-0.5 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/50 text-cyan-300 hover:text-cyan-100 rounded-md text-sm font-bold transition-all">Go Here →</button>{parts[1]}</p>;
+                                          return <p>{parts[0]}<button onClick={() => setCurrentView('suggestions')} className="inline-flex items-center gap-1 px-2 py-0.5 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/50 text-cyan-700 dark:text-cyan-300 hover:text-cyan-900 dark:hover:text-cyan-100 rounded-md text-sm font-bold transition-all">Go Here →</button>{parts[1]}</p>;
                                         }
                                         return <p>{children}</p>;
                                       }
@@ -4510,12 +4510,12 @@ function App() {
                           )}
                           {/* Official Document Export Panel — outside the bubble for clean visual separation */}
                           {msg.role === 'assistant' && docTitle && docContent && (
-                            <div className="w-full max-w-[85%] sm:max-w-[75%] rounded-xl border-2 border-blue-200 bg-blue-50/70 p-4 flex flex-col gap-3 shadow-sm">
+                            <div className="w-full max-w-[85%] sm:max-w-[75%] rounded-xl border-2 border-blue-200 dark:border-blue-700 bg-blue-50/70 dark:bg-blue-950/40 p-4 flex flex-col gap-3 shadow-sm">
                               <div className="flex items-center gap-2.5">
                                 <span className="text-base leading-none select-none">📄</span>
-                                <span className="text-xs font-mono text-slate-700 tracking-wide">
+                                <span className="text-xs font-mono text-slate-700 dark:text-slate-300 tracking-wide">
                                   Official Document Drafted:{' '}
-                                  <span className="text-blue-900 font-bold">{docTitle}</span>
+                                  <span className="text-blue-900 dark:text-blue-300 font-bold">{docTitle}</span>
                                 </span>
                               </div>
                               <div className="flex flex-wrap gap-2">
@@ -4572,19 +4572,19 @@ function App() {
                             const topPillColor = topScore >= 0.70 ? 'bg-green-900/60 text-green-400' : topScore >= 0.50 ? 'bg-yellow-900/60 text-yellow-400' : 'bg-slate-800 text-slate-400';
                             return (
                               <details className="w-full max-w-[85%] sm:max-w-[75%] group/sources cursor-pointer">
-                                <summary className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-amber-50 border-2 border-amber-500/60 hover:bg-amber-100/80 transition-colors list-none select-none">
+                                <summary className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border-2 border-amber-500/60 dark:border-amber-700 hover:bg-amber-100/80 dark:hover:bg-amber-950/70 transition-colors list-none select-none">
                                   <div className="flex items-center gap-2">
-                                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                    <span className="text-xs font-mono tracking-widest text-amber-950 font-bold uppercase">
+                                    <svg className="w-4 h-4 text-amber-700 dark:text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    <span className="text-xs font-mono tracking-widest text-amber-950 dark:text-amber-200 font-bold uppercase">
                                       SOURCES ({grouped.length})
                                     </span>
-                                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-200/90 text-amber-900 border border-amber-300">
+                                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-200/90 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
                                       {topPct}% match
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <span className="text-xs font-mono text-amber-900/80 tracking-wide font-medium hidden sm:inline">{headerLabel}</span>
-                                    <svg className="w-4 h-4 text-amber-900 transform transition-transform group-open/sources:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    <span className="text-xs font-mono text-amber-900/80 dark:text-amber-300/80 tracking-wide font-medium hidden sm:inline">{headerLabel}</span>
+                                    <svg className="w-4 h-4 text-amber-900 dark:text-amber-300 transform transition-transform group-open/sources:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                   </div>
                                 </summary>
                                 <div className="mt-2 flex flex-col gap-2">
@@ -4593,19 +4593,19 @@ function App() {
                                     const pillColor = chunk.displayScore >= 0.70 ? 'bg-green-900/40 text-green-400' : chunk.displayScore >= 0.50 ? 'bg-yellow-900/40 text-yellow-400' : 'bg-slate-800 text-slate-400';
                                     const snippet = chunk.textSnippet || (chunk.text ? chunk.text.slice(0, 300) : '');
                                     return (
-                                      <div key={ci} className="rounded-xl border-2 border-slate-200 bg-slate-50 overflow-hidden shadow-xs">
-                                        <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 bg-white">
+                                      <div key={ci} className="rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 overflow-hidden shadow-xs">
+                                        <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                                           <div className="flex items-center gap-2 overflow-hidden">
                                             <svg className="w-3 h-3 text-cyan-500 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5z" /></svg>
-                                            <span className="text-xs font-mono font-bold text-slate-800 truncate max-w-[200px]">{chunk.source}</span>
+                                            <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px]">{chunk.source}</span>
                                           </div>
                                           <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${pillColor}`}>
                                             {pct}% match
                                           </span>
                                         </div>
                                         <details className="group/snippet">
-                                          <summary className="px-3 py-1.5 text-xs font-mono text-slate-600 hover:text-blue-700 cursor-pointer select-none list-none transition-colors">▶ View Snippet</summary>
-                                          <pre className="px-3 pb-3 pt-1 text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed border-t border-slate-200 bg-slate-50">{snippet}{snippet.length >= 300 ? '...' : ''}</pre>
+                                          <summary className="px-3 py-1.5 text-xs font-mono text-slate-600 dark:text-slate-400 hover:text-blue-700 dark:hover:text-cyan-400 cursor-pointer select-none list-none transition-colors">▶ View Snippet</summary>
+                                          <pre className="px-3 pb-3 pt-1 text-xs font-mono text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">{snippet}{snippet.length >= 300 ? '...' : ''}</pre>
                                         </details>
                                       </div>
                                     );
@@ -4621,13 +4621,13 @@ function App() {
                     {/* Phase-aware loading indicators */}
                     {loading && streamPhase !== 'GENERATING' && (
                       <div className="flex w-full justify-start">
-                        <div className="max-w-[80%] bg-white border-2 border-slate-300 shadow-sm rounded-xl p-4 flex items-center gap-3">
+                        <div className="max-w-[80%] bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 shadow-sm rounded-xl p-4 flex items-center gap-3">
                           {/* Spinning ring for indexing/searching phases */}
-                          <svg className="w-5 h-5 text-blue-600 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5 text-blue-600 dark:text-cyan-400 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                           </svg>
-                          <span className="text-xs font-mono text-slate-800 font-bold tracking-widest uppercase animate-pulse">
+                          <span className="text-xs font-mono text-slate-800 dark:text-slate-200 font-bold tracking-widest uppercase animate-pulse">
                             {streamPhase === 'INDEXING_DOCUMENTS' && 'Indexing Documents...'}
                             {streamPhase === 'RETRIEVING_CONTEXT' && 'Searching Knowledge Base...'}
                           </span>
@@ -4638,12 +4638,12 @@ function App() {
                     {/* Live streaming bubble — renders tokens in real-time */}
                     {loading && streamPhase === 'GENERATING' && (
                       <div className="flex w-full justify-start">
-                        <div className="max-w-[85%] sm:max-w-[75%] bg-white border-2 border-slate-300 text-black rounded-2xl p-4 sm:p-6 flex flex-col shadow-sm">
-                          <div className="font-sans leading-relaxed prose-chat text-black font-normal text-[21px] sm:text-[22px]">
+                        <div className="max-w-[85%] sm:max-w-[75%] bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 text-black dark:text-slate-100 rounded-2xl p-4 sm:p-6 flex flex-col shadow-sm">
+                          <div className="font-sans leading-relaxed prose-chat text-black dark:text-slate-100 font-normal text-[21px] sm:text-[22px]">
                             <ReactMarkdown>{streamingContent.replace(/<official_document[\s\S]*/i, '').trim()}</ReactMarkdown>
                           </div>
                           {/* Blinking cursor to indicate streaming is active */}
-                          <span className="mt-2 inline-block w-2.5 h-5 bg-blue-600 animate-[pulse_0.8s_ease-in-out_infinite] align-middle" />
+                          <span className="mt-2 inline-block w-2.5 h-5 bg-blue-600 dark:bg-cyan-400 animate-[pulse_0.8s_ease-in-out_infinite] align-middle" />
                         </div>
                       </div>
                     )}
@@ -4652,9 +4652,9 @@ function App() {
 
                 {/* Input Area — also serves as the drag-and-drop zone */}
                 <div
-                  className={`p-3 sm:p-5 bg-white border-t-2 flex-shrink-0 relative transition-all duration-200 ${isDragging
-                    ? 'border-blue-600 bg-blue-50/40'
-                    : 'border-slate-200'
+                  className={`p-3 sm:p-5 bg-white dark:bg-slate-900 border-t-2 flex-shrink-0 relative transition-all duration-200 ${isDragging
+                    ? 'border-blue-600 bg-blue-50/40 dark:bg-blue-950/30'
+                    : 'border-slate-200 dark:border-slate-700'
                     }`}
                   onDragOver={handleDragOver}
                   onDragEnter={handleDragEnter}
@@ -4676,13 +4676,13 @@ function App() {
                     {selectedFiles.length > 0 && (
                       <div className="flex flex-wrap gap-2">
                         {selectedFiles.map((f, idx) => (
-                          <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-lg text-xs font-mono">
-                            <svg className="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                            <span className="text-slate-800 font-bold max-w-[150px] truncate">{f.name}</span>
+                          <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-mono">
+                            <svg className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                            <span className="text-slate-800 dark:text-slate-200 font-bold max-w-[150px] truncate">{f.name}</span>
                             <button
                               type="button"
                               onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
-                              className="text-slate-400 hover:text-red-600 transition-colors ml-1 shrink-0 cursor-pointer"
+                              className="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors ml-1 shrink-0 cursor-pointer"
                               title="Remove file"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -4720,7 +4720,7 @@ function App() {
                         onClick={() => fileInputRef.current?.click()}
                         disabled={loading || selectedFiles.length >= 8}
                         title={selectedFiles.length >= 8 ? "Max 8 files reached" : "Attach files (PDF, DOCX, TXT) — up to 8"}
-                        className="shrink-0 p-3 rounded-xl border-2 border-slate-300 bg-slate-50 text-slate-700 hover:text-black hover:border-black transition-all disabled:opacity-40 cursor-pointer"
+                        className="shrink-0 p-3 rounded-xl border-2 border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-black dark:hover:text-white hover:border-black dark:hover:border-slate-400 transition-all disabled:opacity-40 cursor-pointer"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
                       </button>
@@ -4736,7 +4736,7 @@ function App() {
                         placeholder="Initiate prompt..."
                         rows={1}
                         style={{ maxHeight: '200px', overflowY: 'auto', resize: 'none' }}
-                        className="flex-1 w-full bg-slate-50 border-2 border-slate-300 hover:border-slate-400 focus:border-black focus:bg-white focus:ring-1 focus:ring-black rounded-xl px-4 py-3 text-black font-mono text-sm sm:text-base transition-all placeholder-slate-400 disabled:opacity-50 leading-relaxed"
+                        className="flex-1 w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 focus:border-black dark:focus:border-cyan-500 focus:bg-white dark:focus:bg-slate-800 focus:ring-1 focus:ring-black dark:focus:ring-cyan-500 rounded-xl px-4 py-3 text-black dark:text-slate-100 font-mono text-sm sm:text-base transition-all placeholder-slate-400 dark:placeholder-slate-400 disabled:opacity-50 leading-relaxed"
                         autoFocus
                       />
 
@@ -4745,8 +4745,8 @@ function App() {
                         type="submit"
                         disabled={loading || !inputText.trim()}
                         className={`shrink-0 px-6 py-3 font-display font-bold text-sm tracking-widest uppercase rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${(loading || !inputText.trim())
-                          ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                          : 'bg-black hover:bg-slate-800 text-white border border-black shadow-md hover:shadow-lg cursor-pointer active:scale-95'
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 cursor-not-allowed'
+                          : 'bg-black dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-500 text-white border border-black dark:border-blue-500 shadow-md hover:shadow-lg cursor-pointer active:scale-95'
                           }`}
                       >
                         SEND
@@ -4772,13 +4772,13 @@ function App() {
       {deleteConfirmId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDeleteConfirmId(null)} />
-          <div className="relative z-10 bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 w-full max-w-sm">
-            <h3 className="text-base font-bold text-slate-900 mb-2">Delete Conversation?</h3>
-            <p className="text-sm text-slate-500 mb-6">Are you sure you want to delete this conversation? This action cannot be undone.</p>
+          <div className="relative z-10 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6 w-full max-w-sm">
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-2">Delete Conversation?</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Are you sure you want to delete this conversation? This action cannot be undone.</p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setDeleteConfirmId(null)}
-                className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
               >
                 Cancel
               </button>

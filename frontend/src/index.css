@@ -4,6 +4,13 @@
    Without this, dark: utilities never fire when html.dark is toggled manually. */
 @variant dark (&:where(.dark, .dark *));
 
+/*
+  Safelist: force-include all dynamic dark-mode classes used in CommitteeBadge.jsx
+  and elsewhere (dynamic object lookups that Tailwind's scanner cannot see statically).
+  Tailwind v4: @source inline() accepts a space-separated list of class names.
+*/
+@source inline("dark:bg-emerald-900/40 dark:bg-indigo-900/40 dark:bg-amber-900/40 dark:bg-purple-900/40 dark:bg-rose-900/40 dark:bg-cyan-900/40 dark:bg-sky-900/40 dark:bg-teal-900/40 dark:bg-fuchsia-900/40 dark:bg-lime-900/40 dark:bg-blue-900/40 dark:bg-red-900/40 dark:text-emerald-300 dark:text-indigo-300 dark:text-amber-300 dark:text-purple-300 dark:text-rose-300 dark:text-cyan-300 dark:text-sky-300 dark:text-teal-300 dark:text-fuchsia-300 dark:text-lime-300 dark:text-blue-300 dark:text-red-300 dark:border-emerald-700 dark:border-indigo-700 dark:border-amber-700 dark:border-purple-700 dark:border-rose-700 dark:border-cyan-700 dark:border-sky-700 dark:border-teal-700 dark:border-fuchsia-700 dark:border-lime-700 dark:border-blue-700 dark:border-red-700");
+
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
@@ -259,153 +266,61 @@ html.dark .theme-toggle__icon--moon { opacity: 1;    transform: scale(1); }
 }
 
 /* =========================================================
-   DARK MODE — Global overrides for all white/light frames
-   Covers every bg-white, bg-slate-50, bg-gray-50 element
-   that lacks an explicit dark: Tailwind class.
+   DARK MODE — Safe fallbacks for elements lacking dark: classes
+   Uses :not([class*="dark:..."]) so explicit Tailwind dark:
+   utilities are NEVER overridden. Never force * { color: inherit }.
    ========================================================= */
 
-/* -- Sidebar borders & text -- */
-html.dark .border-slate-200 { border-color: #1e293b; }
-html.dark .border-slate-300 { border-color: #334155; }
+/* -- Borders on light containers without explicit dark:border-* -- */
+html.dark .border-slate-200:not([class*="dark:border-"]) { border-color: #1e293b; }
+html.dark .border-slate-300:not([class*="dark:border-"]) { border-color: #334155; }
+html.dark .border-slate-100:not([class*="dark:border-"]) { border-color: #1e293b; }
 
-/* -- Chat panel: the THREAD container (bg-white/70 becomes dark) -- */
-html.dark .bg-white\/70 { background-color: rgb(15 23 42 / 0.7) !important; }
-html.dark .bg-white\/90 { background-color: rgb(15 23 42 / 0.9) !important; }
+/* -- Chat / translucent panels without explicit dark:bg-* -- */
+html.dark .bg-white\/70:not([class*="dark:bg-"]) { background-color: rgb(15 23 42 / 0.7); }
+html.dark .bg-white\/90:not([class*="dark:bg-"]) { background-color: rgb(15 23 42 / 0.9); }
 
-/* -- Generic white card / panel frames -- */
-html.dark .bg-white {
-  background-color: #0f172a !important;
+/* -- Generic light card / panel frames without explicit dark:bg-* -- */
+html.dark .bg-white:not([class*="dark:bg-"]) {
+  background-color: #0f172a;
+}
+html.dark .bg-slate-50:not([class*="dark:bg-"]) {
+  background-color: #1e293b;
+}
+html.dark .bg-gray-50:not([class*="dark:bg-"]) {
+  background-color: #1e293b;
+}
+html.dark .bg-slate-50\/50:not([class*="dark:bg-"]) {
+  background-color: rgb(30 41 59 / 0.5);
+}
+
+/* -- Native form inputs without explicit dark: classes -- */
+html.dark input:not([class*="dark:bg-"]):not([class*="bg-slate-900"]):not([class*="bg-transparent"]),
+html.dark textarea:not([class*="dark:bg-"]):not([class*="bg-slate-900"]),
+html.dark select:not([class*="dark:bg-"]):not([class*="bg-slate-900"]) {
+  background-color: #1e293b;
   color: #f1f5f9;
-}
-html.dark .bg-slate-50 {
-  background-color: #1e293b !important;
-  color: #cbd5e1;
-}
-html.dark .bg-gray-50 {
-  background-color: #1e293b !important;
-  color: #cbd5e1;
-}
-
-/* -- Input fields -- */
-html.dark input,
-html.dark textarea,
-html.dark select {
-  background-color: #1e293b !important;
-  color: #f1f5f9 !important;
-  border-color: #334155 !important;
+  border-color: #334155;
 }
 html.dark input::placeholder,
 html.dark textarea::placeholder {
-  color: #64748b !important;
-}
-
-/* -- Borders on white containers -- */
-html.dark .border-slate-200 { border-color: #1e293b; }
-html.dark .border-slate-100 { border-color: #1e293b; }
-
-/* -- Text colors that sit on white in light mode -- */
-html.dark .text-slate-900 { color: #f1f5f9 !important; }
-html.dark .text-slate-800 { color: #e2e8f0 !important; }
-html.dark .text-slate-700 { color: #cbd5e1 !important; }
-html.dark .text-slate-600 { color: #94a3b8 !important; }
-html.dark .text-slate-500 { color: #64748b !important; }
-
-/* -- Table rows -- */
-html.dark tr.bg-white { background-color: #0f172a !important; }
-html.dark tr.bg-slate-50\/50,
-html.dark .bg-slate-50\/50 { background-color: rgb(30 41 59 / 0.5) !important; }
-html.dark .hover\:bg-blue-50\/30:hover { background-color: rgb(30 58 138 / 0.2) !important; }
-
-/* -- Sidebar inner header / divider -- */
-html.dark .bg-slate-100\/80 { background-color: rgb(15 23 42 / 0.8) !important; }
-html.dark .bg-slate-50\/50 { background-color: rgb(30 41 59 / 0.5) !important; }
-
-/* -- Sidebar user info area -- */
-html.dark .text-slate-900.truncate { color: #f1f5f9 !important; }
-
-/* -- Hover states on sidebar threads -- */
-html.dark .hover\:bg-slate-200\/50:hover { background-color: rgb(30 41 59 / 0.5) !important; }
-
-/* -- Notification bell dropdown -- */
-html.dark .bg-white.border.border-slate-200.rounded-xl { background-color: #0f172a !important; }
-
-/* -- Export popup -- */
-html.dark .bg-white.border-2.border-slate-300.rounded-xl { background-color: #0f172a !important; }
-
-/* -- Modal / overlay dialogs -- */
-html.dark .bg-white.rounded-2xl,
-html.dark .bg-white.border-2.border-slate-200.rounded-2xl,
-html.dark .bg-white.border-2.border-slate-300.rounded-2xl,
-html.dark .bg-white.border-2.border-amber-300.rounded-2xl,
-html.dark .bg-white.border-2.border-red-300.rounded-2xl,
-html.dark .bg-white.border-2.border-amber-400.rounded-2xl {
-  background-color: #0f172a !important;
-  border-color: #334155 !important;
-  color: #f1f5f9;
-}
-html.dark .bg-white.border-2.border-slate-200.rounded-2xl * { color: inherit; }
-
-/* -- Stat cards (Admin Dashboard) -- */
-html.dark .bg-white.border-2.border-slate-200.rounded-2xl.p-4,
-html.dark .bg-white.border-2.border-slate-200.rounded-2xl.p-5,
-html.dark .bg-white.border-2.border-slate-200.rounded-2xl.p-6,
-html.dark .bg-white.border-2.border-slate-200.rounded-2xl.p-12 {
-  background-color: #0f172a !important;
-  border-color: #1e293b !important;
-}
-
-/* -- FAQ items -- */
-html.dark .bg-white.border.border-slate-200.rounded-xl {
-  background-color: #0f172a !important;
-  border-color: #1e293b !important;
-}
-
-/* -- Suggestions cards -- */
-html.dark .bg-slate-50.border.border-slate-200.rounded-xl,
-html.dark .bg-slate-50.border-2.border-slate-200.rounded-xl {
-  background-color: #1e293b !important;
-  border-color: #334155 !important;
-}
-
-/* -- Table borders -- */
-html.dark .border-b.border-slate-100 { border-color: #1e293b !important; }
-html.dark .border-b.border-slate-200 { border-color: #1e293b !important; }
-html.dark .border-b-2.border-slate-200 { border-color: #1e293b !important; }
-html.dark .border-t-2.border-slate-200 { border-color: #1e293b !important; }
-html.dark .border-l-2.border-blue-200 { border-color: #1d4ed8 !important; }
-
-/* -- Monospace log / code viewer boxes -- */
-html.dark .max-h-80.overflow-y-auto.rounded-xl.border-2.border-slate-200.font-mono.bg-white {
-  background-color: #020617 !important;
-  border-color: #1e293b !important;
   color: #94a3b8;
 }
 
-/* -- Pagination buttons -- */
-html.dark .px-3.py-1.bg-white.hover\:bg-slate-100 {
-  background-color: #1e293b !important;
-  border-color: #334155 !important;
-  color: #cbd5e1 !important;
-}
+/* -- Text colors without explicit dark:text-* -- */
+html.dark .text-slate-900:not([class*="dark:text-"]) { color: #f1f5f9; }
+html.dark .text-slate-800:not([class*="dark:text-"]) { color: #e2e8f0; }
+html.dark .text-slate-700:not([class*="dark:text-"]) { color: #cbd5e1; }
+html.dark .text-slate-600:not([class*="dark:text-"]) { color: #94a3b8; }
+html.dark .text-slate-500:not([class*="dark:text-"]) { color: #94a3b8; }
+html.dark .text-black:not([class*="dark:text-"]) { color: #f1f5f9; }
 
-/* -- Auto-tagged badge -- */
-html.dark .text-slate-500.bg-white.px-2\.5.py-1.rounded-md { background-color: #1e293b !important; }
-
-/* -- Chat header (the THREAD top bar + white content area) -- */
-html.dark .bg-white\/70.backdrop-blur-md { background-color: rgb(15 23 42 / 0.8) !important; }
-
-/* -- The main chat message scroll area -- */
-html.dark .flex-1.overflow-y-auto.p-4 { background-color: transparent; }
-
-/* -- "New Chat" / active thread highlight fix in sidebar -- */
-html.dark .bg-blue-100\/50 { background-color: rgb(30 58 138 / 0.3) !important; }
-html.dark .border-blue-200 { border-color: #1d4ed8 !important; }
-
-/* -- Hover on red (logout etc.) in dark sidebar -- */
-html.dark .hover\:bg-red-50:hover { background-color: rgb(127 29 29 / 0.2) !important; }
-
-/* -- Section header "Module" text in sidebar -- */
-html.dark .text-slate-400 { color: #475569; }
+/* -- Sidebar inner header / hover states -- */
+html.dark .bg-slate-100\/80:not([class*="dark:bg-"]) { background-color: rgb(15 23 42 / 0.8); }
+html.dark .hover\:bg-slate-200\/50:not([class*="dark:hover:bg-"]):hover { background-color: rgb(30 41 59 / 0.5); }
+html.dark .hover\:bg-blue-50\/30:not([class*="dark:hover:bg-"]):hover { background-color: rgb(30 58 138 / 0.2); }
+html.dark .bg-blue-100\/50:not([class*="dark:bg-"]) { background-color: rgb(30 58 138 / 0.35); }
+html.dark .hover\:bg-red-50:not([class*="dark:hover:bg-"]):hover { background-color: rgb(127 29 29 / 0.25); }
 
 /* ---- Small sidebar variant of the pill toggle ---- */
 .theme-toggle--sm {

@@ -7,9 +7,9 @@ import { useState, useEffect, useRef } from 'react';
 
 const STATUS_LABELS = { upcoming: 'Upcoming', active: 'Active', completed: 'Completed' };
 const STATUS_COLORS = {
-  upcoming: 'bg-amber-50 text-amber-800 border border-amber-300',
+  upcoming: 'bg-amber-50 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700',
   active: 'bg-emerald-600 text-white shadow-sm',
-  completed: 'bg-slate-100 text-slate-600 border border-slate-300',
+  completed: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600',
 };
 
 function FeedbackPanel({ eventId, apiBase, authToken, authUser }) {
@@ -59,38 +59,38 @@ function FeedbackPanel({ eventId, apiBase, authToken, authUser }) {
   const replies = (parentId) => comments.filter(c => c.parent_id === parentId);
 
   return (
-    <div className="mt-4 border-t border-slate-200 pt-4">
-      <p className="text-xs font-display font-bold uppercase tracking-widest text-slate-500 mb-3">
+    <div className="mt-4 border-t border-slate-200 dark:border-slate-700 pt-4">
+      <p className="text-xs font-display font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">
         💬 Community Feedback ({comments.length})
       </p>
 
-      {loading && <p className="text-xs text-slate-400 font-mono">Loading…</p>}
+      {loading && <p className="text-xs text-slate-400 dark:text-slate-500 font-mono">Loading…</p>}
 
       {topLevel.length === 0 && !loading && (
-        <p className="text-xs text-slate-400 font-mono italic mb-3">No feedback yet. Be the first!</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500 font-mono italic mb-3">No feedback yet. Be the first!</p>
       )}
 
       <div className="space-y-3 mb-4">
         {topLevel.map(c => (
-          <div key={c.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+          <div key={c.id} className="bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl p-3">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-display font-bold text-slate-800">{c.author_label || c.author_name}</span>
-              <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${c.kind === 'suggestion' ? 'bg-cyan-100 text-cyan-700 border border-cyan-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
+              <span className="text-xs font-display font-bold text-slate-800 dark:text-slate-100">{c.author_label || c.author_name}</span>
+              <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${c.kind === 'suggestion' ? 'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-700' : 'bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700'}`}>
                 {c.kind}
               </span>
               {c.is_official === 1 && (
-                <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-amber-100 text-amber-700 border border-amber-200">Official</span>
+                <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-700">Official</span>
               )}
             </div>
-            <p className="text-sm text-slate-700 leading-relaxed">{c.content}</p>
+            <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">{c.content}</p>
             {/* Replies */}
             {replies(c.id).map(r => (
-              <div key={r.id} className="ml-4 mt-2 pl-3 border-l-2 border-blue-200 bg-white rounded-lg p-2">
-                <span className="text-xs font-bold text-slate-700">{r.author_label || r.author_name}</span>
+              <div key={r.id} className="ml-4 mt-2 pl-3 border-l-2 border-blue-200 dark:border-blue-600 bg-white dark:bg-slate-800 rounded-lg p-2">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{r.author_label || r.author_name}</span>
                 {r.is_official === 1 && (
-                  <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 font-bold">Official</span>
+                  <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-700 font-bold">Official</span>
                 )}
-                <p className="text-xs text-slate-600 mt-0.5">{r.content}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">{r.content}</p>
               </div>
             ))}
           </div>
@@ -105,12 +105,12 @@ function FeedbackPanel({ eventId, apiBase, authToken, authUser }) {
             placeholder={authUser?.full_name || 'Your name (optional)'}
             value={form.display_name}
             onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))}
-            className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-blue-400 bg-white"
+            className="flex-1 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-blue-400 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
           />
           <select
             value={form.kind}
             onChange={e => setForm(f => ({ ...f, kind: e.target.value }))}
-            className="border border-slate-200 rounded-lg px-2 py-2 text-xs font-mono focus:outline-none focus:border-blue-400 bg-white"
+            className="border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-2 text-xs font-mono focus:outline-none focus:border-blue-400 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
           >
             <option value="comment">Comment</option>
             <option value="suggestion">Suggestion</option>
@@ -122,7 +122,7 @@ function FeedbackPanel({ eventId, apiBase, authToken, authUser }) {
           value={form.content}
           onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
           disabled={!authToken}
-          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-blue-400 resize-none bg-white disabled:opacity-50"
+          className="w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-blue-400 resize-none bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 disabled:opacity-50"
         />
         {error && <p className="text-xs text-red-500 font-mono">{error}</p>}
         {success && <p className="text-xs text-emerald-600 font-mono">{success}</p>}
@@ -183,17 +183,17 @@ export default function PublicEventsPage({ apiBase }) {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-cyan-50/20 font-sans text-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-cyan-50/20 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 font-sans text-slate-900 dark:text-slate-100">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
+      <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 shadow-sm">
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-3">
             <img src="/ASKYOUTH.LOGO.png" alt="aSKYOUTH" className="w-8 h-8 object-contain" onError={e => e.target.style.display = 'none'} />
             <div>
-              <span className="font-display font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-cyan-600">
+              <span className="font-display font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-cyan-600 dark:from-blue-400 dark:to-cyan-400">
                 aSK//YOUTH
               </span>
-              <span className="ml-2 text-xs font-mono text-slate-500">Public Events</span>
+              <span className="ml-2 text-xs font-mono text-slate-500 dark:text-slate-400">Public Events</span>
             </div>
           </div>
           <a
@@ -208,8 +208,8 @@ export default function PublicEventsPage({ apiBase }) {
       <main className="max-w-5xl mx-auto px-4 py-8">
         {/* Title */}
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-display font-black text-slate-900">SK Events & Programs</h1>
-          <p className="text-slate-500 font-mono text-sm mt-1">
+          <h1 className="text-2xl sm:text-3xl font-display font-black text-slate-900 dark:text-slate-100">SK Events & Programs</h1>
+          <p className="text-slate-500 dark:text-slate-400 font-mono text-sm mt-1">
             Public events and programs by the Sangguniang Kabataan of your Barangay.
             Viewing is open to all — no login required.
           </p>
@@ -222,12 +222,12 @@ export default function PublicEventsPage({ apiBase }) {
             placeholder="Search events…"
             value={searchQ}
             onChange={e => setSearchQ(e.target.value)}
-            className="flex-1 min-w-[180px] border-2 border-slate-200 focus:border-blue-400 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none bg-white"
+            className="flex-1 min-w-[180px] border-2 border-slate-200 dark:border-slate-700 focus:border-blue-400 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
           />
           <select
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value)}
-            className="border-2 border-slate-200 focus:border-blue-400 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none bg-white"
+            className="border-2 border-slate-200 dark:border-slate-700 focus:border-blue-400 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
           >
             <option value="">All Statuses</option>
             <option value="upcoming">Upcoming</option>
@@ -237,7 +237,7 @@ export default function PublicEventsPage({ apiBase }) {
           <select
             value={filterCommittee}
             onChange={e => setFilterCommittee(e.target.value)}
-            className="border-2 border-slate-200 focus:border-blue-400 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none bg-white"
+            className="border-2 border-slate-200 dark:border-slate-700 focus:border-blue-400 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
           >
             <option value="">All Committees</option>
             {committees.map(c => <option key={c} value={c}>{c}</option>)}
@@ -253,8 +253,8 @@ export default function PublicEventsPage({ apiBase }) {
 
         {/* Empty */}
         {!loading && filtered.length === 0 && (
-          <div className="bg-white border-2 border-slate-200 rounded-2xl p-10 text-center">
-            <p className="text-slate-400 font-mono text-sm">No events found.</p>
+          <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-10 text-center">
+            <p className="text-slate-400 dark:text-slate-500 font-mono text-sm">No events found.</p>
           </div>
         )}
 
@@ -271,7 +271,7 @@ export default function PublicEventsPage({ apiBase }) {
             return (
               <div
                 key={ev.id}
-                className="bg-white border-2 border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all overflow-hidden"
+                className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm hover:shadow-md transition-all overflow-hidden"
               >
                 {/* Card header — always visible */}
                 <button
@@ -280,17 +280,17 @@ export default function PublicEventsPage({ apiBase }) {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${STATUS_COLORS[ev.status] || 'bg-slate-100 text-slate-600'}`}>
+                      <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${STATUS_COLORS[ev.status] || 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
                         {STATUS_LABELS[ev.status] || ev.status}
                       </span>
                       {ev.committee && (
-                        <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold uppercase tracking-wider">
+                        <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 font-bold uppercase tracking-wider">
                           {ev.committee === 'general' ? 'Barangay-Wide' : `${ev.committee} Committee`}
                         </span>
                       )}
                     </div>
-                    <h2 className="text-base font-display font-black text-slate-900 truncate">{ev.title}</h2>
-                    <div className="flex flex-wrap gap-3 mt-1 text-xs font-mono text-slate-500">
+                    <h2 className="text-base font-display font-black text-slate-900 dark:text-slate-100 truncate">{ev.title}</h2>
+                    <div className="flex flex-wrap gap-3 mt-1 text-xs font-mono text-slate-500 dark:text-slate-400">
                       {dateLabel && <span>📅 {dateLabel}</span>}
                       {ev.time && <span>🕐 {ev.time}</span>}
                       {ev.location && <span>📍 {ev.location}</span>}
@@ -306,14 +306,14 @@ export default function PublicEventsPage({ apiBase }) {
 
                 {/* Expanded details */}
                 {isExpanded && (
-                  <div className="px-5 pb-5 border-t border-slate-100">
+                  <div className="px-5 pb-5 border-t border-slate-100 dark:border-slate-700">
                     {ev.description && (
-                      <p className="text-sm text-slate-700 leading-relaxed mt-4 mb-3">{ev.description}</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mt-4 mb-3">{ev.description}</p>
                     )}
                     {ev.requirements && (
-                      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-3">
-                        <p className="text-xs font-display font-bold text-amber-800 uppercase tracking-wider mb-1">Requirements</p>
-                        <p className="text-sm text-amber-900">{ev.requirements}</p>
+                      <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-xl px-4 py-3 mb-3">
+                        <p className="text-xs font-display font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider mb-1">Requirements</p>
+                        <p className="text-sm text-amber-900 dark:text-amber-200">{ev.requirements}</p>
                       </div>
                     )}
                     <FeedbackPanel

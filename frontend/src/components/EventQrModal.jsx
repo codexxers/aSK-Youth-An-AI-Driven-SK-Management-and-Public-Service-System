@@ -238,36 +238,36 @@ export default function EventQrModal({
       onClick={onClose}
     >
       <div
-        className="bg-white border-2 border-slate-300 rounded-3xl w-full max-w-md shadow-2xl text-slate-900 overflow-hidden transition-all flex flex-col"
+        className="bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 rounded-3xl w-full max-w-md shadow-2xl text-slate-900 dark:text-slate-100 overflow-hidden transition-all flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Bar */}
-        <div className="p-6 border-b border-slate-100 flex items-start justify-between gap-4">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
               <CommitteeBadge committee={ev.committee} compact={true} />
               <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
                 ev.status === 'completed'
-                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                  ? 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
                   : ev.status === 'active'
                   ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'bg-amber-50 text-amber-800 border border-amber-300'
+                  : 'bg-amber-50 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
               }`}>
                 {ev.status || 'Upcoming'}
               </span>
             </div>
-            <h3 className="text-lg font-display font-bold text-slate-900 leading-snug truncate">
+            <h3 className="text-lg font-display font-bold text-slate-900 dark:text-slate-100 leading-snug truncate">
               {ev.title}
             </h3>
             {(ev.date || ev.location) && (
-              <p className="text-xs text-slate-500 font-mono mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-1">
                 {ev.date} {ev.location ? `// ${ev.location}` : ''}
               </p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
             title="Close"
           >
             ✕
@@ -275,8 +275,8 @@ export default function EventQrModal({
         </div>
 
         {/* QR Display Area */}
-        <div className="p-6 flex flex-col items-center bg-slate-50/60">
-          <div className="relative p-5 bg-white rounded-2xl border-2 border-slate-200 shadow-lg">
+        <div className="p-6 flex flex-col items-center bg-slate-50/60 dark:bg-slate-900/50">
+          <div className="relative p-5 bg-white rounded-2xl border-2 border-slate-200 dark:border-slate-600 shadow-lg">
             {/* Viewfinder Target Corner Brackets */}
             <span className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-blue-600 pointer-events-none" />
             <span className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-blue-600 pointer-events-none" />
@@ -329,25 +329,25 @@ export default function EventQrModal({
             )}
           </div>
 
-          <p className="text-xs text-slate-600 text-center font-medium mt-4 max-w-xs">
+          <p className="text-xs text-slate-600 dark:text-slate-300 text-center font-medium mt-4 max-w-xs">
             Youth constituents scan this code with their smartphone camera to log event attendance.
           </p>
 
           {/* Deep link copy snippet */}
-          <div className="w-full mt-3 flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-xs">
-            <span className="text-[10px] font-mono text-slate-400 font-bold uppercase shrink-0">Link</span>
+          <div className="w-full mt-3 flex items-center gap-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-2.5 py-1.5 shadow-xs">
+            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-400 font-bold uppercase shrink-0">Link</span>
             <input
               type="text"
               readOnly
               value={scanUrl}
-              className="flex-1 text-[11px] font-mono text-slate-700 bg-transparent outline-none truncate cursor-text"
+              className="flex-1 text-[11px] font-mono text-slate-700 dark:text-slate-200 bg-transparent outline-none truncate cursor-text"
             />
             <button
               onClick={handleCopyLink}
               className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer shrink-0 ${
                 copied
                   ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                  : 'bg-slate-100 dark:bg-slate-600 hover:bg-slate-200 dark:hover:bg-slate-500 text-slate-700 dark:text-slate-200'
               }`}
             >
               {copied ? 'Copied' : 'Copy'}
@@ -356,7 +356,7 @@ export default function EventQrModal({
         </div>
 
         {/* Action Buttons */}
-        <div className="p-6 pt-4 border-t border-slate-100 flex flex-col gap-2.5">
+        <div className="p-6 pt-4 border-t border-slate-100 dark:border-slate-700 flex flex-col gap-2.5">
           <div className="grid grid-cols-2 gap-2">
             <button
               disabled={loading || !!error || !blobUrl}
@@ -368,7 +368,7 @@ export default function EventQrModal({
             <button
               disabled={loading || !!error || !blobUrl}
               onClick={handlePrint}
-              className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-800 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer border border-slate-200"
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-40 text-slate-800 dark:text-slate-200 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-slate-600"
             >
               Print Sign
             </button>
@@ -377,7 +377,7 @@ export default function EventQrModal({
           {isAdmin && onRefreshQR && (
             <button
               onClick={() => onRefreshQR(ev.id)}
-              className="w-full px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer font-mono"
+              className="w-full px-3 py-2 bg-amber-50 dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer font-mono"
             >
               Rotate QR Token (Admin Only)
             </button>
@@ -385,7 +385,7 @@ export default function EventQrModal({
 
           <button
             onClick={onClose}
-            className="w-full px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors cursor-pointer font-mono mt-1"
+            className="w-full px-4 py-2 bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors cursor-pointer font-mono mt-1"
           >
             Close
           </button>

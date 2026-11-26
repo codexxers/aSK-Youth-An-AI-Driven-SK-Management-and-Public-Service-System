@@ -2096,17 +2096,17 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             {/* Side-by-Side Charts Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Event Statistics & Participation Leaderboard */}
-              <div className="bg-white border-2 border-slate-200 rounded-2xl p-5 flex flex-col h-[400px] shadow-sm">
+              <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-5 flex flex-col h-[400px] shadow-sm">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2 shrink-0">
-                  <h3 className="text-xs font-display text-slate-800 uppercase tracking-wider font-bold flex items-center gap-2 m-0">
+                  <h3 className="text-xs font-display text-slate-800 dark:text-slate-100 uppercase tracking-wider font-bold flex items-center gap-2 m-0">
                     <span className="w-2 h-2 rounded-full bg-blue-600" /> Event Statistics
                   </h3>
                   <div className="flex items-center gap-2 text-[10px] font-mono shrink-0">
-                    <span className="text-slate-500 font-bold">Sort:</span>
+                    <span className="text-slate-500 dark:text-slate-400 font-bold">Sort:</span>
                     <select
                       value={leaderboardSortBy}
                       onChange={e => setLeaderboardSortBy(e.target.value)}
-                      className="bg-slate-50 border-2 border-slate-200 rounded-lg px-2 py-0.5 text-slate-800 focus:outline-none focus:border-blue-600 font-bold cursor-pointer"
+                      className="bg-slate-50 dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-lg px-2 py-0.5 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-600 font-bold cursor-pointer"
                     >
                       <option value="attendees">Attendees</option>
                       <option value="budget">Budget</option>
@@ -2114,7 +2114,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     </select>
                     <button
                       onClick={() => setLeaderboardSortAsc(!leaderboardSortAsc)}
-                      className="p-1 px-1.5 hover:bg-slate-100 rounded text-slate-600 hover:text-blue-600 transition-colors cursor-pointer border border-slate-200 bg-slate-50 flex items-center justify-center gap-1 font-bold"
+                      className="p-1 px-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300 hover:text-blue-600 transition-colors cursor-pointer border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 flex items-center justify-center gap-1 font-bold"
                       title={leaderboardSortAsc ? "Sort Ascending" : "Sort Descending"}
                       aria-label={leaderboardSortAsc ? "Sort Ascending" : "Sort Descending"}
                     >
@@ -2128,11 +2128,11 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                       </svg>
                       <span className="text-[9px] uppercase">{leaderboardSortAsc ? 'ASC' : 'DESC'}</span>
                     </button>
-                    <span className="text-slate-400 ml-1 border-l border-slate-200 pl-2 font-bold">Show:</span>
+                    <span className="text-slate-400 dark:text-slate-500 ml-1 border-l border-slate-200 dark:border-slate-600 pl-2 font-bold">Show:</span>
                     <select
                       value={leaderboardLimit}
                       onChange={e => setLeaderboardLimit(e.target.value)}
-                      className="bg-slate-50 border-2 border-slate-200 rounded-lg px-2 py-0.5 text-slate-800 focus:outline-none focus:border-blue-600 font-bold cursor-pointer"
+                      className="bg-slate-50 dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-lg px-2 py-0.5 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-600 font-bold cursor-pointer"
                     >
                       <option value="5">Top 5</option>
                       <option value="10">Top 10</option>
@@ -2178,12 +2178,12 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                                 ? 'bg-cyan-700 text-white'
                                 : index === 2
                                   ? 'bg-slate-700 text-white'
-                                  : 'bg-slate-100 text-slate-600 border border-slate-200';
+                                  : 'bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-200 border border-slate-200 dark:border-slate-500';
 
                           return (
                             <div
                               key={d.id || index}
-                              className="group p-2.5 rounded-xl border border-slate-200/80 bg-slate-50/40 hover:bg-white hover:border-blue-300 hover:shadow-xs transition-all duration-150"
+                              className="group p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-700/40 hover:bg-white dark:hover:bg-slate-700 hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-xs transition-all duration-150"
                             >
                               <div className="flex items-start justify-between gap-3">
                                 {/* Left: Rank & Title */}
@@ -2193,14 +2193,14 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                                   </span>
                                   <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                      <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-blue-600 transition-colors" title={d.title}>
+                                      <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" title={d.title}>
                                         {d.title}
                                       </h4>
                                       {d.committee && (
                                         <CommitteeBadge committee={d.committee} compact={true} className="text-[10px] py-0 px-1.5 shrink-0" />
                                       )}
                                     </div>
-                                    <div className="flex items-center gap-2 mt-0.5 text-[10px] font-mono text-slate-400">
+                                    <div className="flex items-center gap-2 mt-0.5 text-[10px] font-mono text-slate-500 dark:text-slate-400">
                                       <span>Date: {formattedDate}</span>
                                     </div>
                                   </div>
@@ -2210,19 +2210,19 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                                 <div className="text-right shrink-0">
                                   {isBudgetSort ? (
                                     <>
-                                      <div className="text-xs font-mono font-bold text-emerald-700">
+                                      <div className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
                                         ₱{budget.toLocaleString()}
                                       </div>
-                                      <div className="text-[10px] font-mono text-slate-500">
+                                      <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
                                         {attendees.toLocaleString()} attendees
                                       </div>
                                     </>
                                   ) : (
                                     <>
-                                      <div className="text-xs font-mono font-bold text-blue-700">
-                                        {attendees.toLocaleString()} <span className="text-[10px] font-normal text-slate-500">attendees</span>
+                                      <div className="text-xs font-mono font-bold text-blue-700 dark:text-blue-400">
+                                        {attendees.toLocaleString()} <span className="text-[10px] font-normal text-slate-500 dark:text-slate-400">attendees</span>
                                       </div>
-                                      <div className="text-[10px] font-mono text-slate-500">
+                                      <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
                                         Budget: ₱{budget.toLocaleString()}
                                       </div>
                                     </>
@@ -2231,7 +2231,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                               </div>
 
                               {/* Proportional Metric Bar */}
-                              <div className="mt-2 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200/60">
+                              <div className="mt-2 w-full bg-slate-100 dark:bg-slate-600 rounded-full h-1.5 overflow-hidden border border-slate-200/60 dark:border-slate-500/60">
                                 <div
                                   className={`h-full rounded-full transition-all duration-300 ${isBudgetSort
                                       ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
@@ -2261,12 +2261,12 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                 const budgetPalette = ['#2563eb', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#f97316', '#6366f1', '#14b8a6'];
 
                 return (
-                  <div className="bg-white border-2 border-slate-200 rounded-2xl p-5 flex flex-col h-[400px] shadow-sm">
+                  <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-5 flex flex-col h-[400px] shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-xs font-display text-slate-800 uppercase tracking-wider font-bold flex items-center gap-2">
+                      <h3 className="text-xs font-display text-slate-800 dark:text-slate-100 uppercase tracking-wider font-bold flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-emerald-500" /> Budget Allocation by Category
                       </h3>
-                      <span className="text-[11px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">
+                      <span className="text-[11px] font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-700 px-2 py-0.5 rounded-lg">
                         Total: ₱{totalBudgetValue.toLocaleString()}
                       </span>
                     </div>
@@ -2298,7 +2298,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                           useResizeHandler
                         />
                       ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-xs font-mono text-slate-400">No budget allotments recorded</div>
+                        <div className="absolute inset-0 flex items-center justify-center text-xs font-mono text-slate-400 dark:text-slate-500">No budget allotments recorded</div>
                       )}
                     </div>
 
@@ -2309,14 +2309,14 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                           const pct = totalBudgetValue > 0 ? ((Number(item.total_budget) / totalBudgetValue) * 100).toFixed(1) : '0';
                           const color = budgetPalette[idx % budgetPalette.length];
                           return (
-                            <div key={item.category || idx} className="flex items-center justify-between p-1.5 rounded-xl bg-slate-50 border border-slate-200">
+                            <div key={item.category || idx} className="flex items-center justify-between p-1.5 rounded-xl bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: color }} />
-                                <span className="font-bold text-slate-800 uppercase truncate text-[10px]">{item.category || 'General'}</span>
+                                <span className="font-bold text-slate-800 dark:text-slate-100 uppercase truncate text-[10px]">{item.category || 'General'}</span>
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
-                                <span className="font-semibold text-slate-600 text-[10px]">₱{Number(item.total_budget).toLocaleString()}</span>
-                                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200">{pct}%</span>
+                                <span className="font-semibold text-slate-700 dark:text-slate-200 text-[10px]">₱{Number(item.total_budget).toLocaleString()}</span>
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700">{pct}%</span>
                               </div>
                             </div>
                           );
@@ -2329,22 +2329,22 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             </div>
 
             {/* Recent Activity Feed */}
-            <div className="bg-white border-2 border-slate-200 rounded-2xl p-5 shadow-sm">
-              <h3 className="text-xs font-display text-slate-800 uppercase tracking-wider mb-3 font-bold">Recent System Trajectory (Admin Log Preview)</h3>
+            <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+              <h3 className="text-xs font-display text-slate-800 dark:text-slate-100 uppercase tracking-wider mb-3 font-bold">Recent System Trajectory (Admin Log Preview)</h3>
               <div className="space-y-2">
                 {logs.slice(0, 8).map((lg, i) => (
-                  <div key={i} className="flex items-center gap-3 text-xs font-mono py-2 px-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/30 transition-colors">
-                    <span className="text-[10px] text-blue-600 shrink-0 font-bold tracking-wide">{formatSGT(lg.created_at)}</span>
-                    <span className="px-2 py-0.5 bg-slate-200 text-slate-800 rounded-lg text-[9px] font-bold uppercase">{lg.role}</span>
-                    <span className="text-slate-900 truncate max-w-[150px] font-bold">{lg.actor}</span>
-                    <span className="text-slate-400 shrink-0">→</span>
-                    <span className="text-blue-700 font-bold">{lg.action}</span>
-                    {lg.target && <span className="text-slate-500 truncate max-w-[180px]">({lg.target})</span>}
-                    <span className="ml-auto text-slate-500 truncate text-[11px] max-w-[250px] hidden sm:inline">{lg.details}</span>
+                  <div key={i} className="flex items-center gap-3 text-xs font-mono py-2 px-3 bg-slate-50 dark:bg-slate-700/60 rounded-xl border border-slate-200 dark:border-slate-600 hover:border-blue-300 dark:hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-colors">
+                    <span className="text-[10px] text-blue-600 dark:text-blue-400 shrink-0 font-bold tracking-wide">{formatSGT(lg.created_at)}</span>
+                    <span className="px-2 py-0.5 bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-100 rounded-lg text-[9px] font-bold uppercase">{lg.role}</span>
+                    <span className="text-slate-900 dark:text-slate-100 truncate max-w-[150px] font-bold">{lg.actor}</span>
+                    <span className="text-slate-400 dark:text-slate-500 shrink-0">→</span>
+                    <span className="text-blue-700 dark:text-blue-400 font-bold">{lg.action}</span>
+                    {lg.target && <span className="text-slate-500 dark:text-slate-400 truncate max-w-[180px]">({lg.target})</span>}
+                    <span className="ml-auto text-slate-500 dark:text-slate-400 truncate text-[11px] max-w-[250px] hidden sm:inline">{lg.details}</span>
                   </div>
                 ))}
                 {logs.length === 0 && (
-                  <p className="text-xs font-mono text-slate-400 py-4 text-center">No logs generated yet. Perform actions to populate trajectory.</p>
+                  <p className="text-xs font-mono text-slate-400 dark:text-slate-500 py-4 text-center">No logs generated yet. Perform actions to populate trajectory.</p>
                 )}
               </div>
             </div>

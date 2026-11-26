@@ -1996,14 +1996,14 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-transparent text-slate-900 overflow-y-auto relative">
+    <div className="flex-1 flex flex-col h-full bg-transparent text-slate-900 dark:text-slate-100 overflow-y-auto relative">
       {/* Top Banner */}
-      <div className="shrink-0 border-b border-slate-200/80 bg-white/70 backdrop-blur-md px-3 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sticky top-0 z-30">
+      <div className="shrink-0 border-b border-slate-200/80 dark:border-slate-700 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md px-3 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sticky top-0 z-30">
         <div className="flex items-center gap-3 min-w-0">
           {!sidebarOpen && (
             <button
               onClick={onToggleSidebar}
-              className="text-slate-500 hover:text-blue-600 transition-all p-1.5 hover:bg-slate-100 rounded-lg border border-slate-200/60 flex items-center justify-center cursor-pointer md:hidden"
+              className="text-slate-500 hover:text-blue-600 transition-all p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg border border-slate-200/60 dark:border-slate-600 flex items-center justify-center cursor-pointer md:hidden"
               title="Open Menu"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2012,18 +2012,18 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             </button>
           )}
           <div className="min-w-0">
-            <h1 className="text-base sm:text-xl font-display font-black text-slate-900 tracking-wide truncate">
+            <h1 className="text-base sm:text-xl font-display font-black text-slate-900 dark:text-slate-100 tracking-wide truncate">
               🛡️ ADMIN GATEWAY
             </h1>
           </div>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border-2 border-slate-200 font-mono text-[11px]">
+        <div className="flex items-center justify-between sm:justify-end gap-2 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border-2 border-slate-200 dark:border-slate-700 font-mono text-[11px]">
           <div className="flex items-center gap-2 truncate">
-            <span className="text-slate-500 select-none font-bold">OPERATOR:</span>
-            <span className="text-slate-900 font-bold truncate max-w-[120px]">{authUser?.full_name}</span>
+            <span className="text-slate-500 dark:text-slate-400 select-none font-bold">OPERATOR:</span>
+            <span className="text-slate-900 dark:text-slate-100 font-bold truncate max-w-[120px]">{authUser?.full_name}</span>
           </div>
-          <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200 font-bold uppercase text-[9px] shrink-0">
+          <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700 font-bold uppercase text-[9px] shrink-0">
             {effectiveRole}
           </span>
         </div>
@@ -2031,7 +2031,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
 
       {/* Tabs navigation */}
       <div className="relative shrink-0">
-        <div className="px-3 sm:px-6 pt-2 sm:pt-4 flex flex-nowrap gap-1 sm:gap-2 border-b-2 border-slate-200 overflow-x-auto scrollbar-none">
+        <div className="px-3 sm:px-6 pt-2 sm:pt-4 flex flex-nowrap gap-1 sm:gap-2 border-b-2 border-slate-200 dark:border-slate-700 overflow-x-auto scrollbar-none">
           {[
             { id: 'overview', label: 'Analytics', icon: '📊' },
             { id: 'users', label: 'Users', icon: '👥' },
@@ -2042,8 +2042,8 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`shrink-0 flex items-center gap-2 px-3 sm:px-4 py-2 border-b-2 font-display text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${activeTab === tab.id
-                ? 'border-blue-600 text-blue-700 bg-blue-50/60 rounded-t-xl'
-                : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50/50 rounded-t-xl'
+                ? 'border-blue-600 text-blue-700 dark:text-blue-400 bg-blue-50/60 dark:bg-blue-900/30 rounded-t-xl'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 rounded-t-xl'
                 }`}
             >
               <span>{tab.icon}</span>
@@ -2081,12 +2081,12 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                 ...(stats.totalBudget !== undefined ? [{ label: 'BUDGET UTILIZED', val: `₱${(stats.totalBudget ?? 0).toLocaleString()}`, color: 'border-emerald-200 text-emerald-600', icon: '💰' }] : []),
                 { label: 'PENDING SUGGESTIONS', val: stats.pendingSuggestions, color: 'border-amber-200 text-amber-600', icon: '📬' },
               ].map((st, i) => (
-                <div key={i} className={`bg-white border-2 ${st.color} rounded-2xl p-5 relative group hover:shadow-md transition-all overflow-hidden`}>
+                <div key={i} className={`bg-white dark:bg-slate-800 border-2 ${st.color} rounded-2xl p-5 relative group hover:shadow-md transition-all overflow-hidden`}>
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest">{st.label}</span>
+                    <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{st.label}</span>
                     <span className="text-base select-none">{st.icon}</span>
                   </div>
-                  <div className="mt-2 text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 group-hover:scale-105 origin-left transition-transform">
+                  <div className="mt-2 text-2xl sm:text-3xl font-display font-black tracking-tight text-slate-900 dark:text-slate-100 group-hover:scale-105 origin-left transition-transform">
                     {st.val ?? '—'}
                   </div>
                 </div>
@@ -2353,9 +2353,9 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
 
         {/* --- USERS TAB --- */}
         {activeTab === 'users' && (
-          <div className="bg-white border-2 border-slate-200 rounded-2xl overflow-hidden flex flex-col shadow-sm">
-            <div className="p-4 bg-slate-50 border-b-2 border-slate-200 flex items-center justify-between flex-wrap gap-2">
-              <span className="text-xs font-display text-slate-700 uppercase tracking-wider font-bold">
+          <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden flex flex-col shadow-sm">
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-b-2 border-slate-200 dark:border-slate-700 flex items-center justify-between flex-wrap gap-2">
+              <span className="text-xs font-display text-slate-700 dark:text-slate-300 uppercase tracking-wider font-bold">
                 Registered Operators ({users.filter(u => u.role !== 'youth').length})
               </span>
               {effectiveRole === 'admin' && (
@@ -2370,7 +2370,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs font-mono">
-                <thead className="bg-slate-100 text-slate-600 uppercase tracking-wider border-b-2 border-slate-200">
+                <thead className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 uppercase tracking-wider border-b-2 border-slate-200 dark:border-slate-600">
                   <tr>
                     <th className="p-3">Username</th>
                     <th className="p-3">Identity / Alias</th>
@@ -2381,23 +2381,23 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     {effectiveRole === 'admin' && <th className="p-3 text-right">Privilege Controls</th>}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {users.filter(u => u.role !== 'youth').map(usr => (
-                    <tr key={usr.id} className="hover:bg-blue-50/30 transition-colors">
-                      <td className="p-3 font-bold text-blue-700">{usr.username}</td>
-                      <td className="p-3 text-slate-900 font-semibold">
+                    <tr key={usr.id} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-colors">
+                      <td className="p-3 font-bold text-blue-700 dark:text-blue-400">{usr.username}</td>
+                      <td className="p-3 text-slate-900 dark:text-slate-100 font-semibold">
                         <div>{usr.full_name}</div>
                         {usr.role === 'committee' && (
-                          <div className="text-[10px] text-slate-500 font-normal">
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">
                             {getCommitteeLabel(usr.committee)}
                           </div>
                         )}
                       </td>
                       <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${usr.role === 'admin' ? 'bg-red-100 text-red-800 border border-red-200' :
-                          usr.role === 'chairman' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
-                            usr.role === 'committee' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                              'bg-slate-100 text-slate-700'
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${usr.role === 'admin' ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-700' :
+                          usr.role === 'chairman' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700' :
+                            usr.role === 'committee' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700' :
+                              'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                           }`}>
                           {usr.role === 'committee' ? 'Committee' : usr.role}
                         </span>
@@ -2406,16 +2406,16 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                         {usr.role === 'committee' ? (
                           <CommitteeBadge committee={usr.committee} compact={true} />
                         ) : (
-                          <span className="text-slate-400 font-mono text-xs">—</span>
+                          <span className="text-slate-400 dark:text-slate-500 font-mono text-xs">—</span>
                         )}
                       </td>
                       <td className="p-3">
-                        <span className={`flex items-center gap-1.5 font-bold ${usr.status === 'active' ? 'text-emerald-700' : 'text-slate-400'}`}>
+                        <span className={`flex items-center gap-1.5 font-bold ${usr.status === 'active' ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${usr.status === 'active' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                           {usr.status.toUpperCase()}
                         </span>
                       </td>
-                      <td className="p-3 text-slate-500">{usr.created_at?.slice(0, 10)}</td>
+                      <td className="p-3 text-slate-500 dark:text-slate-400">{usr.created_at?.slice(0, 10)}</td>
                       {effectiveRole === 'admin' && (
                         <td className="p-3 text-right">
                           <div className="flex items-center justify-end gap-2 flex-wrap">
@@ -2465,23 +2465,23 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
 
         {/* --- SYSTEM LOGS TAB (Admin Only) --- */}
         {activeTab === 'logs' && effectiveRole === 'admin' && (
-          <div className="bg-white border-2 border-slate-200 rounded-2xl overflow-hidden flex flex-col shadow-sm">
+          <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden flex flex-col shadow-sm">
             {/* Filter controls row */}
-            <div className="p-4 bg-slate-50 border-b-2 border-slate-200 flex flex-wrap items-center justify-between gap-3">
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-b-2 border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <input
                   type="text"
                   placeholder="Filter Actor…"
                   value={logActorFilter}
                   onChange={e => { setLogActorFilter(e.target.value); setLogsPage(1); }}
-                  className="bg-white border-2 border-slate-200 rounded-xl px-3 py-1.5 text-xs font-mono text-slate-800 focus:outline-none focus:border-blue-600 placeholder-slate-400 shadow-sm"
+                  className="bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-3 py-1.5 text-xs font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-600 placeholder-slate-400 dark:placeholder-slate-500 shadow-sm"
                 />
                 <input
                   type="text"
                   placeholder="Filter Action…"
                   value={logActionFilter}
                   onChange={e => { setLogActionFilter(e.target.value); setLogsPage(1); }}
-                  className="bg-white border-2 border-slate-200 rounded-xl px-3 py-1.5 text-xs font-mono text-slate-800 focus:outline-none focus:border-blue-600 placeholder-slate-400 shadow-sm"
+                  className="bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 rounded-xl px-3 py-1.5 text-xs font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-600 placeholder-slate-400 dark:placeholder-slate-500 shadow-sm"
                 />
                 {(logActorFilter || logActionFilter) && (
                   <button
@@ -2495,7 +2495,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
 
               <button
                 onClick={handleExportLogs}
-                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-display font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 ml-auto cursor-pointer shadow-sm active:scale-95"
+                className="px-4 py-2 bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white rounded-xl text-xs font-display font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 ml-auto cursor-pointer shadow-sm active:scale-95"
               >
                 <span>📥</span> Export Logs (CSV)
               </button>
@@ -2504,7 +2504,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
             {/* Logs Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs font-mono whitespace-nowrap">
-                <thead className="bg-slate-100 text-slate-600 uppercase tracking-wider border-b-2 border-slate-200">
+                <thead className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 uppercase tracking-wider border-b-2 border-slate-200 dark:border-slate-600">
                   <tr>
                     <th className="p-3">Timestamp</th>
                     <th className="p-3">Actor Entity</th>
@@ -2515,23 +2515,23 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     <th className="p-3">IP Source</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {logs.map(lg => (
-                    <tr key={lg.id} className="hover:bg-blue-50/30 transition-colors">
-                      <td className="p-3 text-blue-700 font-bold tracking-wide">{formatSGT(lg.created_at)}</td>
-                      <td className="p-3 font-bold text-slate-900">{lg.actor}</td>
+                    <tr key={lg.id} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-colors">
+                      <td className="p-3 text-blue-700 dark:text-blue-400 font-bold tracking-wide">{formatSGT(lg.created_at)}</td>
+                      <td className="p-3 font-bold text-slate-900 dark:text-slate-100">{lg.actor}</td>
                       <td className="p-3">
-                        <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 rounded text-[10px] font-bold uppercase">{lg.role}</span>
+                        <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 text-slate-700 dark:text-slate-200 rounded text-[10px] font-bold uppercase">{lg.role}</span>
                       </td>
-                      <td className="p-3 font-bold text-blue-700">{lg.action}</td>
-                      <td className="p-3 text-slate-600 max-w-[150px] truncate">{lg.target || '—'}</td>
-                      <td className="p-3 text-slate-800 whitespace-normal min-w-[200px]">{lg.details || '—'}</td>
-                      <td className="p-3 text-slate-400 font-mono text-[11px]">{lg.ip_address || 'local'}</td>
+                      <td className="p-3 font-bold text-blue-700 dark:text-blue-400">{lg.action}</td>
+                      <td className="p-3 text-slate-600 dark:text-slate-400 max-w-[150px] truncate">{lg.target || '—'}</td>
+                      <td className="p-3 text-slate-800 dark:text-slate-200 whitespace-normal min-w-[200px]">{lg.details || '—'}</td>
+                      <td className="p-3 text-slate-400 dark:text-slate-500 font-mono text-[11px]">{lg.ip_address || 'local'}</td>
                     </tr>
                   ))}
                   {logs.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="p-6 text-center text-slate-400 font-mono">No telemetry events map matching filters</td>
+                      <td colSpan={7} className="p-6 text-center text-slate-400 dark:text-slate-500 font-mono">No telemetry events map matching filters</td>
                     </tr>
                   )}
                 </tbody>
@@ -2540,20 +2540,20 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
 
             {/* Pagination controls */}
             {logsTotalPages > 1 && (
-              <div className="p-3 bg-slate-50 border-t-2 border-slate-200 flex items-center justify-between text-xs font-mono text-slate-600">
+              <div className="p-3 bg-slate-50 dark:bg-slate-900/50 border-t-2 border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs font-mono text-slate-600 dark:text-slate-400">
                 <span>Page {logsPage} of {logsTotalPages}</span>
                 <div className="flex gap-1.5">
                   <button
                     onClick={() => setLogsPage(p => Math.max(1, p - 1))}
                     disabled={logsPage === 1}
-                    className="px-3 py-1 bg-white hover:bg-slate-100 disabled:opacity-40 rounded-xl border border-slate-200 text-slate-700 cursor-pointer shadow-sm font-bold"
+                    className="px-3 py-1 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 disabled:opacity-40 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 cursor-pointer shadow-sm font-bold"
                   >
                     ◀ Prev
                   </button>
                   <button
                     onClick={() => setLogsPage(p => Math.min(logsTotalPages, p + 1))}
                     disabled={logsPage === logsTotalPages}
-                    className="px-3 py-1 bg-white hover:bg-slate-100 disabled:opacity-40 rounded-xl border border-slate-200 text-slate-700 cursor-pointer shadow-sm font-bold"
+                    className="px-3 py-1 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 disabled:opacity-40 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 cursor-pointer shadow-sm font-bold"
                   >
                     Next ▶
                   </button>

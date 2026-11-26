@@ -1729,6 +1729,7 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   const [deleteTarget, setDeleteTarget] = useState(null);  // { id, username } | null
   const [deleteStep, setDeleteStep] = useState(1);         // 1 = first confirm, 2 = type username
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
   // Derived: is there already a chairman or secretary?
   const hasChairman = users.some(u => u.role === 'chairman' && u.status === 'active');
   const hasSecretary = users.some(u => u.role === 'secretary' && u.status === 'active');
@@ -1900,7 +1901,8 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
         method: 'DELETE',
         headers: authHeaders({ 'X-Actor': authUser?.full_name || 'Admin', 'X-Role': effectiveRole })
       });
-      if (!res.ok) throw new Error('Failed to deactivate account');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to deactivate account');
       fetchDashboardData();
     } catch (err) {
       alert(err.message);
@@ -1914,22 +1916,31 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
     setDeleteConfirmInput('');
   };
   const cancelDelete = () => {
+    if (deleteLoading) return;
     setDeleteTarget(null);
     setDeleteStep(1);
     setDeleteConfirmInput('');
   };
   const handleDeleteUser = async () => {
-    if (!deleteTarget) return;
+    if (!deleteTarget || deleteLoading) return;
+    setDeleteLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/users/${deleteTarget.id}`, {
+      const res = await fetch(`${API_BASE}/api/users/${deleteTarget.id}?permanent=true`, {
         method: 'DELETE',
         headers: authHeaders({ 'X-Actor': authUser?.full_name || 'Admin', 'X-Role': effectiveRole })
       });
-      if (!res.ok) throw new Error('Failed to delete account');
-      cancelDelete();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to delete account');
+      const deletedId = deleteTarget.id;
+      setDeleteTarget(null);
+      setDeleteStep(1);
+      setDeleteConfirmInput('');
+      setUsers(prev => prev.filter(u => u.id !== deletedId));
       fetchDashboardData();
     } catch (err) {
       alert(err.message);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -2879,13 +2890,13 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   <p className="text-red-500 dark:text-red-400 text-[10px] font-bold">Username does not match.</p>
                 )}
                 <div className="flex justify-end gap-2 pt-1">
-                  <button onClick={cancelDelete} className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl text-xs font-bold transition-colors cursor-pointer">Cancel</button>
+                  <button onClick={cancelDelete} disabled={deleteLoading} className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50 rounded-xl text-xs font-bold transition-colors cursor-pointer">Cancel</button>
                   <button
                     onClick={handleDeleteUser}
-                    disabled={deleteConfirmInput !== deleteTarget.username}
+                    disabled={deleteLoading || deleteConfirmInput !== deleteTarget.username}
                     className="px-5 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-200 dark:disabled:bg-slate-700 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold rounded-xl text-xs transition-colors shadow-md cursor-pointer"
                   >
-                    Delete Account
+                    {deleteLoading ? 'Deleting...' : 'Delete Account'}
                   </button>
                 </div>
               </>

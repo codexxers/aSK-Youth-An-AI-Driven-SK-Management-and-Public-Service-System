@@ -1761,19 +1761,44 @@ app.patch('/api/users/:id', verifyAdmin, (req, res) => {
 
 app.delete('/api/users/:id', verifyAdmin, (req, res) => {
     const { id } = req.params;
+    const isPermanent = req.query.permanent === 'true';
     const actor = req.authUser.full_name || 'Admin';
     const actorRole = req.authUser.role || 'admin';
     const ip = req.ip || req.socket.remoteAddress;
 
     try {
-        const targetUser = db.prepare('SELECT username FROM users WHERE id = ?').get(id);
+        const targetUser = db.prepare('SELECT id, username, full_name FROM users WHERE id = ?').get(id);
         if (!targetUser) return res.status(404).json({ error: 'User not found' });
-        // Safe delete/deactivation
+
+        if (targetUser.username === 'admin') {
+            return res.status(403).json({ error: 'The protected system admin account cannot be deactivated or deleted.' });
+        }
+        if (Number(targetUser.id) === Number(req.authUser.id)) {
+            return res.status(400).json({ error: 'You cannot deactivate or delete the account you are currently signed into.' });
+        }
+
+        if (isPermanent) {
+            // Preserve attendee display names on any historical event_logs rows before unlinking user_id
+            const deleteTx = db.transaction((userId, fallbackName) => {
+                db.prepare("UPDATE event_logs SET first_name = COALESCE(first_name, ?), last_name = COALESCE(last_name, '') WHERE user_id = ?")
+                  .run(fallbackName || 'Deleted User', userId);
+                db.prepare('UPDATE event_logs SET user_id = NULL WHERE user_id = ?').run(userId);
+                db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+            });
+            deleteTx(targetUser.id, targetUser.full_name);
+            clearFailedAttempts(targetUser.username);
+            writeLog(actor, actorRole, 'permanent_delete_user', targetUser.username, `Permanently deleted user account (${targetUser.full_name})`, ip);
+            res.json({ success: true, permanent: true });
+            scheduleSnapshot();
+            return;
+        }
+
+        // Safe deactivate (table Deactivate button)
         db.prepare("UPDATE users SET status = 'inactive' WHERE id = ?").run(id);
         // Also clear any active lockout for this user
         clearFailedAttempts(targetUser.username);
         writeLog(actor, actorRole, 'delete_user', targetUser.username, 'Deactivated user account', ip);
-        res.json({ success: true });
+        res.json({ success: true, permanent: false });
         scheduleSnapshot();
     } catch (err) {
         res.status(500).json({ error: err.message });

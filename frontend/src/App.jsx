@@ -360,8 +360,8 @@ function EventFormModal({ event, onClose, onSaved, authHeaders, authUser }) {
           <div><label className={labelCls}>Male</label><input type="number" min="0" value={form.male_count} onChange={e => set('male_count', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Female</label><input type="number" min="0" value={form.female_count} onChange={e => set('female_count', e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Staff (optional)</label><input type="number" min="0" value={form.staff_count} onChange={e => set('staff_count', e.target.value)} placeholder="—" className={inputCls} /></div>
-          {/* Budget — finance tier only: chairman + secretary */}
-          {(authUser?.role === 'chairman' || authUser?.role === 'secretary') && (
+          {/* Budget — finance tier: admin, chairman + secretary */}
+          {(authUser?.role === 'admin' || authUser?.role === 'chairman' || authUser?.role === 'secretary') && (
             <div className="col-span-2 sm:col-span-2"><label className={labelCls}>Budget Allotted (₱)</label><input type="number" min="0" step="0.01" value={form.budget_allotted} onChange={e => set('budget_allotted', e.target.value)} placeholder="0.00" className={inputCls} /></div>
           )}
         </div>
@@ -1729,8 +1729,9 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
   const [deleteTarget, setDeleteTarget] = useState(null);  // { id, username } | null
   const [deleteStep, setDeleteStep] = useState(1);         // 1 = first confirm, 2 = type username
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
-  // Derived: is there already a chairman?
+  // Derived: is there already a chairman or secretary?
   const hasChairman = users.some(u => u.role === 'chairman' && u.status === 'active');
+  const hasSecretary = users.some(u => u.role === 'secretary' && u.status === 'active');
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -2610,10 +2611,16 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                   <option value="chairman" disabled={hasChairman} className={hasChairman ? 'text-slate-400' : ''}>
                     Chairman{hasChairman ? ' (Already Assigned)' : ''}
                   </option>
+                  <option value="secretary" disabled={hasSecretary} className={hasSecretary ? 'text-slate-400' : ''}>
+                    Secretary{hasSecretary ? ' (Already Assigned)' : ''}
+                  </option>
                   <option value="committee">Committee</option>
                 </select>
                 {newUser.role === 'chairman' && hasChairman && (
                   <p className="mt-1 text-amber-600 text-[10px]">⚠️ A Chairman already exists. Only one Chairman is allowed.</p>
+                )}
+                {newUser.role === 'secretary' && hasSecretary && (
+                  <p className="mt-1 text-amber-600 text-[10px]">⚠️ A Secretary already exists. Only one Secretary is allowed.</p>
                 )}
               </div>
               {newUser.role === 'committee' && (
@@ -2705,6 +2712,13 @@ function AdminDashboardModule({ authHeaders, authUser, sidebarOpen, onToggleSide
                     className={hasChairman && editUser.role !== 'chairman' ? 'text-slate-400' : ''}
                   >
                     Chairman{hasChairman && editUser.role !== 'chairman' ? ' (Already Assigned)' : ''}
+                  </option>
+                  <option
+                    value="secretary"
+                    disabled={hasSecretary && editUser.role !== 'secretary'}
+                    className={hasSecretary && editUser.role !== 'secretary' ? 'text-slate-400' : ''}
+                  >
+                    Secretary{hasSecretary && editUser.role !== 'secretary' ? ' (Already Assigned)' : ''}
                   </option>
                   <option value="committee">Committee</option>
                 </select>

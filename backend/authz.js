@@ -36,18 +36,18 @@ export function isElevated(user) {
 
 /**
  * Can this user READ budget fields?
- * Chairman and Secretary only. Admin is intentionally excluded (D2).
+ * Admin (highest tier), Chairman, and Secretary.
  */
 export function canReadBudget(user) {
-  return isChairman(user) || isSecretary(user);
+  return isAdmin(user) || isChairman(user) || isSecretary(user);
 }
 
 /**
  * Can this user WRITE budget fields on an event?
- * Same as read — chairman and secretary only.
+ * Admin (highest tier), Chairman, and Secretary.
  */
 export function canWriteBudget(user) {
-  return isChairman(user) || isSecretary(user);
+  return isAdmin(user) || isChairman(user) || isSecretary(user);
 }
 
 // ─── Event Access Control ─────────────────────────────────────────────────────

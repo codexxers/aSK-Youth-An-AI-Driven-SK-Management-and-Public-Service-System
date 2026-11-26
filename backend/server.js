@@ -1224,11 +1224,11 @@ function verifyElevated(req, res, next) {
     });
 }
 
-// verifyFinance — requires chairman or secretary (budget data, D2)
+// verifyFinance — requires admin, chairman, or secretary (budget data)
 function verifyFinance(req, res, next) {
     verifyJWT(req, res, () => {
         if (!canReadBudget(req.authUser)) {
-            return res.status(403).json({ error: 'Forbidden: budget data requires Chairman or Secretary access.' });
+            return res.status(403).json({ error: 'Forbidden: budget data requires Admin, Chairman, or Secretary access.' });
         }
         next();
     });
@@ -1523,7 +1523,7 @@ app.get('/api/admin/stats', (req, res) => {
 
         const response = { totalEvents, totalAttendees, pendingSuggestions, activeUsers };
 
-        // Budget total — finance tier only (chairman + secretary). Admin is excluded (D2).
+        // Budget total — finance tier (admin, chairman, secretary).
         if (canReadBudget(viewer)) {
             const totalBudget = db.prepare('SELECT COALESCE(SUM(budget_allotted), 0) as c FROM events').get().c || 0;
             response.totalBudget = totalBudget;
